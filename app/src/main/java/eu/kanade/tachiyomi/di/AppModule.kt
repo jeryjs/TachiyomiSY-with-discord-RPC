@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.cache.PagePreviewCache
+import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
@@ -170,6 +171,8 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { EHentaiUpdateHelper(app) }
 
         addSingletonFactory { PagePreviewCache(app) }
+
+        addSingletonFactory { ConnectionsManager() }
         // SY <--
 
         // Asynchronously init expensive components for a faster cold start

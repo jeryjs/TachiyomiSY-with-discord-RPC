@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.source
 
 import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
@@ -52,3 +53,10 @@ private fun getMergedSourcesString(
 // SY <--
 
 fun Source.isLocalOrStub(): Boolean = isLocal() || this is StubSource
+
+fun Source?.isNsfw(): Boolean {
+    if (this == null || this.isLocalOrStub()) return false
+    val sourceUsed = Injekt.get<ExtensionManager>().installedExtensionsFlow.value
+        .find { ext -> ext.sources.any { it.id == this.id } }!!
+    return sourceUsed.isNsfw
+}

@@ -10,6 +10,35 @@
     <string name="action_start_reading">Start reading</string>
     <string name="action_edit_info">Edit info</string>
 
+    <!-- Connections section -->
+    <string name="special_services">Special Services</string>
+    <string name="general_categories">Categories</string>
+    <string name="pref_category_connections">Connections</string>
+    <string name="pref_connections_summary">Discord, more to come..</string>
+    <string name="connections_info">Special Services that are unique to Kuukiyomi and enhance the way you use the app</string>
+    <string name="connections_discord">Discord</string>
+    <string name="connections_discord_info">This Discord Service works through token logging. Use at your own risk. Your token is stored locally and Kuukiyomi does not share it anywhere else</string>
+    <string name="pref_discord_rpc">Discord Rich Presence</string>
+    <string name="pref_enable_discord_rpc">Enable Discord Rich Presence</string>
+    <string name="show_chapters_titles_title">Show Episodes/Chapters Titles</string>
+    <string name="show_chapters_titles_subtitle">Show the title of the episode/chapter you are reading</string>
+    <string name="pref_discord_status">Discord Status</string>
+    <string name="pref_discord_dnd">⛔ Do Not Disturb</string>
+    <string name="pref_discord_idle">🌙 Idle</string>
+    <string name="pref_discord_online">🟢 Online</string>
+    <string name="pref_category_discord_incognito">RPC Incognito</string>
+    <string name="pref_discord_incognito">Discord Incognito mode</string>
+    <string name="pref_discord_incognito_summary">Overridden when Incognito Mode is enabled</string>
+    <string name="pref_discord_incognito_categories_details">Entries in included categories will not be displayed in Discord</string>
+
+    <!-- Discord section -->
+    <string name="fancy_rpc_name">𝐓𝐚𝐜𝐡𝐢𝐲𝐨𝐦𝐢𝐒𝐘</string>
+    <string name="fancy_rpc_reading">ℜ𝔢𝔞𝔡𝔦𝔫𝔤</string>
+    <string name="browsing">Browsing</string>
+    <string name="scrolling">Scrolling through</string>
+    <string name="messing">Messing around with</string>
+    <string name="comic">Comic</string>
+
     <!-- Entry Type -->
     <string name="entry_type_manga">Manga</string>
     <string name="entry_type_manhwa">Manhwa</string>

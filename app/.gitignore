@@ -1,4 +1,6 @@
 /build
+/dev
+/standard
 *iml
 *.iml
 google-services.json

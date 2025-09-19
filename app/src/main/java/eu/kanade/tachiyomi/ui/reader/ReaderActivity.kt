@@ -56,6 +56,7 @@ import dev.chrisbanes.insetter.applyInsetter
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.manga.model.readingMode
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.reader.ChapterListDialog
 import eu.kanade.presentation.reader.DisplayRefreshHost
 import eu.kanade.presentation.reader.OrientationSelectDialog
@@ -624,6 +625,13 @@ class ReaderActivity : BaseActivity() {
                         onClickChapter = {
                             viewModel.loadNewChapterFromDialog(it)
                             onDismissRequest()
+                        },
+                        onDownloadChapter = { items, action ->
+                            viewModel.runDownloadActions(items, action)
+                            // Refresh UI after delete by incrementing a dummy state
+                            if (action == ChapterDownloadAction.DELETE) {
+                                chapters = chapters.map { it }.toImmutableList()
+                            }
                         },
                         onBookmark = { chapter ->
                             viewModel.toggleBookmark(chapter.id, !chapter.bookmark)
@@ -1423,13 +1431,16 @@ class ReaderActivity : BaseActivity() {
                     DiscordRPCService.setReaderActivity(
                         context = this@ReaderActivity,
                         ReaderData(
-                            incognitoMode = viewModel.incognitoMode,    // viewModel.currentSource.isNsfw()
+                            incognitoMode = viewModel.incognitoMode, // viewModel.currentSource.isNsfw()
                             mangaId = viewModel.manga?.id,
                             mangaTitle = viewModel.manga?.title,
                             thumbnailUrl = viewModel.manga?.thumbnailUrl,
                             chapterNumber = Pair(currentChapter?.chapter_number ?: -1f, viewModel.getChapters().size),
-                            chapterTitle = if(connectionsPreferences.useChapterTitles().get()) currentChapter?.name
-                                            else currentChapter?.chapter_number.toString(),
+                            chapterTitle = if (connectionsPreferences.useChapterTitles().get()) {
+                                currentChapter?.name
+                            } else {
+                                currentChapter?.chapter_number.toString()
+                            },
                         ),
                     )
                 } else {

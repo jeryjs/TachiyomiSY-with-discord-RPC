@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.components.AdaptiveSheet
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.MangaChapterListItem
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -40,6 +41,7 @@ fun ChapterListDialog(
     screenModel: ReaderSettingsScreenModel,
     chapters: ImmutableList<ReaderChapterItem>,
     onClickChapter: (Chapter) -> Unit,
+    onDownloadChapter: (List<Chapter>, ChapterDownloadAction) -> Unit,
     onBookmark: (Chapter) -> Unit,
     dateRelativeTime: Boolean,
 ) {
@@ -106,14 +108,16 @@ fun ChapterListDialog(
                     read = chapterItem.chapter.read,
                     bookmark = chapterItem.chapter.bookmark,
                     selected = false,
-                    downloadIndicatorEnabled = false,
+                    downloadIndicatorEnabled = true,
                     downloadStateProvider = { downloadState },
                     downloadProgressProvider = { progress },
                     chapterSwipeStartAction = ChapterSwipeAction.ToggleBookmark,
                     chapterSwipeEndAction = ChapterSwipeAction.ToggleBookmark,
                     onLongClick = { /*TODO*/ },
                     onClick = { onClickChapter(chapterItem.chapter) },
-                    onDownloadClick = null,
+                    onDownloadClick = { action: ChapterDownloadAction ->
+                        onDownloadChapter(listOf(chapterItem.chapter), action)
+                    },
                     onChapterSwipe = {
                         onBookmark(chapterItem.chapter)
                     },

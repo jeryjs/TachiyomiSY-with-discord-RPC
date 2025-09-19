@@ -19,6 +19,7 @@ import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.track.interactor.TrackChapter
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.tachiyomi.data.database.models.toDomainChapter
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
@@ -617,6 +618,38 @@ class ReaderViewModel @JvmOverloads constructor(
         }
 
         eventChannel.trySend(Event.PageChanged)
+    }
+
+    fun runDownloadActions(chapters: List<Chapter>, action: ChapterDownloadAction) {
+        if (chapters.isEmpty()) return
+        viewModelScope.launchNonCancellable {
+            when (action) {
+                ChapterDownloadAction.START -> {
+                    val manga = manga ?: return@launchNonCancellable
+                    // Don't download if source isn't available
+                    sourceManager.get(manga.source) ?: return@launchNonCancellable
+                    downloadManager.downloadChapters(manga, chapters)
+                    // Auto start any errored downloads
+                    if (chapters.any { downloadManager.getQueuedDownloadOrNull(it.id)?.status == Download.State.ERROR }) {
+                        downloadManager.startDownloads()
+                    }
+                }
+                ChapterDownloadAction.START_NOW -> {
+                    val chapterId = chapters.singleOrNull()?.id ?: return@launchNonCancellable
+                    downloadManager.startDownloadNow(chapterId)
+                }
+                ChapterDownloadAction.CANCEL -> {
+                    val chapterId = chapters.singleOrNull()?.id ?: return@launchNonCancellable
+                    val activeDownload = downloadManager.getQueuedDownloadOrNull(chapterId) ?: return@launchNonCancellable
+                    downloadManager.cancelQueuedDownloads(listOf(activeDownload))
+                }
+                ChapterDownloadAction.DELETE -> {
+                    val manga = manga ?: return@launchNonCancellable
+                    val source = sourceManager.get(manga.source) ?: return@launchNonCancellable
+                    downloadManager.deleteChapters(chapters, manga, source)
+                }
+            }
+        }
     }
 
     private fun downloadNextChapters() {

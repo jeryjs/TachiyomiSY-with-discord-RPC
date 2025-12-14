@@ -131,7 +131,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         // SY <--
 
         setupExhLogging() // EXH logging
-        LogcatLogger.install(XLogLogcatLogger()) // SY Redirect Logcat to XLog
+        LogcatLogger.install()
+        LogcatLogger.loggers += XLogLogcatLogger() // SY Redirect Logcat to XLog
 
         setupNotificationChannels()
 
@@ -156,7 +157,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                         val pendingIntent = PendingIntent.getBroadcast(
                             this@App,
                             0,
-                            Intent(ACTION_DISABLE_INCOGNITO_MODE),
+                            Intent(ACTION_DISABLE_INCOGNITO_MODE).setPackage(BuildConfig.APPLICATION_ID),
                             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
                         )
                         setContentIntent(pendingIntent)
@@ -281,8 +282,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 // Override the value passed as X-Requested-With in WebView requests
                 val stackTrace = Looper.getMainLooper().thread.stackTrace
                 val isChromiumCall = stackTrace.any { trace ->
-                    trace.className.equals("org.chromium.base.BuildInfo", ignoreCase = true) &&
-                        setOf("getAll", "getPackageName", "<init>").any { trace.methodName.equals(it, ignoreCase = true) }
+                    trace.className.lowercase() in setOf("org.chromium.base.buildinfo", "org.chromium.base.apkinfo") &&
+                        trace.methodName.lowercase() in setOf("getall", "getpackagename", "<init>")
                 }
 
                 if (isChromiumCall) return WebViewUtil.spoofedPackageName(applicationContext)

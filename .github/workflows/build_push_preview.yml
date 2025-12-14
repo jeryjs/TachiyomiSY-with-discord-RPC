@@ -1,7 +1,7 @@
 name: Remote Dispatch Build App
 
 on:
- workflow_dispatch:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

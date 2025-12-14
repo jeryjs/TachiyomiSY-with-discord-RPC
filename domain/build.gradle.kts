@@ -31,7 +31,7 @@ dependencies {
 
     api(libs.sqldelight.android.paging)
 
-    compileOnly(libs.compose.stablemarker)
+    compileOnly(compose.runtime.annotation)
 
     // SY -->
     implementation(libs.injekt)
@@ -39,4 +39,5 @@ dependencies {
 
     testImplementation(libs.bundles.test)
     testImplementation(kotlinx.coroutines.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }

@@ -18,7 +18,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.chapter.interactor.SyncChaptersWithSource
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.copyFrom
@@ -66,7 +65,6 @@ import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.NoChaptersException
 import tachiyomi.domain.library.model.GroupLibraryMode
@@ -130,8 +128,6 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
     private val insertTrack: InsertTrack = Injekt.get()
     private val trackerManager: TrackerManager = Injekt.get()
     private val mdList = trackerManager.mdList
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get()
-    private val setReadStatus: SetReadStatus = Injekt.get()
     // SY <--
 
     private val notifier = LibraryUpdateNotifier(context)
@@ -156,7 +152,8 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         setForegroundSafely()
 
-        val target = inputData.getString(KEY_TARGET)?.let { Target.valueOf(it) } ?: Target.CHAPTERS
+        val target = inputData.getString(KEY_TARGET)?.let { Target.valueOf(it) }
+            ?: Target.CHAPTERS
 
         // If this is a chapter update, set the last update time to now
         if (target == Target.CHAPTERS) {
@@ -220,28 +217,23 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         // SY <--
 
         val listToUpdate = if (categoryId != -1L) {
-            libraryManga.filter { it.category == categoryId }
+            libraryManga.filter { categoryId in it.categories }
+            // SY -->
         } else if (
             group == LibraryGroup.BY_DEFAULT ||
             groupLibraryUpdateType == GroupLibraryMode.GLOBAL ||
             (groupLibraryUpdateType == GroupLibraryMode.ALL_BUT_UNGROUPED && group == LibraryGroup.UNGROUPED)
         ) {
-            val categoriesToUpdate = libraryPreferences.updateCategories().get().map(String::toLong)
-            val includedManga = if (categoriesToUpdate.isNotEmpty()) {
-                libraryManga.filter { it.category in categoriesToUpdate }
-            } else {
-                libraryManga
-            }
+            // SY <--
+            val includedCategories = libraryPreferences.updateCategories().get().map { it.toLong() }.toSet()
+            val excludedCategories = libraryPreferences.updateCategoriesExclude().get().map { it.toLong() }.toSet()
 
-            val categoriesToExclude = libraryPreferences.updateCategoriesExclude().get().map { it.toLong() }
-            val excludedMangaIds = if (categoriesToExclude.isNotEmpty()) {
-                libraryManga.filter { it.category in categoriesToExclude }.map { it.manga.id }
-            } else {
-                emptyList()
+            libraryManga.filter {
+                val included = includedCategories.isEmpty() || it.categories.intersect(includedCategories).isNotEmpty()
+                val excluded = it.categories.intersect(excludedCategories).isNotEmpty()
+                included && !excluded
             }
-
-            includedManga
-                .filterNot { it.manga.id in excludedMangaIds }
+            // SY -->
         } else {
             when (group) {
                 LibraryGroup.BY_TRACK_STATUS -> {
@@ -255,6 +247,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                         status.int == trackingExtra
                     }
                 }
+
                 LibraryGroup.BY_SOURCE -> {
                     val sourceExtra = groupExtra?.nullIfBlank()?.toIntOrNull()
                     val source = libraryManga.map { it.manga.source }
@@ -264,12 +257,14 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
                     if (source != null) libraryManga.filter { it.manga.source == source } else emptyList()
                 }
+
                 LibraryGroup.BY_STATUS -> {
                     val statusExtra = groupExtra?.toLongOrNull() ?: -1
                     libraryManga.filter {
                         it.manga.status == statusExtra
                     }
                 }
+
                 LibraryGroup.UNGROUPED -> libraryManga
                 else -> libraryManga
             }
@@ -286,10 +281,9 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             // SY <--
             .filter {
                 when {
-                    it.manga.updateStrategy != UpdateStrategy.ALWAYS_UPDATE -> {
+                    it.manga.updateStrategy == UpdateStrategy.ONLY_FETCH_ONCE && it.totalChapters > 0L -> {
                         skippedUpdates.add(
-                            it.manga to
-                                context.stringResource(MR.strings.skipped_reason_not_always_update),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_always_update),
                         )
                         false
                     }
@@ -311,11 +305,11 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
                     MANGA_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate > fetchWindowUpperBound -> {
                         skippedUpdates.add(
-                            it.manga to
-                                context.stringResource(MR.strings.skipped_reason_not_in_release_period),
+                            it.manga to context.stringResource(MR.strings.skipped_reason_not_in_release_period),
                         )
                         false
                     }
+
                     else -> true
                 }
             }
@@ -328,9 +322,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
             logcat {
                 skippedUpdates
                     .groupBy { it.second }
-                    .map { (reason, entries) ->
-                        "$reason: [${entries.map { it.first.title }.sorted().joinToString()}]"
-                    }
+                    .map { (reason, entries) -> "$reason: [${entries.map { it.first.title }.sorted().joinToString()}]" }
                     .joinToString()
             }
         }
@@ -421,13 +413,14 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                         }
                                     } catch (e: Throwable) {
                                         val errorMessage = when (e) {
-                                            is NoChaptersException ->
-                                                context.stringResource(MR.strings.no_chapters_error)
-                                            // failedUpdates will already have the source,
-                                            // don't need to copy it into the message
+                                            is NoChaptersException -> context.stringResource(
+                                                MR.strings.no_chapters_error,
+                                            )
+                                            // failedUpdates will already have the source, don't need to copy it into the message
                                             is SourceNotInstalledException -> context.stringResource(
                                                 MR.strings.loader_not_implemented_error,
                                             )
+
                                             else -> e.message
                                         }
                                         failedUpdates.add(manga to errorMessage)
@@ -539,7 +532,7 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                                             .copyFrom(networkManga)
                                         try {
                                             updateManga.await(updatedManga.toMangaUpdate())
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             logcat(LogPriority.ERROR) { "Manga doesn't exist anymore" }
                                         }
                                     } catch (e: Throwable) {
@@ -580,7 +573,9 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
                 count++
                 notifier.showProgressNotification(
-                    listOf(Manga.create().copy(ogTitle = networkManga.title)), count, size,
+                    listOf(Manga.create().copy(ogTitle = networkManga.title)),
+                    count,
+                    size,
                 )
 
                 var dbManga = getManga.await(networkManga.url, mangaDex.id)
@@ -697,7 +692,8 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
                 }
                 return file
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
         return File("")
     }
 
@@ -721,8 +717,6 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
         private const val WORK_NAME_MANUAL = "LibraryUpdate-manual"
 
         private const val ERROR_LOG_HELP_URL = "https://mihon.app/docs/guides/troubleshooting/"
-
-        private const val MANGA_PER_SOURCE_QUEUE_WARNING_THRESHOLD = 60
 
         /**
          * Key for category to update.

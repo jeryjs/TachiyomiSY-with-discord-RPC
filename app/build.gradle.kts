@@ -129,9 +129,9 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        aidl = true
 
         // Disable some unused things
-        aidl = false
         renderScript = false
         shaders = false
     }
@@ -256,7 +256,6 @@ dependencies {
     implementation(libs.directionalviewpager) {
         exclude(group = "androidx.viewpager", module = "viewpager")
     }
-    implementation(libs.insetter)
     implementation(libs.richeditor.compose)
     implementation(libs.aboutLibraries.compose)
     implementation(libs.bundles.voyager)
@@ -278,8 +277,12 @@ dependencies {
     // Shizuku
     implementation(libs.bundles.shizuku)
 
+    // String similarity
+    implementation(libs.stringSimilarity)
+
     // Tests
     testImplementation(libs.bundles.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     // For detecting memory leaks; see https://square.github.io/leakcanary/
     // debugImplementation(libs.leakcanary.android)
@@ -288,9 +291,6 @@ dependencies {
     testImplementation(kotlinx.coroutines.test)
 
     // SY -->
-    // Text distance (EH)
-    implementation(sylibs.simularity)
-
     // Firebase (EH)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)

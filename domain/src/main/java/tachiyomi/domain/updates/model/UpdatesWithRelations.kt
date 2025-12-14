@@ -14,6 +14,7 @@ data class UpdatesWithRelations(
     val chapterId: Long,
     val chapterName: String,
     val scanlator: String?,
+    val chapterUrl: String,
     val read: Boolean,
     val bookmark: Boolean,
     val lastPageRead: Long,

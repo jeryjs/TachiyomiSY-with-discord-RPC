@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.manga
 
 import android.content.Context
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -226,7 +225,9 @@ class MangaScreen(
             previewsRowCount = successState.previewsRowCount,
             onMigrateClicked = {
                 navigator.push(MigrationConfigScreen(successState.manga.id))
-            }.takeIf { successState.manga.favorite },
+            }.takeIf {
+                successState.manga.favorite /* SY --> */ && successState.manga.source != MERGED_SOURCE_ID /* SY <-- */
+            },
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
             // SY -->
             onMetadataViewerClicked = { openMetadataViewer(navigator, successState.manga) },
@@ -432,12 +433,7 @@ class MangaScreen(
         try {
             getMangaUrl(manga_, source_)?.let { url ->
                 val intent = url.toUri().toShareIntent(context, type = "text/plain")
-                context.startActivity(
-                    Intent.createChooser(
-                        intent,
-                        context.stringResource(MR.strings.action_share),
-                    ),
-                )
+                context.startActivity(intent)
             }
         } catch (e: Exception) {
             context.toast(e.message)

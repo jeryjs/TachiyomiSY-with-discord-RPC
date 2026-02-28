@@ -182,7 +182,7 @@ class MainActivity : BaseActivity() {
         }
 
         // SY -->
-        @Suppress("KotlinConstantConditions")
+        @Suppress("KotlinConstantConditions", "SimplifyBooleanWithConstants")
         val hasDebugOverlay = (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "releaseTest")
         // SY <--
 

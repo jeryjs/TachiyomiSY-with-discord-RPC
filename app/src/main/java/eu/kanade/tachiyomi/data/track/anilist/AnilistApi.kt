@@ -45,9 +45,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     suspend fun addLibManga(track: Track): Track {
         return withIOContext {
-            val query = """
-            |mutation AddManga(${'$'}mangaId: Int, ${'$'}progressVolumes: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean) {
-                |SaveMediaListEntry (mediaId: ${'$'}mangaId, progressVolumes: ${'$'}progressVolumes, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private) {
+            val query = $$"""
+            |mutation AddManga($mangaId: Int, $progressVolumes: Int, $progress: Int, $status: MediaListStatus, $private: Boolean) {
+                |SaveMediaListEntry (mediaId: $mangaId, progressVolumes: $progressVolumes, progress: $progress, status: $status, private: $private) {
                 |   id
                 |   status
                 |}
@@ -81,16 +81,16 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
-suspend fun updateLibManga(track: Track): Track {
+    suspend fun updateLibManga(track: Track): Track {
         return withIOContext {
-            val query = """
+            val query = $$"""
             |mutation UpdateManga(
-                |${'$'}listId: Int, ${'$'}progressVolumes: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}private: Boolean,
-                |${'$'}score: Int, ${'$'}startedAt: FuzzyDateInput, ${'$'}completedAt: FuzzyDateInput
+                |$listId: Int, $progressVolumes: Int, $progress: Int, $status: MediaListStatus, $private: Boolean,
+                |$score: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput
             |) {
                 |SaveMediaListEntry(
-                    |id: ${'$'}listId, progressVolumes: ${'$'}progressVolumes, progress: ${'$'}progress, status: ${'$'}status, private: ${'$'}private,
-                    |scoreRaw: ${'$'}score, startedAt: ${'$'}startedAt, completedAt: ${'$'}completedAt
+                    |id: $listId, progressVolumes: $progressVolumes, progress: $progress, status: $status, private: $private,
+                    |scoreRaw: $score, startedAt: $startedAt, completedAt: $completedAt
                 |) {
                     |id
                     |status
@@ -120,9 +120,9 @@ suspend fun updateLibManga(track: Track): Track {
 
     suspend fun deleteLibManga(track: DomainTrack) {
         withIOContext {
-            val query = """
-            |mutation DeleteManga(${'$'}listId: Int) {
-                |DeleteMediaListEntry(id: ${'$'}listId) {
+            val query = $$"""
+            |mutation DeleteManga($listId: Int) {
+                |DeleteMediaListEntry(id: $listId) {
                     |deleted
                 |}
             |}
@@ -141,10 +141,10 @@ suspend fun updateLibManga(track: Track): Track {
 
     suspend fun search(search: String): List<TrackSearch> {
         return withIOContext {
-            val query = """
-            |query Search(${'$'}query: String) {
+            val query = $$"""
+            |query Search($query: String) {
                 |Page (perPage: 50) {
-                    |media(search: ${'$'}query, type: MANGA, format_not_in: [NOVEL]) {
+                    |media(search: $query, type: MANGA, format_not_in: [NOVEL]) {
                         |id
                         |staff {
                             |edges {
@@ -203,10 +203,10 @@ suspend fun updateLibManga(track: Track): Track {
 
     suspend fun findLibManga(track: Track, userid: Int): Track? {
         return withIOContext {
-            val query = """
-            |query (${'$'}id: Int!, ${'$'}manga_id: Int!) {
+            val query = $$"""
+            |query ($id: Int!, $manga_id: Int!) {
                 |Page {
-                    |mediaList(userId: ${'$'}id, type: MANGA, mediaId: ${'$'}manga_id) {
+                    |mediaList(userId: $id, type: MANGA, mediaId: $manga_id) {
                         |id
                         |status
                         |scoreRaw: score(format: POINT_100)

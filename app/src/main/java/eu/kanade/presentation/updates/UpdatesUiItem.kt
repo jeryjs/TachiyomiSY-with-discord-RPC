@@ -92,7 +92,7 @@ internal fun LazyListScope.updatesUiItems(
     // SY <--
     updateSwipeToStart: ChapterSwipeAction,
     updateSwipeToEnd: ChapterSwipeAction,
-    onUpdateSelected: (UpdatesItem, Boolean, Boolean, Boolean) -> Unit,
+    onUpdateSelected: (UpdatesItem, Boolean, Boolean) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
     onClickUpdate: (UpdatesItem) -> Unit,
     onExpandClicked: (UpdatesItem) -> Unit,
@@ -158,11 +158,11 @@ internal fun LazyListScope.updatesUiItems(
                         updateSwipeToStart = updateSwipeToStart,
                         updateSwipeToEnd = updateSwipeToEnd,
                         onLongClick = {
-                            onUpdateSelected(updatesItem, !updatesItem.selected, true, true)
+                            onUpdateSelected(updatesItem, !updatesItem.selected, true)
                         },
                         onClick = {
                             when {
-                                selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, true, false)
+                                selectionMode -> onUpdateSelected(updatesItem, !updatesItem.selected, false)
                                 else -> onClickUpdate(updatesItem)
                             }
                         },

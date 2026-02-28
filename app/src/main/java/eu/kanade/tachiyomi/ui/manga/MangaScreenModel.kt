@@ -1182,6 +1182,13 @@ class MangaScreenModel(
         return if (manga.sortDescending()) chaptersSorted.reversed() else chaptersSorted
     }
 
+    private fun getBookmarkedChapters(): List<Chapter> {
+        val chapterItems = if (skipFiltered) filteredChapters.orEmpty() else allChapters.orEmpty()
+        return chapterItems
+            .filter { (chapter, dlStatus) -> chapter.bookmark && dlStatus == Download.State.NOT_DOWNLOADED }
+            .map { it.chapter }
+    }
+
     private fun startDownload(
         chapters: List<Chapter>,
         startNow: Boolean,
@@ -1244,6 +1251,7 @@ class MangaScreenModel(
             DownloadAction.NEXT_10_CHAPTERS -> getUnreadChaptersSorted().take(10)
             DownloadAction.NEXT_25_CHAPTERS -> getUnreadChaptersSorted().take(25)
             DownloadAction.UNREAD_CHAPTERS -> getUnreadChapters()
+            DownloadAction.BOOKMARKED_CHAPTERS -> getBookmarkedChapters()
         }
         if (chaptersToDownload.isNotEmpty()) {
             startDownload(chaptersToDownload, false)
@@ -1494,7 +1502,6 @@ class MangaScreenModel(
     fun toggleSelection(
         item: ChapterList.Item,
         selected: Boolean,
-        userSelected: Boolean = false,
         fromLongPress: Boolean = false,
     ) {
         updateSuccessState { successState ->
@@ -1509,7 +1516,7 @@ class MangaScreenModel(
                 set(selectedIndex, selectedItem.copy(selected = selected))
                 selectedChapterIds.addOrRemove(item.id, selected)
 
-                if (selected && userSelected && fromLongPress) {
+                if (selected && fromLongPress) {
                     if (firstSelection) {
                         selectedPositions[0] = selectedIndex
                         selectedPositions[1] = selectedIndex
@@ -1535,7 +1542,7 @@ class MangaScreenModel(
                             }
                         }
                     }
-                } else if (userSelected && !fromLongPress) {
+                } else if (!fromLongPress) {
                     if (!selected) {
                         if (selectedIndex == selectedPositions[0]) {
                             selectedPositions[0] = indexOfFirst { it.selected }

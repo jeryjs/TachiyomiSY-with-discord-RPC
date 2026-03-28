@@ -107,7 +107,13 @@ class DiscordRPCService : Service() {
             addAction(R.drawable.ic_format_list_numbered_24dp, getString(R.string.status), openStatusDialogPendingIntent(context))
         }
 
-        startForeground(Notifications.ID_DISCORD_RPC, builder.build())
+        try {
+            startForeground(Notifications.ID_DISCORD_RPC, builder.build())
+        } catch (_: Exception) {
+            rpc?.closeRPC()
+            rpc = null
+            stopSelf()
+        }
     }
 
     private fun togglePauseResumePendingIntent(context: Context): PendingIntent {

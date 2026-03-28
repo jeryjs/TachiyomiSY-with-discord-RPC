@@ -54,13 +54,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.domain.connections.service.ConnectionsPreferences
+import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
 import eu.kanade.presentation.more.settings.screen.ConfigureExhDialog
+import eu.kanade.presentation.more.settings.screen.SettingsDiscordScreen
 import eu.kanade.presentation.more.settings.screen.about.WhatsNewDialog
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionReposScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
@@ -341,6 +342,8 @@ class MainActivity : BaseActivity() {
             // SY -->
             ConfigureExhDialog(run = runExhConfigureDialog, onRunning = { runExhConfigureDialog = false })
             // SY <--
+
+            SettingsDiscordScreen.DiscordStatusDialogHost()
         }
 
         val startTime = System.currentTimeMillis()
@@ -535,6 +538,10 @@ class MainActivity : BaseActivity() {
                         navigator.push(ExtensionReposScreen(repoUrl))
                     }
                 }
+                null
+            }
+            DiscordRPCService.ACTION_DISCORD_SET_STATUS -> {
+                SettingsDiscordScreen.requestDiscordStatusDialog()
                 null
             }
             else -> return false

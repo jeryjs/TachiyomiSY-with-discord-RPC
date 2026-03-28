@@ -5,8 +5,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.util.fastFilter
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.util.fastFilter
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.core.preference.asState
@@ -182,6 +182,7 @@ class UpdatesScreenModel(
     }
 
     private fun List<UpdatesWithRelations>.toUpdateItems(): List<UpdatesItem> {
+        val tmpArtifactsByManga = mutableMapOf<Pair<Long, String>, Set<String>>()
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.chapterId)
@@ -194,9 +195,21 @@ class UpdatesScreenModel(
                     // SY <--
                     update.sourceId,
                 )
+                val hasIncompleteDownload = !downloaded && activeDownload == null &&
+                    downloadManager.hasIncompleteChapterDownload(
+                        update.chapterName,
+                        update.scanlator,
+                        update.chapterUrl,
+                        update.ogMangaTitle,
+                        update.sourceId,
+                        tmpArtifactsByManga.getOrPut(update.sourceId to update.ogMangaTitle) {
+                            downloadManager.getMangaChapterTmpArtifactNames(update.ogMangaTitle, update.sourceId)
+                        },
+                    )
                 val downloadState = when {
                     activeDownload != null -> activeDownload.status
                     downloaded -> Download.State.DOWNLOADED
+                    hasIncompleteDownload -> Download.State.ERROR
                     else -> Download.State.NOT_DOWNLOADED
                 }
                 UpdatesItem(

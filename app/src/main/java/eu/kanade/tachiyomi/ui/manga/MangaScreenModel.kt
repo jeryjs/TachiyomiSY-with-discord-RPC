@@ -72,6 +72,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -240,6 +241,8 @@ class MangaScreenModel(
     var dedupe: Boolean = true
     // EXH <--
 
+    private var incompleteDownloadsLoaded = false
+
     private data class CombineState(
         val manga: Manga,
         val chapters: List<Chapter>,
@@ -259,6 +262,31 @@ class MangaScreenModel(
             when (it) {
                 State.Loading -> it
                 is State.Success -> func(it)
+            }
+        }
+    }
+
+    private fun scheduleIncompleteDownloadRefresh(
+        manga: Manga,
+        chapters: List<Chapter>,
+        mergedData: MergedMangaData?,
+    ) {
+        if (incompleteDownloadsLoaded) return
+        incompleteDownloadsLoaded = true
+
+        screenModelScope.launchIO {
+            delay(250)
+
+            val currentState = mutableState.value as? State.Success ?: return@launchIO
+            if (currentState.manga.id != manga.id) return@launchIO
+
+            val chapterItems = chapters.toChapterListItems(manga, mergedData, includeIncompleteDownloads = true)
+            updateSuccessState {
+                if (it.manga.id == manga.id) {
+                    it.copy(chapters = chapterItems)
+                } else {
+                    it
+                }
             }
         }
     }
@@ -334,7 +362,10 @@ class MangaScreenModel(
                 // SY <--
                 .flowWithLifecycle(lifecycle)
                 .collectLatest { (manga, chapters /* SY --> */, flatMetadata, mergedData /* SY <-- */) ->
-                    val chapterItems = chapters.toChapterListItems(manga /* SY --> */, mergedData /* SY <-- */)
+                    val chapterItems = chapters.toChapterListItems(
+                        manga /* SY --> */, mergedData /* SY <-- */,
+                        includeIncompleteDownloads = incompleteDownloadsLoaded,
+                    )
                     updateSuccessState {
                         it.copy(
                             manga = manga,
@@ -345,6 +376,7 @@ class MangaScreenModel(
                             // SY <--
                         )
                     }
+                    scheduleIncompleteDownloadRefresh(manga, chapters, mergedData)
                 }
         }
 
@@ -406,7 +438,7 @@ class MangaScreenModel(
                     getMangaAndChapters.awaitChapters(mangaId, applyScanlatorFilter = true)
                 }
                 )
-                .toChapterListItems(manga, mergedData)
+                .toChapterListItems(manga, mergedData, includeIncompleteDownloads = false)
             val meta = getFlatMetadata.await(mangaId)
             // SY <--
 
@@ -1006,6 +1038,7 @@ class MangaScreenModel(
     private fun List<Chapter>.toChapterListItems(
         manga: Manga,
         mergedData: MergedMangaData?,
+        includeIncompleteDownloads: Boolean = true,
     ): List<ChapterList.Item> {
         val isLocal = manga.isLocal()
         // SY -->
@@ -1013,6 +1046,7 @@ class MangaScreenModel(
         val enabledLanguages = Injekt.get<SourcePreferences>().enabledLanguages().get()
             .filterNot { it in listOf("all", "other") }
         // SY <--
+        val tmpArtifactsByManga = mutableMapOf<Pair<Long, String>, Set<String>>()
         return map { chapter ->
             val activeDownload = if (isLocal) {
                 null
@@ -1036,9 +1070,21 @@ class MangaScreenModel(
                     manga.source,
                 )
             }
+            val hasIncompleteDownload = includeIncompleteDownloads && !manga.isLocal() && !downloaded && activeDownload == null &&
+                downloadManager.hasIncompleteChapterDownload(
+                    chapter.name,
+                    chapter.scanlator,
+                    chapter.url,
+                    manga.ogTitle,
+                    manga.source,
+                    tmpArtifactsByManga.getOrPut(manga.source to manga.ogTitle) {
+                        downloadManager.getMangaChapterTmpArtifactNames(manga.ogTitle, manga.source)
+                    },
+                )
             val downloadState = when {
                 activeDownload != null -> activeDownload.status
                 downloaded -> Download.State.DOWNLOADED
+                hasIncompleteDownload -> Download.State.ERROR
                 else -> Download.State.NOT_DOWNLOADED
             }
 

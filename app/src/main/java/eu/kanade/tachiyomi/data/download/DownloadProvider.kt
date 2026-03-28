@@ -115,6 +115,36 @@ class DownloadProvider(
     }
 
     /**
+     * Returns temporary chapter artifacts left by interrupted/failed downloads.
+     */
+    fun findChapterTmpDirs(
+        chapterName: String,
+        chapterScanlator: String?,
+        chapterUrl: String,
+        mangaTitle: String,
+        source: Source,
+    ): List<UniFile> {
+        val mangaDir = findMangaDir(mangaTitle, source) ?: return emptyList()
+        return getValidChapterDirNames(chapterName, chapterScanlator, chapterUrl)
+            .mapNotNull { mangaDir.findFile(it + Downloader.TMP_DIR_SUFFIX) }
+    }
+
+    /**
+     * Returns all chapter temp artifact names for a manga (e.g. "chapter.cbz_tmp").
+     */
+    fun findMangaChapterTmpArtifactNames(
+        mangaTitle: String,
+        source: Source,
+    ): Set<String> {
+        val mangaDir = findMangaDir(mangaTitle, source) ?: return emptySet()
+        return mangaDir.listFiles().orEmpty()
+            .mapNotNull { file ->
+                file.name?.takeIf { it.endsWith(Downloader.TMP_DIR_SUFFIX) }
+            }
+            .toSet()
+    }
+
+    /**
      * Returns a list of downloaded directories for the chapters that exist.
      *
      * @param chapters the chapters to query.
@@ -266,7 +296,9 @@ class DownloadProvider(
     /**
      * Returns valid downloaded chapter directory names.
      *
-     * @param chapter the domain chapter object.
+     * @param chapterName the chapter name.
+     * @param chapterScanlator the chapter scanlator.
+     * @param chapterUrl the chapter url.
      */
     fun getValidChapterDirNames(chapterName: String, chapterScanlator: String?, chapterUrl: String): List<String> {
         val chapterDirName = getChapterDirName(chapterName, chapterScanlator, chapterUrl)

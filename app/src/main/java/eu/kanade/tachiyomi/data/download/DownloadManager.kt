@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
@@ -204,6 +203,26 @@ class DownloadManager(
         return cache.isChapterDownloaded(chapterName, chapterScanlator, chapterUrl, mangaTitle, sourceId, skipCache)
     }
 
+    fun hasIncompleteChapterDownload(
+        chapterName: String,
+        chapterScanlator: String?,
+        chapterUrl: String,
+        mangaTitle: String,
+        sourceId: Long,
+        mangaTmpArtifactNames: Set<String>? = null,
+    ): Boolean {
+        val tmpArtifactNames = mangaTmpArtifactNames ?: getMangaChapterTmpArtifactNames(mangaTitle, sourceId)
+        if (tmpArtifactNames.isEmpty()) return false
+
+        return provider.getValidChapterDirNames(chapterName, chapterScanlator, chapterUrl)
+            .any { "$it${Downloader.TMP_DIR_SUFFIX}" in tmpArtifactNames }
+    }
+
+    fun getMangaChapterTmpArtifactNames(mangaTitle: String, sourceId: Long): Set<String> {
+        val source = sourceManager.getOrStub(sourceId)
+        return provider.findMangaChapterTmpArtifactNames(mangaTitle, source)
+    }
+
     /**
      * Returns the amount of downloaded chapters.
      */
@@ -242,6 +261,17 @@ class DownloadManager(
 
             val (mangaDir, chapterDirs) = provider.findChapterDirs(filteredChapters, manga, source)
             chapterDirs.forEach { it.delete() }
+            filteredChapters
+                .flatMap {
+                    provider.findChapterTmpDirs(
+                        chapterName = it.name,
+                        chapterScanlator = it.scanlator,
+                        chapterUrl = it.url,
+                        mangaTitle = manga.ogTitle,
+                        source = source,
+                    )
+                }
+                .forEach { it.delete() }
             cache.removeChapters(filteredChapters, manga)
 
             // Delete manga directory if empty

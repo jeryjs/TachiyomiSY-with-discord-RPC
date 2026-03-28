@@ -50,6 +50,15 @@ fun ChapterListDialog(
     val state = rememberLazyListState(chapters.indexOfFirst { it.isCurrent }.coerceAtLeast(0))
     val downloadManager: DownloadManager = remember { Injekt.get() }
     val downloadQueueState by downloadManager.queueState.collectAsState()
+    val tmpArtifactNames = remember(chapters) {
+        chapters.firstOrNull()?.let {
+            if (it.manga.isLocal()) {
+                emptySet()
+            } else {
+                downloadManager.getMangaChapterTmpArtifactNames(it.manga.ogTitle, it.manga.source)
+            }
+        }.orEmpty()
+    }
 
     AdaptiveSheet(
         onDismissRequest = onDismissRequest,
@@ -81,9 +90,19 @@ fun ChapterListDialog(
                         chapterItem.manga.source,
                     )
                 }
+                val hasIncompleteDownload = !chapterItem.manga.isLocal() && !downloaded && activeDownload == null &&
+                    downloadManager.hasIncompleteChapterDownload(
+                        chapterItem.chapter.name,
+                        chapterItem.chapter.scanlator,
+                        chapterItem.chapter.url,
+                        chapterItem.manga.ogTitle,
+                        chapterItem.manga.source,
+                        tmpArtifactNames,
+                    )
                 val downloadState = when {
                     activeDownload != null -> activeDownload.status
                     downloaded -> Download.State.DOWNLOADED
+                    hasIncompleteDownload -> Download.State.ERROR
                     else -> Download.State.NOT_DOWNLOADED
                 }
                 MangaChapterListItem(

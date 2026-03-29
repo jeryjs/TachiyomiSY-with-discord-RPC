@@ -45,8 +45,27 @@ class TrackChapter(
                             val updatedTrack = service.refresh(track.toDbTrack())
                                 .toDomainTrack(idRequired = true)!!
                                 .copy(lastChapterRead = chapterNumber)
-                            service.update(updatedTrack.toDbTrack(), true)
-                            insertTrack.await(updatedTrack)
+
+                            val wasRereading = service.getRereadingStatus() != -1L && updatedTrack.status == service.getRereadingStatus()
+                            val remoteTrack = service.update(updatedTrack.toDbTrack(), true)
+                            val completedReread = wasRereading && remoteTrack.status == service.getCompletionStatus()
+
+                            val domainTrack = remoteTrack.toDomainTrack(idRequired = true)
+                            domainTrack?.let { insertTrack.await(it) }
+
+                            if (completedReread && service.supportsRereadCount()) {
+                                val newCount = remoteTrack.reread_count.toInt() + 1
+                                runCatching {
+                                    service.setRemoteRereadCount(remoteTrack, newCount)
+                                }.onSuccess {
+                                    domainTrack?.let { track ->
+                                        insertTrack.await(track.copy(rereadCount = newCount.toLong()))
+                                    }
+                                }.onFailure {
+                                    logcat(LogPriority.WARN, it) { "Failed to update reread count for tracker ${service.name}" }
+                                }
+                            }
+
                             delayedTrackingStore.remove(track.id)
                         } catch (e: Exception) {
                             delayedTrackingStore.add(track.id, chapterNumber)

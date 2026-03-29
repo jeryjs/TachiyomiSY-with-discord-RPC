@@ -17,6 +17,9 @@ import eu.kanade.domain.manga.model.readingMode
 import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.track.interactor.TrackChapter
+import eu.kanade.domain.track.model.AutoTrackState
+import eu.kanade.domain.track.model.toDbTrack
+import eu.kanade.domain.track.model.toDomainTrack
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
@@ -28,6 +31,8 @@ import eu.kanade.tachiyomi.data.saver.Image
 import eu.kanade.tachiyomi.data.saver.ImageSaver
 import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
+import eu.kanade.tachiyomi.data.track.Tracker
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -102,6 +107,9 @@ import tachiyomi.domain.manga.interactor.GetMergedMangaById
 import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.domain.track.interactor.GetTracks
+import tachiyomi.domain.track.interactor.InsertTrack
+import tachiyomi.domain.track.model.Track
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -123,6 +131,9 @@ class ReaderViewModel @JvmOverloads constructor(
     private val downloadPreferences: DownloadPreferences = Injekt.get(),
     private val trackPreferences: TrackPreferences = Injekt.get(),
     private val trackChapter: TrackChapter = Injekt.get(),
+    private val getTracks: GetTracks = Injekt.get(),
+    private val insertTrack: InsertTrack = Injekt.get(),
+    private val trackerManager: TrackerManager = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val getNextChapters: GetNextChapters = Injekt.get(),
@@ -783,8 +794,88 @@ class ReaderViewModel @JvmOverloads constructor(
         }
     }
 
+    private suspend fun maybeHandleReread(readerChapter: ReaderChapter) {
+        if (readerChapter.chapter.chapter_number > 1) return    // Check only for first chapter
+
+        val autoTrack = trackPreferences.autoUpdateTrackOnReread().get()
+        if (autoTrack == AutoTrackState.NEVER) return   // check if auto track is enabled
+
+        val completedTracks = getCompletedTracksThatSupportRereading()
+        if (completedTracks.isEmpty()) return  // check if manga tracker status is marked as completed. skip otherwise
+
+        // If reached last page of first chapter on manga tracked as completed
+        if (autoTrack == AutoTrackState.ALWAYS) {
+            startReread(completedTracks)
+        } else {
+            eventChannel.trySend(Event.AskStartReread)
+        }
+    }
+
+    fun confirmStartReread() {
+        viewModelScope.launchNonCancellable {
+            startReread()
+        }
+    }
+
+    private suspend fun startReread(
+        completedTracks: List<Pair<Track, Tracker>>? = null,
+    ) {
+        val manga = manga ?: return
+        val tracks = completedTracks ?: getCompletedTracksThatSupportRereading()
+        if (tracks.isEmpty()) return
+
+        val currentChapter = state.value.currentChapter?.chapter
+
+        setReadStatus.await(manga, read = false)
+
+        currentChapter?.id?.let { chapterId ->
+            updateChapter.await(
+                ChapterUpdate(
+                    id = chapterId,
+                    read = true,
+                    lastPageRead = currentChapter.last_page_read.toLong(),
+                ),
+            )
+        }
+
+        // Keep in-memory chapter objects aligned to avoid stale reread prompts.
+        chapterListCache?.forEach {
+            if (it.chapter.id == currentChapter?.id) return@forEach
+            it.chapter.read = false
+            it.chapter.last_page_read = 0
+        }
+        unfilteredChapterListCache = null
+
+        tracks.forEach { (track, service) ->
+            runCatching {
+                val updatedTrack = track.copy(
+                    status = service.getRereadingStatus(),
+                    lastChapterRead = 0.0,
+                    lastVolumeRead = 0.0,
+                )
+                val remoteTrack = service.update(updatedTrack.toDbTrack(), didReadChapter = false)  // set to 'false' to avoid overwriting fields like start date
+                remoteTrack.toDomainTrack(idRequired = true)?.let { insertTrack.await(it) }
+            }.onFailure {
+                logcat(LogPriority.WARN, it) { "Failed to start reread for tracker ${service.name}" }
+            }
+        }
+
+        eventChannel.trySend(Event.RereadStarted)
+    }
+
+    private suspend fun getCompletedTracksThatSupportRereading(): List<Pair<Track, Tracker>> {
+        val mangaId = manga?.id ?: return emptyList()
+        return getTracks.await(mangaId).mapNotNull { track ->
+            val service = trackerManager.get(track.trackerId) ?: return@mapNotNull null
+            if (!service.isLoggedIn || service.getRereadingStatus() == -1L) return@mapNotNull null
+            if (track.status != service.getCompletionStatus()) return@mapNotNull null
+            track to service
+        }
+    }
+
     private suspend fun updateChapterProgressOnComplete(readerChapter: ReaderChapter) {
         readerChapter.chapter.read = true
+        maybeHandleReread(readerChapter)    // handle reread only upon completion of first ch
         // SY -->
         if (manga?.isEhBasedManga() == true) {
             viewModelScope.launchNonCancellable {
@@ -1453,6 +1544,8 @@ class ReaderViewModel @JvmOverloads constructor(
         data object ReloadViewerChapters : Event
         data object ChapterChanged : Event
         data object PageChanged : Event
+        data object AskStartReread : Event
+        data object RereadStarted : Event
         data class SetOrientation(val orientation: Int) : Event
         data class SetCoverResult(val result: SetAsCoverResult) : Event
 

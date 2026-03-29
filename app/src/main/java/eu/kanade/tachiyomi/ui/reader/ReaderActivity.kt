@@ -30,6 +30,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -195,6 +199,7 @@ class ReaderActivity : BaseActivity() {
     private val windowInsetsController by lazy { WindowInsetsControllerCompat(window, window.decorView) }
 
     private var loadingIndicator: ReaderProgressIndicator? = null
+    private val snackbarHostState = SnackbarHostState()
 
     var isScrollingThroughPages = false
         private set
@@ -295,6 +300,25 @@ class ReaderActivity : BaseActivity() {
                         displayRefreshHost.flash()
                     }
 
+                    ReaderViewModel.Event.AskStartReread -> {
+                        val result = snackbarHostState.showSnackbar(
+                            message = stringResource(MR.strings.confirm_start_reread),
+                            actionLabel = stringResource(MR.strings.action_ok),
+                            duration = SnackbarDuration.Short,
+                            withDismissAction = true,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            viewModel.confirmStartReread()
+                        }
+                    }
+
+                    ReaderViewModel.Event.RereadStarted -> {
+                        snackbarHostState.showSnackbar(
+                            message = stringResource(MR.strings.reread_started_summary),
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
+
                     is ReaderViewModel.Event.SetOrientation -> {
                         setOrientation(event.orientation)
                     }
@@ -348,6 +372,13 @@ class ReaderActivity : BaseActivity() {
             ContentOverlay(state = state)
 
             AppBars(state = state)
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding(),
+            )
         }
 
         val onDismissRequest = viewModel::closeDialog

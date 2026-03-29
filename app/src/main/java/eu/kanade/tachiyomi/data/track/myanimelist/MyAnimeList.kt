@@ -75,15 +75,16 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
     }
 
     override suspend fun update(track: Track, didReadChapter: Boolean): Track {
+        val isRereading = track.status == REREADING
         if (track.status != COMPLETED) {
             if (didReadChapter) {
                 if (track.last_chapter_read.toLong() == track.total_chapters && track.total_chapters > 0) {
                     track.last_volume_read = track.total_volumes.toDouble()
+                    if (!isRereading) track.finished_reading_date = System.currentTimeMillis()
                     track.status = COMPLETED
-                    track.finished_reading_date = System.currentTimeMillis()
                 } else if (track.status != REREADING) {
                     track.status = READING
-                    if (track.last_chapter_read == 1.0) {
+                    if (track.last_chapter_read == 1.0 && !isRereading) {
                         track.started_reading_date = System.currentTimeMillis()
                     }
                 }

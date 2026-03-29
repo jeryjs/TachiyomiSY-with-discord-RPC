@@ -23,6 +23,8 @@ data class MALListItemStatus(
     @SerialName("num_chapters_read")
     val numChaptersRead: Double,
     val score: Int,
+    @SerialName("num_times_reread")
+    val numTimesReread: Int? = null,
     @SerialName("start_date")
     val startDate: String?,
     @SerialName("finish_date")

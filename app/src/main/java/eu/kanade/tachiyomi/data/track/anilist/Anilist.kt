@@ -76,6 +76,8 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
 
     override fun getRereadingStatus(): Long = REREADING
 
+    override fun supportsRereadCount(): Boolean = true
+
     override fun getCompletionStatus(): Long = COMPLETED
 
     override fun getScoreList(): ImmutableList<String> {

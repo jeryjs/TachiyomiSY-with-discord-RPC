@@ -10,6 +10,7 @@ data class SMUserListEntry(
     val id: Long,
     val volumes: Double,
     val chapters: Double,
+    val rewatches: Int? = null,
     val score: Int,
     val status: String,
 ) {
@@ -24,6 +25,7 @@ data class SMUserListEntry(
             score = this@SMUserListEntry.score.toDouble()
             status = toTrackStatus(this@SMUserListEntry.status)
             tracking_url = ShikimoriApi.BASE_URL + manga.url
+            reread_count = (this@SMUserListEntry.rewatches ?: 0).toLong()
         }
     }
 }

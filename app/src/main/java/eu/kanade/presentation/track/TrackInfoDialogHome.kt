@@ -72,6 +72,7 @@ fun TrackInfoDialogHome(
     onScoreClick: (TrackItem) -> Unit,
     onStartDateEdit: (TrackItem) -> Unit,
     onEndDateEdit: (TrackItem) -> Unit,
+    onRereadCountClick: (TrackItem) -> Unit,
     onNewSearch: (TrackItem) -> Unit,
     onOpenInBrowser: (TrackItem) -> Unit,
     onRemoved: (TrackItem) -> Unit,
@@ -92,6 +93,7 @@ fun TrackInfoDialogHome(
                 val supportsScoring = item.tracker.getScoreList().isNotEmpty()
                 val supportsReadingDates = item.tracker.supportsReadingDates
                 val supportsPrivate = item.tracker.supportsPrivateTracking
+                val supportsRereadCount = item.tracker.supportsRereadCount()
                 TrackInfoItem(
                     title = item.track.title,
                     tracker = item.tracker,
@@ -130,6 +132,10 @@ fun TrackInfoDialogHome(
                         .takeIf { supportsReadingDates && item.track.finishDate != 0L },
                     onEndDateClick = { onEndDateEdit(item) }
                         .takeIf { supportsReadingDates },
+                    rereadCount = item.track.rereadCount.toString()
+                        .takeIf { supportsRereadCount },
+                    onRereadCountClick = { onRereadCountClick(item) }
+                        .takeIf { supportsRereadCount },
                     onNewSearch = { onNewSearch(item) },
                     onOpenInBrowser = { onOpenInBrowser(item) },
                     onRemoved = { onRemoved(item) },
@@ -164,6 +170,8 @@ private fun TrackInfoItem(
     onStartDateClick: (() -> Unit)?,
     endDate: String?,
     onEndDateClick: (() -> Unit)?,
+    rereadCount: String?,
+    onRereadCountClick: (() -> Unit)?,
     onNewSearch: () -> Unit,
     onOpenInBrowser: () -> Unit,
     onRemoved: () -> Unit,
@@ -286,6 +294,15 @@ private fun TrackInfoItem(
                             placeholder = stringResource(MR.strings.track_finished_reading_date),
                             onClick = onEndDateClick,
                         )
+                        if (rereadCount != null) {
+                            VerticalDivider()
+                            TrackDetailsItem(
+                                modifier = Modifier.weight(1F),
+                                text = rereadCount,
+                                placeholder = stringResource(MR.strings.track_reread_count),
+                                onClick = onRereadCountClick,
+                            )
+                        }
                     }
                 }
             }
@@ -298,13 +315,19 @@ private const val UNSET_TEXT_ALPHA = 0.5F
 @Composable
 private fun TrackDetailsItem(
     text: String?,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     placeholder: String = "",
 ) {
     Box(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .run {
+                if (onClick != null) {
+                    clickable(onClick = onClick)
+                } else {
+                    this
+                }
+            }
             .fillMaxHeight()
             .padding(12.dp),
         contentAlignment = Alignment.Center,

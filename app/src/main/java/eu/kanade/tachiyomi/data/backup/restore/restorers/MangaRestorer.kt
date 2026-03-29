@@ -454,6 +454,7 @@ class MangaRestorer(
                         track.startDate,
                         track.finishDate,
                         track.private,
+                        track.rereadCount,
                         track.id,
                     )
                 }

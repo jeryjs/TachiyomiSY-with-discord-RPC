@@ -19,4 +19,5 @@ data class Track(
     val startDate: Long,
     val finishDate: Long,
     val private: Boolean,
+    val rereadCount: Long = 0,
 ) : Serializable

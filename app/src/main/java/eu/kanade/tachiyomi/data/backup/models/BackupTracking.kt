@@ -26,9 +26,10 @@ data class BackupTracking(
     // finishedReadingDate is called endReadTime in 1.x
     @ProtoNumber(11) var finishedReadingDate: Long = 0,
     @ProtoNumber(12) var private: Boolean = false,
-    // volume support is exclusive to this fork (for now), so im using a random starting range for proto number
+    // volume & rereadCount support is exclusive to this fork (for now), so im using a random starting range for proto number
     @ProtoNumber(20) var lastVolumeRead: Float = 0F,
     @ProtoNumber(21) var totalVolumes: Int = 0,
+    @ProtoNumber(22) var rereadCount: Int = 0,
     @ProtoNumber(100) var mediaId: Long = 0,
 ) {
 
@@ -55,6 +56,7 @@ data class BackupTracking(
             finishDate = this@BackupTracking.finishedReadingDate,
             remoteUrl = this@BackupTracking.trackingUrl,
             private = this@BackupTracking.private,
+            rereadCount = this@BackupTracking.rereadCount.toLong(),
         )
     }
 }
@@ -76,6 +78,7 @@ val backupTrackMapper = {
         startDate: Long,
         finishDate: Long,
         private: Boolean,
+        rereadCount: Long,
     ->
     BackupTracking(
         syncId = syncId.toInt(),
@@ -93,5 +96,6 @@ val backupTrackMapper = {
         finishedReadingDate = finishDate,
         trackingUrl = remoteUrl,
         private = private,
+        rereadCount = rereadCount.toInt(),
     )
 }

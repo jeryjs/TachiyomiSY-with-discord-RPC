@@ -211,6 +211,29 @@ fun TrackDateSelector(
 }
 
 @Composable
+fun TrackRereadSelector(
+    selection: Int,
+    onSelectionChange: (Int) -> Unit,
+    range: Iterable<Int>,
+    onConfirm: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    BaseSelector(
+        title = stringResource(MR.strings.track_reread_count),
+        content = {
+            WheelNumberPicker(
+                items = range.toImmutableList(),
+                modifier = Modifier.align(Alignment.Center),
+                startIndex = selection,
+                onSelectionChanged = { onSelectionChange(it) },
+            )
+        },
+        onConfirm = onConfirm,
+        onDismissRequest = onDismissRequest,
+    )
+}
+
+@Composable
 private fun BaseSelector(
     title: String,
     content: @Composable BoxScope.() -> Unit,

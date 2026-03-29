@@ -46,8 +46,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
     suspend fun addLibManga(track: Track): Track {
         return withIOContext {
             val query = $$"""
-            |mutation AddManga($mangaId: Int, $progressVolumes: Int, $progress: Int, $status: MediaListStatus, $private: Boolean) {
-                |SaveMediaListEntry (mediaId: $mangaId, progressVolumes: $progressVolumes, progress: $progress, status: $status, private: $private) {
+            |mutation AddManga($mangaId: Int, $progressVolumes: Int, $progress: Int, $status: MediaListStatus, $private: Boolean, $repeat: Int) {
+                |SaveMediaListEntry (mediaId: $mangaId, progressVolumes: $progressVolumes, progress: $progress, status: $status, private: $private, repeat: $repeat) {
                 |   id
                 |   status
                 |}
@@ -62,6 +62,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     put("progress", track.last_chapter_read.toInt())
                     put("status", track.toApiStatus())
                     put("private", track.private)
+                    put("repeat", track.reread_count.toInt())
                 }
             }
             with(json) {
@@ -86,11 +87,11 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             val query = $$"""
             |mutation UpdateManga(
                 |$listId: Int, $progressVolumes: Int, $progress: Int, $status: MediaListStatus, $private: Boolean,
-                |$score: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput
+                |$score: Int, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput, $repeat: Int
             |) {
                 |SaveMediaListEntry(
                     |id: $listId, progressVolumes: $progressVolumes, progress: $progress, status: $status, private: $private,
-                    |scoreRaw: $score, startedAt: $startedAt, completedAt: $completedAt
+                    |scoreRaw: $score, startedAt: $startedAt, completedAt: $completedAt, repeat: $repeat
                 |) {
                     |id
                     |status
@@ -110,6 +111,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     put("startedAt", createDate(track.started_reading_date))
                     put("completedAt", createDate(track.finished_reading_date))
                     put("private", track.private)
+                    put("repeat", track.reread_count.toInt())
                 }
             }
             authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
@@ -212,6 +214,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         |scoreRaw: score(format: POINT_100)
                         |progressVolumes
                         |progress
+                        |repeat
                         |private
                         |startedAt {
                             |year

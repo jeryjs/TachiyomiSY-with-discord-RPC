@@ -50,6 +50,7 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.track.TrackChapterSelector
 import eu.kanade.presentation.track.TrackDateSelector
 import eu.kanade.presentation.track.TrackInfoDialogHome
+import eu.kanade.presentation.track.TrackRereadSelector
 import eu.kanade.presentation.track.TrackScoreSelector
 import eu.kanade.presentation.track.TrackStatusSelector
 import eu.kanade.presentation.track.TrackVolumeSelector
@@ -182,6 +183,14 @@ data class TrackInfoDialogHomeScreen(
                                 track = it.track!!,
                                 serviceId = it.tracker.id,
                                 start = false,
+                            ),
+                        )
+                    },
+                    onRereadCountClick = {
+                        navigator.push(
+                            TrackRereadSelectorScreen(
+                                track = it.track!!,
+                                serviceId = it.tracker.id,
                             ),
                         )
                     },
@@ -607,6 +616,56 @@ private data class TrackScoreSelectorScreen(
         @Immutable
         data class State(
             val selection: String,
+        )
+    }
+}
+
+private data class TrackRereadSelectorScreen(
+    private val track: Track,
+    private val serviceId: Long,
+) : Screen() {
+
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        val screenModel = rememberScreenModel {
+            Model(
+                track = track,
+                tracker = Injekt.get<TrackerManager>().get(serviceId)!!,
+            )
+        }
+        val state by screenModel.state.collectAsState()
+
+        TrackRereadSelector(
+            selection = state.selection,
+            onSelectionChange = screenModel::setSelection,
+            range = 0..1000,
+            onConfirm = {
+                screenModel.setRereadCount()
+                navigator.pop()
+            },
+            onDismissRequest = navigator::pop,
+        )
+    }
+
+    private class Model(
+        private val track: Track,
+        private val tracker: Tracker,
+    ) : StateScreenModel<Model.State>(State(track.rereadCount.toInt())) {
+
+        fun setSelection(selection: Int) {
+            mutableState.update { it.copy(selection = selection) }
+        }
+
+        fun setRereadCount() {
+            screenModelScope.launchNonCancellable {
+                tracker.setRemoteRereadCount(track.toDbTrack(), state.value.selection)
+            }
+        }
+
+        @Immutable
+        data class State(
+            val selection: Int,
         )
     }
 }

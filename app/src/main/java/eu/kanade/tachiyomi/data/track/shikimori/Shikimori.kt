@@ -124,6 +124,8 @@ class Shikimori(id: Long) : BaseTracker(id, "Shikimori"), DeletableTracker {
 
     override fun getRereadingStatus(): Long = REREADING
 
+    override fun supportsRereadCount(): Boolean = true
+
     override fun getCompletionStatus(): Long = COMPLETED
 
     override suspend fun login(username: String, password: String) = login(password)

@@ -129,6 +129,11 @@ abstract class BaseTracker(
         updateRemote(track)
     }
 
+    override suspend fun setRemoteRereadCount(track: Track, rereadCount: Int) {
+        track.reread_count = rereadCount.toLong()
+        updateRemote(track)
+    }
+
     override suspend fun setRemotePrivate(track: Track, private: Boolean) {
         track.private = private
         updateRemote(track)

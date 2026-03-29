@@ -62,6 +62,8 @@ class MyAnimeList(id: Long) : BaseTracker(id, "MyAnimeList"), DeletableTracker {
 
     override fun getCompletionStatus(): Long = COMPLETED
 
+    override fun supportsRereadCount(): Boolean = true
+
     override fun getScoreList(): ImmutableList<String> = SCORE_LIST
 
     override fun displayScore(track: DomainTrack): String {

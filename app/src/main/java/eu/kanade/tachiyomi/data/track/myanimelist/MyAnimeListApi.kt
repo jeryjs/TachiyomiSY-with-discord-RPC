@@ -113,6 +113,7 @@ class MyAnimeListApi(
                 .add("score", track.score.toString())
                 .add("num_volumes_read", track.last_volume_read.toInt().toString())
                 .add("num_chapters_read", track.last_chapter_read.toInt().toString())
+                .add("num_times_reread", track.reread_count.toString())
             convertToIsoDate(track.started_reading_date)?.let {
                 formBodyBuilder.add("start_date", it)
             }
@@ -145,7 +146,7 @@ class MyAnimeListApi(
         return withIOContext {
             val uri = "$BASE_API_URL/manga".toUri().buildUpon()
                 .appendPath(track.remote_id.toString())
-                .appendQueryParameter("fields", "num_volumes,num_chapters,my_list_status{start_date,finish_date}")
+                .appendQueryParameter("fields", "num_volumes,num_chapters,my_list_status{start_date,finish_date,num_times_reread}")
                 .build()
             with(json) {
                 authClient.newCall(GET(uri.toString()))
@@ -159,6 +160,28 @@ class MyAnimeListApi(
             }
         }
     }
+
+//    suspend fun setRereadCount(track: Track, rereadCount: Int) {
+//        withIOContext {
+//            val updatedCount = rereadCount + 1
+//
+//            val formBody = FormBody.Builder()
+//                .add("num_times_reread", updatedCount.toString())
+//                .build()
+//
+//            val request = Request.Builder()
+//                .url(mangaUrl(track.remote_id).toString())
+//                .put(formBody)
+//                .build()
+//
+//            with(json) {
+//                authClient.newCall(request)
+//                    .awaitSuccess()
+//                    .parseAs<MALListItemStatus>()
+//                    .numTimesReread ?: updatedCount
+//            }
+//        }
+//    }
 
     suspend fun findListItems(query: String, offset: Int = 0): List<TrackSearch> {
         return withIOContext {
@@ -240,6 +263,7 @@ class MyAnimeListApi(
             last_volume_read = listStatus.numVolumesRead
             last_chapter_read = listStatus.numChaptersRead
             score = listStatus.score.toDouble()
+            reread_count = (listStatus.numTimesReread ?: 0).toLong()
             listStatus.startDate?.let { started_reading_date = parseDate(it) }
             listStatus.finishDate?.let { finished_reading_date = parseDate(it) }
         }

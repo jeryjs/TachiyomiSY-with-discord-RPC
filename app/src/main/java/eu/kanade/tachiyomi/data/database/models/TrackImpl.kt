@@ -35,4 +35,6 @@ class TrackImpl : Track {
     override var tracking_url: String = ""
 
     override var private: Boolean = false
+
+    override var reread_count: Long = 0
 }

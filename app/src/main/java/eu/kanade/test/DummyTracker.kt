@@ -122,6 +122,11 @@ data class DummyTracker(
         epochMillis: Long,
     ) = Unit
 
+    override suspend fun setRemoteRereadCount(
+        track: eu.kanade.tachiyomi.data.database.models.Track,
+        rereadCount: Int,
+    ) = Unit
+
     override suspend fun setRemotePrivate(
         track: eu.kanade.tachiyomi.data.database.models.Track,
         private: Boolean,

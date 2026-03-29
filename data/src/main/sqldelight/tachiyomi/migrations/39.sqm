@@ -1,0 +1,3 @@
+ALTER TABLE manga_sync
+ADD COLUMN reread_count INTEGER NOT NULL DEFAULT 0;
+

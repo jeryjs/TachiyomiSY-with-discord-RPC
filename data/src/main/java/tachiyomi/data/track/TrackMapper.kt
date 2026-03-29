@@ -20,6 +20,7 @@ object TrackMapper {
         startDate: Long,
         finishDate: Long,
         private: Boolean,
+        rereadCount: Long,
     ): Track = Track(
         id = id,
         mangaId = mangaId,
@@ -37,5 +38,6 @@ object TrackMapper {
         startDate = startDate,
         finishDate = finishDate,
         private = private,
+        rereadCount = rereadCount,
     )
 }

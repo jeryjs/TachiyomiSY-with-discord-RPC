@@ -38,6 +38,8 @@ interface Track : Serializable {
 
     var private: Boolean
 
+    var reread_count: Long
+
     fun copyPersonalFrom(other: Track, copyRemotePrivate: Boolean = true) {
         last_volume_read = other.last_volume_read
         total_volumes = other.total_volumes
@@ -47,6 +49,7 @@ interface Track : Serializable {
         started_reading_date = other.started_reading_date
         finished_reading_date = other.finished_reading_date
         if (copyRemotePrivate) private = other.private
+        reread_count = other.reread_count
     }
 
     companion object {

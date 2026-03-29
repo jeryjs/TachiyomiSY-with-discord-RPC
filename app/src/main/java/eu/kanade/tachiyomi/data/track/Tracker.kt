@@ -84,6 +84,11 @@ interface Tracker {
 
     suspend fun setRemoteFinishDate(track: Track, epochMillis: Long)
 
+    // Optional capability: trackers can expose/maintain a remote reread counter.
+    fun supportsRereadCount(): Boolean = false
+
+    suspend fun setRemoteRereadCount(track: Track, rereadCount: Int): Unit? = null
+
     suspend fun setRemotePrivate(track: Track, private: Boolean)
 
     // SY -->

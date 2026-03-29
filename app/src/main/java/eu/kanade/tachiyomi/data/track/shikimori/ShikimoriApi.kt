@@ -48,6 +48,7 @@ class ShikimoriApi(
                         put("target_type", "Manga")
                         put("volumes", track.last_volume_read.toInt())
                         put("chapters", track.last_chapter_read.toInt())
+                        put("rewatches", track.reread_count.toInt())
                         put("score", track.score.toInt())
                         put("status", track.toShikimoriStatus())
                     }

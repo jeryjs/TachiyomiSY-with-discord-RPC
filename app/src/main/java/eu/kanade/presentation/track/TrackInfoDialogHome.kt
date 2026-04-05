@@ -133,7 +133,7 @@ fun TrackInfoDialogHome(
                     onEndDateClick = { onEndDateEdit(item) }
                         .takeIf { supportsReadingDates },
                     rereadCount = item.track.rereadCount.toString()
-                        .takeIf { supportsRereadCount },
+                        .takeIf { supportsRereadCount && (item.track.status == item.tracker.getRereadingStatus() || item.track.rereadCount > 0) },
                     onRereadCountClick = { onRereadCountClick(item) }
                         .takeIf { supportsRereadCount },
                     onNewSearch = { onNewSearch(item) },

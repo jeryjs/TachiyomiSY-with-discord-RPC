@@ -27,6 +27,8 @@ import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -90,6 +92,8 @@ class UpdatesScreenModel(
     // First and last selected index in list
     private val selectedPositions: Array<Int> = arrayOf(-1, -1)
     private val selectedChapterIds: HashSet<Long> = HashSet()
+    private var incompleteDownloadRefreshJob: Job? = null
+    private var incompleteDownloadsByChapterId: Map<Long, Boolean> = emptyMap()
 
     // Swipe actions for update Items.
     val chapterSwipeStartAction by libraryPreferences.swipeToEndAction().asState(screenModelScope)
@@ -126,6 +130,7 @@ class UpdatesScreenModel(
                     .toPersistentList()
             }
                 .collectLatest { updateItems ->
+                    val expectedIds = updateItems.map { it.update.chapterId }
                     mutableState.update {
                         it.copy(
                             isLoading = false,
@@ -137,6 +142,8 @@ class UpdatesScreenModel(
                             },
                         )
                     }
+
+                    scheduleIncompleteDownloadRefresh(expectedIds)
                 }
         }
 
@@ -182,7 +189,6 @@ class UpdatesScreenModel(
     }
 
     private fun List<UpdatesWithRelations>.toUpdateItems(): List<UpdatesItem> {
-        val tmpArtifactsByManga = mutableMapOf<Pair<Long, String>, Set<String>>()
         return this
             .map { update ->
                 val activeDownload = downloadManager.getQueuedDownloadOrNull(update.chapterId)
@@ -196,16 +202,7 @@ class UpdatesScreenModel(
                     update.sourceId,
                 )
                 val hasIncompleteDownload = !downloaded && activeDownload == null &&
-                    downloadManager.hasIncompleteChapterDownload(
-                        update.chapterName,
-                        update.scanlator,
-                        update.chapterUrl,
-                        update.ogMangaTitle,
-                        update.sourceId,
-                        tmpArtifactsByManga.getOrPut(update.sourceId to update.ogMangaTitle) {
-                            downloadManager.getMangaChapterTmpArtifactNames(update.ogMangaTitle, update.sourceId)
-                        },
-                    )
+                    incompleteDownloadsByChapterId[update.chapterId] == true
                 val downloadState = when {
                     activeDownload != null -> activeDownload.status
                     downloaded -> Download.State.DOWNLOADED
@@ -221,6 +218,64 @@ class UpdatesScreenModel(
             }
     }
 
+    private fun scheduleIncompleteDownloadRefresh(expectedIds: List<Long>) {
+        if (expectedIds.isEmpty()) return
+        if (expectedIds.all { it in incompleteDownloadsByChapterId }) return
+
+        incompleteDownloadRefreshJob?.cancel()
+        incompleteDownloadRefreshJob = screenModelScope.launchIO {
+            delay(250)
+
+            val missingChapterIds = expectedIds.filterNot { it in incompleteDownloadsByChapterId }.toSet()
+            if (missingChapterIds.isEmpty()) {
+                return@launchIO
+            }
+
+            val updates = mutableState.value.items
+                .map { it.update }
+                .filter { it.chapterId in missingChapterIds }
+
+            if (updates.isEmpty()) return@launchIO
+
+            val tmpArtifactsByManga = mutableMapOf<Pair<Long, String>, Set<String>>()
+            val computed = updates.associate { update ->
+                val hasIncompleteDownload = downloadManager.hasIncompleteChapterDownload(
+                    update.chapterName,
+                    update.scanlator,
+                    update.chapterUrl,
+                    update.ogMangaTitle,
+                    update.sourceId,
+                    tmpArtifactsByManga.getOrPut(update.sourceId to update.ogMangaTitle) {
+                        downloadManager.getMangaChapterTmpArtifactNames(update.ogMangaTitle, update.sourceId)
+                    },
+                )
+                update.chapterId to hasIncompleteDownload
+            }
+
+            incompleteDownloadsByChapterId += computed
+
+            mutableState.update { state ->
+                val currentIds = state.items.map { it.update.chapterId }
+                if (currentIds != expectedIds) return@update state
+
+                state.copy(
+                    items = state.items
+                        .map { it.update }
+                        .toUpdateItems()
+                        .applyFilters(
+                            ItemPreferences(
+                                filterDownloaded = updatesPreferences.filterDownloaded().get(),
+                                filterUnread = updatesPreferences.filterUnread().get(),
+                                filterStarted = updatesPreferences.filterStarted().get(),
+                                filterBookmarked = updatesPreferences.filterBookmarked().get(),
+                                filterExcludedScanlators = updatesPreferences.filterExcludedScanlators().get(),
+                            ),
+                        )
+                        .toPersistentList(),
+                )
+            }
+        }
+    }
 
     private fun initializeExpandedStates(items: PersistentList<UpdatesItem>): MutableMap<Pair<Long, LocalDate>, Boolean> {
         return mutableStateMapOf<Pair<Long, LocalDate>, Boolean>().apply {

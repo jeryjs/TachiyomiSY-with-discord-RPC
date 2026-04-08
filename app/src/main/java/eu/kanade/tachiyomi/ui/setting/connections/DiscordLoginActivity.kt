@@ -27,7 +27,7 @@ class DiscordLoginActivity : BaseActivity() {
 
         webView.apply {
             settings.javaScriptEnabled = true
-            settings.databaseEnabled = true
+            // settings.databaseEnabled = true //   todo: remove this deprecated property after confirming that removing it doesnt break anything.
             settings.domStorageEnabled = true
         }
 
@@ -63,7 +63,7 @@ class DiscordLoginActivity : BaseActivity() {
 
                     if (response.isSuccessful) {
                         val body = response.body.string()
-                        val jsonObject = org.json.JSONObject(body!!)
+                        val jsonObject = org.json.JSONObject(body)
                         val id = jsonObject.getString("id")
                         val username = jsonObject.getString("username")
                         val avatarId = jsonObject.optString("avatar")

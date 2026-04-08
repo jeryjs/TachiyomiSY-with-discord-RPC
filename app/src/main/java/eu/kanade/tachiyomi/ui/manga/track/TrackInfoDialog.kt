@@ -111,7 +111,7 @@ data class TrackInfoDialogHomeScreen(
         val context = LocalContext.current
         val screenModel = rememberScreenModel { Model(mangaId, sourceId) }
 
-        val dateFormat = remember { UiPreferences.dateFormat(Injekt.get<UiPreferences>().dateFormat().get()) }
+        val dateFormat = remember { UiPreferences.dateFormat(Injekt.get<UiPreferences>().dateFormat.get()) }
         val state by screenModel.state.collectAsState()
 
         // SY -->
@@ -277,7 +277,7 @@ data class TrackInfoDialogHomeScreen(
         // SY -->
         fun newSearch(navigator: Navigator, item: TrackItem, mangaTitle: String) {
             screenModelScope.launchNonCancellable {
-                if (trackPreferences.resolveUsingSourceMetadata().get()) {
+                if (trackPreferences.resolveUsingSourceMetadata.get()) {
                     // Check if the tracker id is contained in the metadata
                     val result = getTrackerIdFromMetadata(item.tracker.id)
                     if (result != null) {

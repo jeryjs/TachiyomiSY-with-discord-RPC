@@ -376,7 +376,7 @@ object AboutScreen : Screen() {
             )
                 .toDateTimestampString(
                     UiPreferences.dateFormat(
-                        Injekt.get<UiPreferences>().dateFormat().get(),
+                        Injekt.get<UiPreferences>().dateFormat.get(),
                     ),
                 )
         } catch (e: Exception) {

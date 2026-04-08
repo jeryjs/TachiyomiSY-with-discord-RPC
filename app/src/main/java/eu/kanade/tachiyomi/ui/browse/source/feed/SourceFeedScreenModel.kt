@@ -78,7 +78,7 @@ open class SourceFeedScreenModel(
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
 
-    val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
+    val startExpanded by uiPreferences.expandFilters.asState(screenModelScope)
 
     init {
         if (source is CatalogueSource) {
@@ -95,7 +95,7 @@ open class SourceFeedScreenModel(
                     mutableState.update { state ->
                         state.copy(
                             items = items,
-                            hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems().get(),
+                            hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get(),
                         )
                     }
                     getFeed(items)

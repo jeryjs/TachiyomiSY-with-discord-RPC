@@ -12,7 +12,7 @@ import uy.kohesive.injekt.api.get
 fun Source.getNameForMangaInfo(
     // SY -->
     mergeSources: List<Source>? = null,
-    enabledLanguages: List<String> = Injekt.get<SourcePreferences>().enabledLanguages().get()
+    enabledLanguages: List<String> = Injekt.get<SourcePreferences>().enabledLanguages.get()
         .filterNot { it in listOf("all", "other") },
     // SY <--
 ): String {
@@ -64,7 +64,7 @@ fun Source?.isNsfw(): Boolean {
 }
 
 fun Source.isIncognitoModeEnabled(): Boolean {
-    if (isEhBasedSource()) return Injekt.get<ExhPreferences>().ehIncognitoMode().get()
+    if (isEhBasedSource()) return Injekt.get<ExhPreferences>().ehIncognitoMode.get()
     val extensionPackage = Injekt.get<ExtensionManager>().getExtensionPackage(id)
-    return extensionPackage in Injekt.get<SourcePreferences>().incognitoExtensions().get()
+    return extensionPackage in Injekt.get<SourcePreferences>().incognitoExtensions.get()
 }

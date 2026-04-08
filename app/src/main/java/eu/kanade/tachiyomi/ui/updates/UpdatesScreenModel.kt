@@ -26,8 +26,8 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -83,10 +83,10 @@ class UpdatesScreenModel(
     private val _events: Channel<Event> = Channel(Int.MAX_VALUE)
     val events: Flow<Event> = _events.receiveAsFlow()
 
-    val lastUpdated by libraryPreferences.lastUpdatedTimestamp().asState(screenModelScope)
+    val lastUpdated by libraryPreferences.lastUpdatedTimestamp.asState(screenModelScope)
 
     // SY -->
-    val preserveReadingPosition by readerPreferences.preserveReadingPosition().asState(screenModelScope)
+    val preserveReadingPosition by readerPreferences.preserveReadingPosition.asState(screenModelScope)
     // SY <--
 
     // First and last selected index in list
@@ -96,8 +96,8 @@ class UpdatesScreenModel(
     private var incompleteDownloadsByChapterId: Map<Long, Boolean> = emptyMap()
 
     // Swipe actions for update Items.
-    val chapterSwipeStartAction by libraryPreferences.swipeToEndAction().asState(screenModelScope)
-    val chapterSwipeEndAction by libraryPreferences.swipeToStartAction().asState(screenModelScope)
+    val chapterSwipeStartAction by libraryPreferences.swipeToEndAction.asState(screenModelScope)
+    val chapterSwipeEndAction by libraryPreferences.swipeToStartAction.asState(screenModelScope)
 
     init {
         screenModelScope.launchIO {
@@ -264,11 +264,11 @@ class UpdatesScreenModel(
                         .toUpdateItems()
                         .applyFilters(
                             ItemPreferences(
-                                filterDownloaded = updatesPreferences.filterDownloaded().get(),
-                                filterUnread = updatesPreferences.filterUnread().get(),
-                                filterStarted = updatesPreferences.filterStarted().get(),
-                                filterBookmarked = updatesPreferences.filterBookmarked().get(),
-                                filterExcludedScanlators = updatesPreferences.filterExcludedScanlators().get(),
+                                filterDownloaded = updatesPreferences.filterDownloaded.get(),
+                                filterUnread = updatesPreferences.filterUnread.get(),
+                                filterStarted = updatesPreferences.filterStarted.get(),
+                                filterBookmarked = updatesPreferences.filterBookmarked.get(),
+                                filterExcludedScanlators = updatesPreferences.filterExcludedScanlators.get(),
                             ),
                         )
                         .toPersistentList(),
@@ -536,7 +536,7 @@ class UpdatesScreenModel(
     }
 
     fun resetNewUpdatesCount() {
-        libraryPreferences.newUpdatesCount().set(0)
+        libraryPreferences.newUpdatesCount.set(0)
     }
 
     fun updateSwipe(update: UpdatesItem, action: ChapterSwipeAction) {
@@ -564,11 +564,11 @@ class UpdatesScreenModel(
 
     private fun getUpdatesItemPreferenceFlow(): Flow<ItemPreferences> {
         return combine(
-            updatesPreferences.filterDownloaded().changes(),
-            updatesPreferences.filterUnread().changes(),
-            updatesPreferences.filterStarted().changes(),
-            updatesPreferences.filterBookmarked().changes(),
-            updatesPreferences.filterExcludedScanlators().changes(),
+            updatesPreferences.filterDownloaded.changes(),
+            updatesPreferences.filterUnread.changes(),
+            updatesPreferences.filterStarted.changes(),
+            updatesPreferences.filterBookmarked.changes(),
+            updatesPreferences.filterExcludedScanlators.changes(),
         ) { downloaded, unread, started, bookmarked, excludedScanlators ->
             ItemPreferences(
                 filterDownloaded = downloaded,

@@ -19,7 +19,7 @@ class GetIncognitoState(
     private val customMangaManager: GetCustomMangaInfo,
 ){
     fun await(sourceId: Long? = null, mangaId: Long? = null): Boolean {
-        if (basePreferences.incognitoMode().get()) return true
+        if (basePreferences.incognitoMode.get()) return true
         var isIncognito = false
         if (sourceId != null) {
             val source = sourceManager.get(sourceId)
@@ -33,11 +33,11 @@ class GetIncognitoState(
     }
 
     fun subscribe(sourceId: Long?, mangaId: Long? = null): Flow<Boolean> {
-        if (sourceId == null && mangaId == null) return basePreferences.incognitoMode().changes()
+        if (sourceId == null && mangaId == null) return basePreferences.incognitoMode.changes()
 
         return combine(
-            basePreferences.incognitoMode().changes(),
-            sourcePreferences.incognitoExtensions().changes(),
+            basePreferences.incognitoMode.changes(),
+            sourcePreferences.incognitoExtensions.changes(),
             if (sourceId != null) extensionManager.getExtensionPackageAsFlow(sourceId) else flow { emit(null) },
             if (sourceId != null) flow { emit(sourceManager.get(sourceId)?.isIncognitoModeEnabled() == true) } else flow { emit(false) },
             if (mangaId != null) flow { emit(customMangaManager.getIncognitoMode(mangaId)) } else flow { emit(false) },

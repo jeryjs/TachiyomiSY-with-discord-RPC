@@ -37,7 +37,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.graphics.Insets
@@ -72,8 +70,8 @@ import eu.kanade.presentation.reader.ReaderContentOverlay
 import eu.kanade.presentation.reader.ReaderPageActionsDialog
 import eu.kanade.presentation.reader.ReaderPageIndicator
 import eu.kanade.presentation.reader.ReadingModeSelectDialog
-import eu.kanade.presentation.reader.appbars.NavBarType
 import eu.kanade.presentation.reader.appbars.ReaderAppBars
+import eu.kanade.presentation.reader.components.ChapterNavigatorType
 import eu.kanade.presentation.reader.settings.ReaderSettingsDialog
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.coil.TachiyomiImageDecoder
@@ -89,7 +87,6 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel.SetAsCoverResult.AddToLibraryFirst
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel.SetAsCoverResult.Error
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel.SetAsCoverResult.Success
-import eu.kanade.tachiyomi.ui.reader.chapter.ReaderChapterItem
 import eu.kanade.tachiyomi.ui.reader.loader.HttpPageLoader
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
@@ -101,7 +98,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerViewer
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.VerticalPagerViewer
+import eu.kanade.tachiyomi.ui.reader.viewer.pager.R2LPagerViewer
 import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.isNightMode
@@ -113,11 +110,6 @@ import exh.source.isEhBasedSource
 import exh.ui.ifSourcesLoaded
 import exh.util.defaultReaderType
 import exh.util.mangaType
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -135,7 +127,6 @@ import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.service.SourceManager
@@ -446,43 +437,35 @@ class ReaderActivity : BaseActivity() {
 
             is ReaderViewModel.Dialog.ChapterList -> {
                 var chapters by remember {
-                    mutableStateOf<ImmutableList<ReaderChapterItem>?>(null)
+                    mutableStateOf(viewModel.getChapters())
                 }
-                LaunchedEffect(state.dialog) {
-                    withIOContext {
-                        chapters = viewModel.getChapters().toImmutableList()
-                    }
-                }
-
-                if (chapters != null) {
-                    ChapterListDialog(
-                        onDismissRequest = onDismissRequest,
-                        screenModel = settingsScreenModel,
-                        chapters = chapters ?: persistentListOf(),
-                        onClickChapter = {
-                            viewModel.loadNewChapterFromDialog(it)
-                            onDismissRequest()
-                        },
-                        onDownloadChapter = { items, action ->
+                ChapterListDialog(
+                    onDismissRequest = onDismissRequest,
+                    screenModel = settingsScreenModel,
+                    chapters = chapters,
+                    onClickChapter = {
+                        viewModel.loadNewChapterFromDialog(it)
+                        onDismissRequest()
+                    },
+                    onDownloadChapter = { items, action ->
                         viewModel.runDownloadActions(items, action)
                         // Refresh UI after delete by incrementing a dummy state
                         if (action == ChapterDownloadAction.DELETE) {
-                            chapters = chapters!!.map { it }.toImmutableList()
+                            chapters = chapters.map { it }
                         }
                     },
                     onBookmark = { chapter ->
                         viewModel.toggleBookmark(chapter.id, !chapter.bookmark)
-                        chapters = chapters?.map {
-                                if (it.chapter.id == chapter.id) {
-                                    it.copy(chapter = chapter.copy(bookmark = !chapter.bookmark))
-                                } else {
-                                    it
-                                }
-                            }?.toImmutableList()
-                        },
-                        state.dateRelativeTime,
-                    )
-                }
+                        chapters = chapters.map {
+                            if (it.chapter.id == chapter.id) {
+                                it.copy(chapter = chapter.copy(bookmark = !chapter.bookmark))
+                            } else {
+                                it
+                            }
+                        }
+                    },
+                    state.dateRelativeTime,
+                )
             }
             // SY -->
             ReaderViewModel.Dialog.AutoScrollHelp -> AlertDialog(
@@ -660,26 +643,13 @@ class ReaderActivity : BaseActivity() {
             cropBorderContinuousVertical
         }
         val readerBottomButtons by remember {
-            readerPreferences.readerBottomButtons.changes().map { it.toImmutableSet() }
-        }.collectAsState(persistentSetOf())
+            readerPreferences.readerBottomButtons.changes()
+        }.collectAsState(emptySet())
         val dualPageSplitPaged by readerPreferences.dualPageSplitPaged.collectAsState()
-
-        val forceHorizontalSeekbar by readerPreferences.forceHorizontalSeekbar.collectAsState()
-        val landscapeVerticalSeekbar by readerPreferences.landscapeVerticalSeekbar.collectAsState()
-        val leftHandedVerticalSeekbar by readerPreferences.leftVerticalSeekbar.collectAsState()
-        val configuration = LocalConfiguration.current
-        val verticalSeekbarLandscape =
-            configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && landscapeVerticalSeekbar
-        val verticalSeekbarHorizontal = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-        val viewerIsVertical = (state.viewer is WebtoonViewer || state.viewer is VerticalPagerViewer)
-        val showVerticalSeekbar =
-            !forceHorizontalSeekbar && (verticalSeekbarLandscape || verticalSeekbarHorizontal) && viewerIsVertical
-        val navBarType = when {
-            !showVerticalSeekbar -> NavBarType.Bottom
-            leftHandedVerticalSeekbar -> NavBarType.VerticalLeft
-            else -> NavBarType.VerticalRight
-        }
         // SY <--
+
+        val verticalNavigatorForLongStrip by readerPreferences.verticalNavigatorForLongStrip.collectAsState()
+        val verticalNavigatorOnLeft by readerPreferences.verticalNavigatorOnLeft.collectAsState()
 
         ReaderAppBars(
             visible = state.menuVisible,
@@ -694,7 +664,19 @@ class ReaderActivity : BaseActivity() {
             onOpenInBrowser = ::openChapterInBrowser.takeIf { isHttpSource },
             onShare = ::shareChapter.takeIf { isHttpSource },
 
-            viewer = state.viewer,
+            chapterNavigatorType = if (isPagerType || !verticalNavigatorForLongStrip) {
+                if (state.viewer is R2LPagerViewer) {
+                    ChapterNavigatorType.HORIZONTAL_RTL
+                } else {
+                    ChapterNavigatorType.HORIZONTAL_LTR
+                }
+            } else {
+                if (verticalNavigatorOnLeft) {
+                    ChapterNavigatorType.VERTICAL_LEFT
+                } else {
+                    ChapterNavigatorType.VERTICAL_RIGHT
+                }
+            },
             onNextChapter = ::loadNextChapter,
             enabledNext = state.viewerChapters?.nextChapter != null,
             onPreviousChapter = ::loadPreviousChapter,
@@ -735,7 +717,6 @@ class ReaderActivity : BaseActivity() {
             onClickBoostPage = ::exhBoostPage,
             onClickBoostPageHelp = viewModel::openBoostPageHelp,
             currentPageText = state.currentPageText,
-            navBarType = navBarType,
             enabledButtons = readerBottomButtons,
             currentReadingMode = ReadingMode.fromPreference(
                 viewModel.getMangaReadingMode(resolveDefault = true),
@@ -1445,7 +1426,7 @@ class ReaderActivity : BaseActivity() {
         private fun setCustomBrightness(enabled: Boolean) {
             if (enabled) {
                 readerPreferences.customBrightnessValue.changes()
-                    .sample(100)
+                    .sample(0.1.seconds)
                     .onEach(::setCustomBrightnessValue)
                     .launchIn(lifecycleScope)
             } else {

@@ -22,7 +22,6 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.util.lang.toRelativeString
 import exh.metadata.MetadataUtil
 import exh.source.isEhBasedManga
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import tachiyomi.domain.chapter.model.Chapter
@@ -39,7 +38,7 @@ import java.time.ZonedDateTime
 fun ChapterListDialog(
     onDismissRequest: () -> Unit,
     screenModel: ReaderSettingsScreenModel,
-    chapters: ImmutableList<ReaderChapterItem>,
+    chapters: List<ReaderChapterItem>,
     onClickChapter: (Chapter) -> Unit,
     onDownloadChapter: (List<Chapter>, ChapterDownloadAction) -> Unit,
     onBookmark: (Chapter) -> Unit,

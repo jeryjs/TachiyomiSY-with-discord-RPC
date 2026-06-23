@@ -22,10 +22,6 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import exh.source.EH_SOURCE_ID
 import exh.source.EXH_SOURCE_ID
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.mutate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -127,7 +123,6 @@ class UpdatesScreenModel(
                 updates
                     .toUpdateItems()
                     .applyFilters(itemPreferences)
-                    .toPersistentList()
             }
                 .collectLatest { updateItems ->
                     val expectedIds = updateItems.map { it.update.chapterId }
@@ -270,14 +265,13 @@ class UpdatesScreenModel(
                                 filterBookmarked = updatesPreferences.filterBookmarked.get(),
                                 filterExcludedScanlators = updatesPreferences.filterExcludedScanlators.get(),
                             ),
-                        )
-                        .toPersistentList(),
+                        ),
                 )
             }
         }
     }
 
-    private fun initializeExpandedStates(items: PersistentList<UpdatesItem>): MutableMap<Pair<Long, LocalDate>, Boolean> {
+    private fun initializeExpandedStates(items: List<UpdatesItem>): MutableMap<Pair<Long, LocalDate>, Boolean> {
         return mutableStateMapOf<Pair<Long, LocalDate>, Boolean>().apply {
             val groupedUiModels = State(items = items).uiModels // Use a temporary State to group
             groupedUiModels.forEach { groupedItem ->
@@ -320,9 +314,9 @@ class UpdatesScreenModel(
      */
     private fun updateDownloadState(download: Download) {
         mutableState.update { state ->
-            val newItems = state.items.mutate { list ->
+            val newItems = state.items.toMutableList().also { list ->
                 val modifiedIndex = list.indexOfFirst { it.update.chapterId == download.chapter.id }
-                if (modifiedIndex < 0) return@mutate
+                if (modifiedIndex < 0) return@also
 
                 val item = list[modifiedIndex]
                 list[modifiedIndex] = item.copy(
@@ -360,7 +354,7 @@ class UpdatesScreenModel(
         }
     }
 
-    private suspend fun startDownloadingNow(chapterId: Long) {
+    private fun startDownloadingNow(chapterId: Long) {
         downloadManager.startDownloadNow(chapterId)
     }
 
@@ -502,7 +496,7 @@ class UpdatesScreenModel(
                     }
                 }
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems)
         }
     }
 
@@ -512,7 +506,7 @@ class UpdatesScreenModel(
                 selectedChapterIds.addOrRemove(it.update.chapterId, selected)
                 it.copy(selected = selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems)
         }
 
         selectedPositions[0] = -1
@@ -525,7 +519,7 @@ class UpdatesScreenModel(
                 selectedChapterIds.addOrRemove(it.update.chapterId, !it.selected)
                 it.copy(selected = !it.selected)
             }
-            state.copy(items = newItems.toPersistentList())
+            state.copy(items = newItems)
         }
         selectedPositions[0] = -1
         selectedPositions[1] = -1
@@ -597,7 +591,7 @@ class UpdatesScreenModel(
     data class State(
         val isLoading: Boolean = true,
         val hasActiveFilters: Boolean = false,
-        val items: PersistentList<UpdatesItem> = persistentListOf(),
+        val items: List<UpdatesItem> = listOf(),
         val dialog: Dialog? = null,
         val expandedStates: MutableMap<Pair<Long, LocalDate>, Boolean> = mutableStateMapOf(),
     ) {
@@ -643,7 +637,7 @@ class UpdatesScreenModel(
                 )
                 if (isFirstInGroup) currentMangaId = mangaId
             }
-            uiModels.toPersistentList() // Convert to PersistentList for immutability
+            uiModels
         }
     }
 

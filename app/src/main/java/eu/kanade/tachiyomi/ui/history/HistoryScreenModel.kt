@@ -10,8 +10,6 @@ import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.presentation.history.HistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -75,7 +73,7 @@ class HistoryScreenModel(
                             logcat(LogPriority.ERROR, error)
                             _events.send(Event.InternalError)
                         }
-                        .map { it.toHistoryUiModels().toImmutableList() }
+                        .map { it.toHistoryUiModels() }
                         .flowOn(Dispatchers.IO)
                 }
                 .collect { newList -> mutableState.update { it.copy(list = newList) } }
@@ -142,14 +140,13 @@ class HistoryScreenModel(
                 .sortedByDescending { it.readAt }
                 .map { HistoryWithRelations.from(it, historyItem) }
 //                .drop(1) //remove current history from previous history list
-                .toImmutableList()
 
             mutableState.update { currentState ->
                 val newList = currentState.list?.map { uiModel ->
                     if (uiModel is HistoryUiModel.Item && uiModel.item.mangaId == historyItem.mangaId)
                         uiModel.copy(previousHistory = previousHistoryList)
                     else uiModel
-                }?.toImmutableList()
+                }
 
                 currentState.copy(list = newList ?: currentState.list) // Update list only if not null
             }
@@ -277,7 +274,7 @@ class HistoryScreenModel(
                 currentState.copy(
                     dialog = Dialog.ChangeCategory(
                         manga = manga,
-                        initialSelection = categories.mapAsCheckboxState { it.id in selection }.toImmutableList(),
+                        initialSelection = categories.mapAsCheckboxState { it.id in selection },
                     ),
                 )
             }
@@ -287,7 +284,7 @@ class HistoryScreenModel(
     @Immutable
     data class State(
         val searchQuery: String? = null,
-        val list: ImmutableList<HistoryUiModel>? = null,
+        val list: List<HistoryUiModel>? = null,
         val dialog: Dialog? = null,
         val expandedStates: MutableMap<Long, Boolean> = mutableStateMapOf(),
     )
@@ -298,7 +295,7 @@ class HistoryScreenModel(
         data class DuplicateManga(val manga: Manga, val duplicates: List<MangaWithChapterCount>) : Dialog
         data class ChangeCategory(
             val manga: Manga,
-            val initialSelection: ImmutableList<CheckboxState<Category>>,
+            val initialSelection: List<CheckboxState<Category>>,
         ) : Dialog
         data class Migrate(val target: Manga, val current: Manga) : Dialog
     }

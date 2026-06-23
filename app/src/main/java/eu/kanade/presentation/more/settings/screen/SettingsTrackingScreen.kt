@@ -140,6 +140,10 @@ object SettingsTrackingScreen : SearchableSettings {
                     .associateWith { stringResource(it.titleRes) },
                 title = stringResource(MR.strings.pref_auto_update_manga_on_reread),
             ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = trackPreferences.alwaysShowRereadCount,
+                title = stringResource(MR.strings.pref_always_show_reread_count),
+            ),
             // SY -->
             Preference.PreferenceItem.SwitchPreference(
                 preference = trackPreferences.resolveUsingSourceMetadata,

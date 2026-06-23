@@ -214,6 +214,7 @@ data class TrackInfoDialogHomeScreen(
                     },
                     onCopyLink = { context.copyTrackerLink(it) },
                     onTogglePrivate = screenModel::togglePrivate,
+                    alwaysShowRereadCount = state.alwaysShowRereadCount,
                 )
             }
         }
@@ -257,6 +258,13 @@ data class TrackInfoDialogHomeScreen(
                     .distinctUntilChanged()
                     .map { it.mapToTrackItem() }
                     .collectLatest { trackItems -> mutableState.update { it.copy(trackItems = trackItems) } }
+            }
+
+            screenModelScope.launch {
+                trackPreferences.alwaysShowRereadCount.changes()
+                    .collectLatest { alwaysShowRereadCount ->
+                        mutableState.update { it.copy(alwaysShowRereadCount = alwaysShowRereadCount) }
+                    }
             }
         }
 
@@ -389,6 +397,7 @@ data class TrackInfoDialogHomeScreen(
             val trackItems: List<TrackItem> = emptyList(),
             // SY -->
             val isLoading: Boolean = false,
+            val alwaysShowRereadCount: Boolean = false,
             // SY <--
         )
     }

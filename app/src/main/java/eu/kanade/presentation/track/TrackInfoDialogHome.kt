@@ -78,6 +78,7 @@ fun TrackInfoDialogHome(
     onRemoved: (TrackItem) -> Unit,
     onCopyLink: (TrackItem) -> Unit,
     onTogglePrivate: (TrackItem) -> Unit,
+    alwaysShowRereadCount: Boolean,
 ) {
     Column(
         modifier = Modifier
@@ -133,7 +134,7 @@ fun TrackInfoDialogHome(
                     onEndDateClick = { onEndDateEdit(item) }
                         .takeIf { supportsReadingDates },
                     rereadCount = item.track.rereadCount.toString()
-                        .takeIf { supportsRereadCount && (item.track.status == item.tracker.getRereadingStatus() || item.track.rereadCount > 0) },
+                        .takeIf { supportsRereadCount && (item.track.status == item.tracker.getRereadingStatus() || item.track.rereadCount > 0 || alwaysShowRereadCount) },
                     onRereadCountClick = { onRereadCountClick(item) }
                         .takeIf { supportsRereadCount },
                     onNewSearch = { onNewSearch(item) },

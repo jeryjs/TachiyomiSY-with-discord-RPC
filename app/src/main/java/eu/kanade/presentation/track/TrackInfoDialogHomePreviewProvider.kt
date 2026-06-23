@@ -71,6 +71,7 @@ internal class TrackInfoDialogHomePreviewProvider :
             onRemoved = {},
             onCopyLink = {},
             onTogglePrivate = {},
+            alwaysShowRereadCount = false,
         )
     }
 
@@ -90,6 +91,7 @@ internal class TrackInfoDialogHomePreviewProvider :
             onRemoved = {},
             onCopyLink = {},
             onTogglePrivate = {},
+            alwaysShowRereadCount = false,
         )
     }
 
@@ -109,6 +111,7 @@ internal class TrackInfoDialogHomePreviewProvider :
             onRemoved = {},
             onCopyLink = {},
             onTogglePrivate = {},
+            alwaysShowRereadCount = false,
         )
     }
 

@@ -48,6 +48,11 @@ class TrackPreferences(
         AutoTrackState.ASK,
     )
 
+    val alwaysShowRereadCount: Preference<Boolean> = preferenceStore.getBoolean(
+        "pref_always_show_reread_count",
+        false,
+    )
+
     // SY -->
     val resolveUsingSourceMetadata: Preference<Boolean> = preferenceStore.getBoolean(
         "pref_resolve_using_source_metadata_key",

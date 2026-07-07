@@ -23,7 +23,6 @@ import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.data.cache.CoverCache
-import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.online.MetadataSource
 import eu.kanade.tachiyomi.source.online.all.MangaDex
@@ -124,23 +123,21 @@ open class BrowseSourceScreenModel(
     // SY <--
 
     init {
-        if (source is CatalogueSource) {
-            mutableState.update {
-                var query: String? = null
-                var listing = it.listing
+        mutableState.update {
+            var query: String? = null
+            var listing = it.listing
 
-                if (listing is Listing.Search) {
-                    query = listing.query
-                    listing = Listing.Search(query, source.getFilterList())
-                }
-
-                it.copy(
-                    listing = listing,
-                    filters = source.getFilterList(),
-                    toolbarQuery = query,
-                    hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get()
-                )
+            if (listing is Listing.Search) {
+                query = listing.query
+                listing = Listing.Search(query, source.getFilterList())
             }
+
+            it.copy(
+                listing = listing,
+                filters = source.getFilterList(),
+                toolbarQuery = query,
+                hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get()
+            )
         }
 
         if (!getIncognitoState.await(source.id)) {
@@ -164,14 +161,12 @@ open class BrowseSourceScreenModel(
             }
         }
 
-        if (source is CatalogueSource) {
-            getExhSavedSearch.subscribe(source.id, source::getFilterList)
-                .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
-                .onEach { savedSearches ->
-                    mutableState.update { it.copy(savedSearches = savedSearches) }
-                }
-                .launchIn(screenModelScope)
-        }
+        getExhSavedSearch.subscribe(source.id, source::getFilterList)
+            .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
+            .onEach { savedSearches ->
+                mutableState.update { it.copy(savedSearches = savedSearches) }
+            }
+            .launchIn(screenModelScope)
         // SY <--
     }
 
@@ -227,8 +222,6 @@ open class BrowseSourceScreenModel(
     // SY <--
 
     fun resetFilters() {
-        if (source !is CatalogueSource) return
-
         mutableState.update { it.copy(
             filters = source.getFilterList(),
             hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get()
@@ -240,8 +233,6 @@ open class BrowseSourceScreenModel(
     }
 
     fun setFilters(filters: FilterList) {
-        if (source !is CatalogueSource) return
-
         mutableState.update {
             it.copy(
                 filters = filters,
@@ -250,7 +241,6 @@ open class BrowseSourceScreenModel(
     }
 
     fun search(query: String? = null, filters: FilterList? = null) {
-        if (source !is CatalogueSource) return
         // SY -->
         if (filters != null && filters !== state.value.filters) {
             mutableState.update { state -> state.copy(filters = filters) }
@@ -271,8 +261,6 @@ open class BrowseSourceScreenModel(
     }
 
     fun searchGenre(genreName: String) {
-        if (source !is CatalogueSource) return
-
         val defaultFilters = source.getFilterList()
         var genreExists = false
 
@@ -486,8 +474,6 @@ open class BrowseSourceScreenModel(
         onToast: (StringResource) -> Unit,
     ) {
         screenModelScope.launchIO {
-            if (source !is CatalogueSource) return@launchIO
-
             if (search.filterList == null && state.value.filters.isNotEmpty()) {
                 withUIContext {
                     onToast(SYMR.strings.save_search_invalid)
@@ -522,7 +508,6 @@ open class BrowseSourceScreenModel(
     fun saveSearch(
         name: String,
     ) {
-        if (source !is CatalogueSource) return
         screenModelScope.launchNonCancellable {
             val query = state.value.toolbarQuery?.takeUnless {
                 it.isBlank() || it == GetRemoteManga.QUERY_POPULAR || it == GetRemoteManga.QUERY_LATEST

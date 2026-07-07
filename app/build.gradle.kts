@@ -12,12 +12,13 @@ plugins {
     kotlin("plugin.parcelize")
 
     alias(libs.plugins.aboutLibraries)
+    alias(libs.plugins.androidx.baselineProfile)
     alias(libs.plugins.kotlin.serialization)
 
     id("com.github.ben-manes.versions")
 }
 
-if (gradle.startParameter.taskRequests.toString().contains("Standard")) {
+if (gradle.startParameter.taskRequests.toString().contains("Release")) {
     pluginManager.apply {
         apply(libs.plugins.google.services.get().pluginId)
         apply(libs.plugins.firebase.crashlytics.get().pluginId)
@@ -47,33 +48,41 @@ android {
             applicationIdSuffix = ".debug"
             isPseudoLocalesEnabled = true
         }
-        create("releaseTest") {
-            applicationIdSuffix = ".rt"
-            // isMinifyEnabled = true
-            // isShrinkResources = true
-            setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
-            matchingFallbacks.add("release")
-        }
         named("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            isProfileable = true
             setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
 
             buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = true)}\"")
+            buildConfigField("boolean", "INCLUDE_UPDATER", "true")
+        }
+        create("foss") {
+            initWith(getByName("release"))
+
+            applicationIdSuffix = ".foss"
+
+            matchingFallbacks.add("release")
+
+            buildConfigField("boolean", "INCLUDE_UPDATER", "false")
         }
         create("benchmark") {
             initWith(getByName("release"))
 
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks.add("release")
-            isDebuggable = false
-            isProfileable = true
             versionNameSuffix = "-benchmark"
             applicationIdSuffix = ".benchmark"
+
+            buildConfigField("boolean", "INCLUDE_UPDATER", "false")
         }
     }
 
     sourceSets {
+        getByName("release").java.directories.add("src/release/java")
+        getByName("foss").java.directories.add("src/foss/java")
+        getByName("debug").java.directories.add("src/debug/java")
+        getByName("benchmark").java.directories.add("src/debug/java")
         getByName("benchmark").res.directories.add("src/debug/res")
     }
 
@@ -83,21 +92,6 @@ android {
             isUniversalApk = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-        }
-    }
-
-    flavorDimensions.add("default")
-
-    productFlavors {
-        create("standard") {
-            buildConfigField("boolean", "INCLUDE_UPDATER", "true")
-            dimension = "default"
-        }
-        create("fdroid") {
-            dimension = "default"
-        }
-        create("dev") {
-            dimension = "default"
         }
     }
 
@@ -164,7 +158,14 @@ kotlin {
     }
 }
 
+baselineProfile {
+    baselineProfileOutputDir = "baselineProfiles"
+    mergeIntoMain = true
+}
+
 dependencies {
+    baselineProfile(projects.baselineProfile)
+
     implementation(projects.i18n)
     // SY -->
     implementation(projects.i18nSy)

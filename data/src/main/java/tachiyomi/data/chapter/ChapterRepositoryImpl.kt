@@ -8,6 +8,7 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.chapter.ChapterMapper.mapChapter
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.chapter.model.Chapter
@@ -35,6 +36,7 @@ class ChapterRepositoryImpl(
                         chapter.dateFetch,
                         chapter.dateUpload,
                         chapter.version,
+                        chapter.memo,
                     )
                         .awaitAsOne()
                     chapter.copy(id = chapterId)
@@ -72,6 +74,7 @@ class ChapterRepositoryImpl(
                     chapterId = chapterUpdate.id,
                     version = chapterUpdate.version,
                     isSyncing = 0,
+                    memo = chapterUpdate.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }

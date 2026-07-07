@@ -211,25 +211,9 @@ class MangaDex(delegate: HttpSource, val context: Context) :
         )
     }
 
-    override suspend fun getMangaDetails(manga: SManga): SManga {
-        return mangaHandler.getMangaDetails(
-            manga,
-            id,
-            coverQuality(),
-            tryUsingFirstVolumeCover(),
-            altTitlesInDesc(),
-            finalChapterInDesc(),
-            preferExtensionLangTitle(),
-        )
-    }
-
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getChapterList"))
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return mangaHandler.fetchChapterListObservable(manga, blockedGroups(), blockedUploaders())
-    }
-
-    override suspend fun getChapterList(manga: SManga): List<SChapter> {
-        return mangaHandler.getChapterList(manga, blockedGroups(), blockedUploaders())
     }
 
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getPageList"))

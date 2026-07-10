@@ -31,8 +31,10 @@ android {
     defaultConfig {
         applicationId = "eu.kanade.tachiyomi.sy"
 
-        versionCode = 78
-        versionName = "1.12.0"
+        versionCode = 79
+        versionName = "1.13.0"
+
+        buildConfigField("String", "UPSTREAM_VERSION", """"0.20.1"""")
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")

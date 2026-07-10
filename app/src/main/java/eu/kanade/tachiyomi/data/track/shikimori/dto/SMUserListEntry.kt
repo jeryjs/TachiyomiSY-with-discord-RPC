@@ -1,31 +1,59 @@
 package eu.kanade.tachiyomi.data.track.shikimori.dto
 
 import eu.kanade.tachiyomi.data.database.models.Track
-import eu.kanade.tachiyomi.data.track.shikimori.ShikimoriApi
 import eu.kanade.tachiyomi.data.track.shikimori.toTrackStatus
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SMUserListEntry(
-    val id: Long,
-    val volumes: Double,
-    val chapters: Double,
-    val rewatches: Int? = null,
-    val score: Int,
-    val status: String,
+data class SMUserListResult(
+    val data: SMUserListEntries,
+)
+
+@Serializable
+data class SMUserListEntries(
+    val mangas: List<SMUserListManga>,
+)
+
+@Serializable
+data class SMUserListManga(
+    val id: String,
+    val url: String,
+    val name: String,
+    @SerialName("volumes")
+    val totalVolumes: Long, // the title's total volumes
+    @SerialName("chapters")
+    val totalChapters: Long, // the title's total chapters
+    val userRate: SMUserRate?,
 ) {
-    fun toTrack(trackId: Long, manga: SMManga): Track {
+    fun toTrack(trackId: Long): Track {
         return Track.create(trackId).apply {
-            title = manga.name
-            remote_id = this@SMUserListEntry.id
-            total_chapters = manga.chapters
-            library_id = this@SMUserListEntry.id
-            last_volume_read = this@SMUserListEntry.volumes
-            last_chapter_read = this@SMUserListEntry.chapters
-            score = this@SMUserListEntry.score.toDouble()
-            status = toTrackStatus(this@SMUserListEntry.status)
-            tracking_url = ShikimoriApi.BASE_URL + manga.url
-            reread_count = (this@SMUserListEntry.rewatches ?: 0).toLong()
+            title = name
+            total_volumes = totalVolumes
+            total_chapters = totalChapters
+            tracking_url = url
+            if (userRate != null) {
+                // null if not in user's list, must not throw here because it'd break adding titles
+                // throws in the findLibManga method of ShikimoriApi if null and shouldn't be
+                remote_id = userRate.rateId.toLong()
+                library_id = userRate.rateId.toLong()
+                last_volume_read = userRate.volumes.toDouble()
+                last_chapter_read = userRate.chapters.toDouble()
+                score = userRate.score
+                status = toTrackStatus(userRate.status)
+                reread_count = (userRate.rewatches ?: 0).toLong()
+            }
         }
     }
 }
+
+@Serializable
+data class SMUserRate(
+    @SerialName("id")
+    val rateId: String, // ID of the list entry (NOT the title)
+    val volumes: Long,  // the user's volume progress
+    val chapters: Long, // the user's chapter progress
+    val status: String,
+    val score: Double,
+    val rewatches: Int? = null
+)

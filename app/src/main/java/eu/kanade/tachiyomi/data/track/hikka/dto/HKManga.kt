@@ -40,6 +40,7 @@ data class HKManga(
         return TrackSearch.create(trackId).apply {
             remote_id = stringToNumber(this@HKManga.slug)
             title = this@HKManga.titleUa ?: this@HKManga.titleEn ?: this@HKManga.titleOriginal
+            total_volumes = this@HKManga.volumes?.toLong() ?: 0
             total_chapters = this@HKManga.chapters?.toLong() ?: 0
             cover_url = this@HKManga.image
             score = this@HKManga.score
@@ -59,8 +60,10 @@ data class HKManga(
             val userProgress = read?.firstOrNull()
             if (userProgress != null) {
                 status = toTrackStatus(userProgress.status)
+                last_volume_read = userProgress.volumes.toDouble()
                 last_chapter_read = userProgress.chapters.toDouble()
                 score = userProgress.score.toDouble()
+                reread_count = userProgress.rereads.toLong()
                 started_reading_date = (userProgress.startDate ?: 0L) * 1000
                 finished_reading_date = (userProgress.endDate ?: 0L) * 1000
             }

@@ -47,6 +47,8 @@ class MangaBaka(id: Long) : BaseTracker(id, "MangaBaka"), DeletableTracker {
 
     override fun getRereadingStatus(): Long = REREADING
 
+    override fun supportsRereadCount(): Boolean = true
+
     override fun getCompletionStatus(): Long = COMPLETED
 
     override fun getScoreList(): ImmutableList<String> {
@@ -73,6 +75,7 @@ class MangaBaka(id: Long) : BaseTracker(id, "MangaBaka"), DeletableTracker {
     ): Track {
         if (track.status != COMPLETED && didReadChapter) {
             if (track.total_chapters > 0 && track.last_chapter_read.toLong() == track.total_chapters) {
+                track.last_volume_read = track.total_volumes.toDouble()
                 track.status = COMPLETED
                 track.finished_reading_date = System.currentTimeMillis()
             } else if (track.status != REREADING) {

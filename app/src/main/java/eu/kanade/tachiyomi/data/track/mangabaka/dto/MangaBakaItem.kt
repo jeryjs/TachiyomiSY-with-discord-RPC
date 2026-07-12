@@ -27,6 +27,10 @@ data class MangaBakaItem(
     val type: String,
     val rating: Double?,
     val titles: List<MangaBakaItemTitle>?,
+    @SerialName("final_volume")
+    val volumes: Long? = null,
+    @SerialName("total_chapters")
+    val chapters: Long? = null,
 ) {
     fun chooseBestTitle(): String {
         // based on https://mangabaka.org/pages/announcements/15-titles-v2#finding-the-title-you-want

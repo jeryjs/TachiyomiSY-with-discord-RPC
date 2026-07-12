@@ -37,6 +37,8 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
 
     override val supportsReadingDates: Boolean = true
 
+    override fun supportsRereadCount(): Boolean = true
+
     override fun getLogo(): Int = R.drawable.brand_hikka
 
     override fun getStatusList(): List<Long> {
@@ -79,6 +81,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         if (track.status != COMPLETED) {
             if (didReadChapter) {
                 if (track.last_chapter_read.toLong() == track.total_chapters && track.total_chapters > 0) {
+                    track.last_volume_read = track.total_volumes.toDouble()
                     track.status = COMPLETED
                     track.finished_reading_date = System.currentTimeMillis()
                 } else if (track.status != REREADING) {
@@ -107,7 +110,9 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
 
         return if (readContent != null) {
             track.score = readContent.score.toDouble()
+            track.last_volume_read = readContent.volumes.toDouble()
             track.last_chapter_read = readContent.chapters.toDouble()
+            track.reread_count = readContent.rereads.toLong()
             track.started_reading_date = (readContent.startDate ?: 0L) * 1000
             track.finished_reading_date = (readContent.endDate ?: 0L) * 1000
             update(track)
@@ -128,7 +133,9 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
         val readContent = api.getRead(track) ?: throw Exception("Could not find manga")
 
         track.score = readContent.score.toDouble()
+        track.last_volume_read = readContent.volumes.toDouble()
         track.last_chapter_read = readContent.chapters.toDouble()
+        track.reread_count = readContent.rereads.toLong()
         track.status = toTrackStatus(readContent.status)
         track.started_reading_date = (readContent.startDate ?: 0L) * 1000
         track.finished_reading_date = (readContent.endDate ?: 0L) * 1000

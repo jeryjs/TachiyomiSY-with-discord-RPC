@@ -31,12 +31,15 @@ data class HKRead(
                 title = mangaContent.titleUa ?: mangaContent.titleEn ?: mangaContent.titleOriginal
                 remote_id = stringToNumber(mangaContent.slug)
                 library_id = stringToNumber(mangaContent.slug)
+                total_volumes = mangaContent.volumes?.toLong() ?: 0
                 total_chapters = mangaContent.chapters?.toLong() ?: 0
                 tracking_url = "${HikkaApi.BASE_URL}/manga/${mangaContent.slug}"
             }
 
+            last_volume_read = this@HKRead.volumes.toDouble()
             last_chapter_read = this@HKRead.chapters.toDouble()
             score = this@HKRead.score.toDouble()
+            reread_count = this@HKRead.rereads.toLong()
             status = toTrackStatus(this@HKRead.status)
 
             started_reading_date = startDate?.let { it * 1000 } ?: 0L

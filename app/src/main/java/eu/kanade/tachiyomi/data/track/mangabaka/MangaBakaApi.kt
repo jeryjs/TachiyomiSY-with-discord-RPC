@@ -69,8 +69,14 @@ class MangaBakaApi(
             val body = buildJsonObject {
                 put("is_private", track.private)
                 put("state", track.toApiStatus())
+                if (track.last_volume_read > 0.0) {
+                    put("progress_volume", track.last_volume_read)
+                }
                 if (track.last_chapter_read > 0.0) {
                     put("progress_chapter", track.last_chapter_read)
+                }
+                if (track.reread_count > 0) {
+                    put("number_of_rereads", track.reread_count)
                 }
                 if (track.score > 0) {
                     put("rating", track.score.toInt().coerceIn(0, 100))
@@ -127,7 +133,11 @@ class MangaBakaApi(
                         started_reading_date = userData.startDate?.let { Instant.parse(it).toEpochMilliseconds() } ?: 0
                         finished_reading_date =
                             userData.finishDate?.let { Instant.parse(it).toEpochMilliseconds() } ?: 0
+                        last_volume_read = userData.progressVolume ?: 0.0
                         last_chapter_read = userData.progressChapter ?: 0.0
+                        total_volumes = additionalData.volumes ?: 0L
+                        total_chapters = additionalData.chapters ?: 0L
+                        reread_count = userData.numberOfRereads ?: 0L
                         private = userData.isPrivate
                     }
                 } catch (e: HttpException) {
@@ -147,6 +157,11 @@ class MangaBakaApi(
             val body = buildJsonObject {
                 put("state", track.toApiStatus())
                 put("is_private", track.private)
+                if (track.last_volume_read > 0.0) {
+                    put("progress_volume", track.last_volume_read)
+                } else {
+                    put("progress_volume", null)
+                }
                 if (track.last_chapter_read > 0.0) {
                     put("progress_chapter", track.last_chapter_read)
                 } else {
@@ -156,6 +171,11 @@ class MangaBakaApi(
                     put("rating", track.score.toInt().coerceIn(0, 100))
                 } else {
                     put("rating", null)
+                }
+                if (track.reread_count > 0) {
+                    put("number_of_rereads", track.reread_count)
+                } else {
+                    put("number_of_rereads", null)
                 }
                 if (track.started_reading_date > 0) {
                     put("start_date", track.started_reading_date.toLocalDate().toString())
@@ -210,6 +230,8 @@ class MangaBakaApi(
             }
             authors = item.authors.orEmpty()
             artists = item.artists.orEmpty()
+            total_volumes = item.volumes ?: 0L
+            total_chapters = item.chapters ?: 0L
         }
     }
 

@@ -153,17 +153,12 @@ class HikkaApi(
             val url = "$BASE_API_URL/read/manga/$slug".toUri().buildUpon()
                 .build()
 
-            var rereads = getRead(track)?.rereads ?: 0
-            if (track.status == Hikka.REREADING && rereads == 0) {
-                rereads = 1
-            }
-
             val payload = buildJsonObject {
                 put("note", "")
+                put("volumes", track.last_volume_read.toInt())
                 put("chapters", track.last_chapter_read.toInt())
-                put("volumes", 0)
-                put("rereads", rereads)
                 put("score", track.score.toInt())
+                put("rereads", track.reread_count.toInt())
                 put("status", track.toApiStatus())
                 put("start_date", if (track.started_reading_date > 0L) track.started_reading_date / 1000 else null)
                 put("end_date", if (track.finished_reading_date > 0L) track.finished_reading_date / 1000 else null)

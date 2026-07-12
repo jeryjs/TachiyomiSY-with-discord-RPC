@@ -18,8 +18,12 @@ data class MangaBakaListEntry(
     val finishDate: String?,
     @SerialName("is_private")
     val isPrivate: Boolean,
+    @SerialName("progress_volume")
+    val progressVolume: Double? = null,
     @SerialName("progress_chapter")
     val progressChapter: Double?,
+    @SerialName("number_of_rereads")
+    val numberOfRereads: Long? = null,
     val rating: Long?,
 ) {
     fun getStatus(): Long = when (state) {

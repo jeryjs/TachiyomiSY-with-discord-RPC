@@ -86,6 +86,7 @@ class ShikimoriApi(
                 |mangas(search: $query, limit: 20, kind:"!light_novel,!novel") {
                     |id
                     |name
+                    |volumes
                     |chapters
                     |kind
                     |poster {
@@ -136,12 +137,15 @@ class ShikimoriApi(
                         |id
                         |url
                         |name
+                        |volumes
                         |chapters
                         |userRate {
                             |id
+                            |volumes
                             |chapters
                             |status
                             |score
+                            |rewatches
                         |}
                     |}
                 |}

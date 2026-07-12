@@ -42,6 +42,9 @@ data class SMUserListManga(
                 score = userRate.score
                 status = toTrackStatus(userRate.status)
                 reread_count = (userRate.rewatches ?: 0).toLong()
+            } else {
+                // if currently adding to list, then initialize volume to show in tracker dialog
+                last_volume_read = 0.0
             }
         }
     }

@@ -12,7 +12,7 @@ import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.formattedMessage
 import exh.recs.RecommendationItemResult
-import exh.recs.RecommendsScreenModel
+import exh.recs.RecommendsViewModel
 import exh.recs.sources.RecommendationPagingSource
 import nl.adaptivity.xmlutil.core.impl.multiplatform.name
 import tachiyomi.domain.manga.model.Manga
@@ -22,7 +22,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun RecommendsScreen(
     title: String,
-    state: RecommendsScreenModel.State,
+    state: RecommendsViewModel.State,
     navigateUp: () -> Unit,
     getManga: @Composable (Manga) -> State<Manga>,
     onClickSource: (RecommendationPagingSource) -> Unit,

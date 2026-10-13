@@ -36,8 +36,8 @@ import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.components.HistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
-import eu.kanade.presentation.util.animateItemFastScroll
-import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.HistoryViewModel
+import kotlinx.datetime.LocalDate
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
@@ -47,19 +47,18 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
-import java.time.LocalDate
 import kotlin.math.min
 
 @Composable
 fun HistoryScreen(
-    state: HistoryScreenModel.State,
+    state: HistoryViewModel.State,
     snackbarHostState: SnackbarHostState,
     onSearchQueryChange: (String?) -> Unit,
     onClickCover: (mangaId: Long) -> Unit,
     onClickResume: (chapter: Chapter?) -> Unit,
     onClickExpand: (historyItem: HistoryWithRelations) -> Unit,
     onClickFavorite: (mangaId: Long) -> Unit,
-    onDialogChange: (HistoryScreenModel.Dialog?) -> Unit,
+    onDialogChange: (HistoryViewModel.Dialog?) -> Unit,
 ) {
     BackHandler(!state.searchQuery.isNullOrEmpty()) {
         onSearchQueryChange(null)
@@ -78,7 +77,7 @@ fun HistoryScreen(
                                 title = stringResource(MR.strings.pref_clear_history),
                                 icon = Icons.Outlined.DeleteSweep,
                                 onClick = {
-                                    onDialogChange(HistoryScreenModel.Dialog.DeleteAll)
+                                    onDialogChange(HistoryViewModel.Dialog.DeleteAll)
                                 },
                             ),
                         ),
@@ -110,7 +109,7 @@ fun HistoryScreen(
                     onClickCover = { history -> onClickCover(history.mangaId) },
                     onClickResume = { history -> onClickResume(history.chapter) },
                     onClickExpand = { history -> onClickExpand(history) },
-                    onClickDelete = { item -> onDialogChange(HistoryScreenModel.Dialog.Delete(item)) },
+                    onClickDelete = { item -> onDialogChange(HistoryViewModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.mangaId) },
                 )
             }
@@ -120,7 +119,7 @@ fun HistoryScreen(
 
 @Composable
 private fun HistoryScreenContent(
-    state: HistoryScreenModel.State,
+    state: HistoryViewModel.State,
     history: List<HistoryUiModel>,
     contentPadding: PaddingValues,
     onClickCover: (HistoryWithRelations) -> Unit,
@@ -145,7 +144,7 @@ private fun HistoryScreenContent(
             when (item) {
                 is HistoryUiModel.Header -> {
                     ListGroupHeader(
-                        modifier = Modifier.animateItemFastScroll(),
+                        modifier = Modifier.animateItem(),
                         text = relativeDateText(item.date),
                     )
                 }
@@ -157,7 +156,7 @@ private fun HistoryScreenContent(
 
                     Column {
                         HistoryItem(
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                             history = mainItem,
                             expanded = expanded,
                             onClickCover = { onClickCover(mainItem) },
@@ -210,7 +209,7 @@ private fun HistoryScreenContent(
                                         }
                                     } else {
                                         HistoryItem(
-                                            modifier = Modifier.animateItemFastScroll(),
+                                            modifier = Modifier.animateItem(),
                                             history = previous,
                                             isPreviousHistory = true,
                                             expanded = false,
@@ -242,8 +241,8 @@ sealed interface HistoryUiModel {
 @PreviewLightDark
 @Composable
 internal fun HistoryScreenPreviews(
-    @PreviewParameter(HistoryScreenModelStateProvider::class)
-    historyState: HistoryScreenModel.State,
+    @PreviewParameter(HistoryviewModelStateProvider::class)
+    historyState: HistoryViewModel.State,
 ) {
     TachiyomiPreviewTheme {
         HistoryScreen(

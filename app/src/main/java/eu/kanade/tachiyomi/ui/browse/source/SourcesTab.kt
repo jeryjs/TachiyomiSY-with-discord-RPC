@@ -5,9 +5,10 @@ import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -18,7 +19,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen.SmartSearchConfig
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
-import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
+import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel.Listing
 import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import exh.ui.smartsearch.SmartSearchScreen
@@ -33,8 +34,15 @@ fun Screen.sourcesTab(
     smartSearchConfig: SmartSearchConfig? = null,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { SourcesScreenModel(smartSearchConfig = smartSearchConfig) }
-    val state by screenModel.state.collectAsState()
+    // SY -->
+    val viewModel = viewModel<SourcesViewModel>(
+        factory = SourcesViewModel.Factory,
+        extras = CreationExtras {
+            set(SourcesViewModel.SMART_SEARCH_CONFIG_KEY, smartSearchConfig)
+        },
+    )
+    // SY <--
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(
         // SY -->
@@ -71,50 +79,50 @@ fun Screen.sourcesTab(
                     // SY -->
                     val screen = when {
                         smartSearchConfig != null -> SmartSearchScreen(source.id, smartSearchConfig)
-                        listing == Listing.Popular && screenModel.useNewSourceNavigation -> SourceFeedScreen(source.id)
+                        listing == Listing.Popular && state.useNewSourceNavigation -> SourceFeedScreen(source.id)
                         else -> BrowseSourceScreen(source.id, listing.query)
                     }
                     navigator.push(screen)
                     // SY <--
                 },
-                onClickPin = screenModel::togglePin,
-                onLongClickItem = screenModel::showSourceDialog,
+                onClickPin = viewModel::togglePin,
+                onLongClickItem = viewModel::showSourceDialog,
             )
 
             when (val dialog = state.dialog) {
-                is SourcesScreenModel.Dialog.SourceLongClick -> {
+                is SourcesViewModel.Dialog.SourceLongClick -> {
                     val source = dialog.source
                     SourceOptionsDialog(
                         source = source,
                         onClickPin = {
-                            screenModel.togglePin(source)
-                            screenModel.closeDialog()
+                            viewModel.togglePin(source)
+                            viewModel.closeDialog()
                         },
                         onClickDisable = {
-                            screenModel.toggleSource(source)
-                            screenModel.closeDialog()
+                            viewModel.toggleSource(source)
+                            viewModel.closeDialog()
                         },
                         // SY -->
                         onClickSetCategories = {
-                            screenModel.showSourceCategoriesDialog(source)
+                            viewModel.showSourceCategoriesDialog(source)
                         }.takeIf { state.categories.isNotEmpty() },
                         onClickToggleDataSaver = {
-                            screenModel.toggleExcludeFromDataSaver(source)
-                            screenModel.closeDialog()
+                            viewModel.toggleExcludeFromDataSaver(source)
+                            viewModel.closeDialog()
                         }.takeIf { state.dataSaverEnabled },
-                        onDismiss = screenModel::closeDialog,
+                        onDismiss = viewModel::closeDialog,
                     )
                 }
-                is SourcesScreenModel.Dialog.SourceCategories -> {
+                is SourcesViewModel.Dialog.SourceCategories -> {
                     val source = dialog.source
                     SourceCategoriesDialog(
                         source = source,
                         categories = state.categories,
                         onClickCategories = { categories ->
-                            screenModel.setSourceCategories(source, categories)
-                            screenModel.closeDialog()
+                            viewModel.setSourceCategories(source, categories)
+                            viewModel.closeDialog()
                         },
-                        onDismissRequest = screenModel::closeDialog,
+                        onDismissRequest = viewModel::closeDialog,
                     )
                 }
                 null -> Unit
@@ -122,9 +130,9 @@ fun Screen.sourcesTab(
 
             val internalErrString = stringResource(MR.strings.internal_error)
             LaunchedEffect(Unit) {
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        SourcesScreenModel.Event.FailedFetchingSources -> {
+                        SourcesViewModel.Event.FailedFetchingSources -> {
                             launch { snackbarHostState.showSnackbar(internalErrString) }
                         }
                     }

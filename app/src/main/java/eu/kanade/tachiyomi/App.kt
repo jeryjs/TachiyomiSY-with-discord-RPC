@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.os.Looper
 import android.webkit.WebView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -41,12 +40,12 @@ import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.crash.CrashActivity
 import eu.kanade.tachiyomi.crash.GlobalExceptionHandler
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
+import eu.kanade.tachiyomi.data.coil.ImageDecoder
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
 import eu.kanade.tachiyomi.data.coil.PagePreviewFetcher
 import eu.kanade.tachiyomi.data.coil.PagePreviewKeyer
-import eu.kanade.tachiyomi.data.coil.TachiyomiImageDecoder
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
@@ -60,7 +59,6 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegate
 import eu.kanade.tachiyomi.util.system.DeviceUtil
-import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.system.cancelNotification
@@ -83,7 +81,6 @@ import org.conscrypt.Conscrypt
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
-import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
@@ -184,14 +181,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             .onEach(FirebaseConfig::setCrashlyticsEnabled)
             .launchIn(scope)
 
-        basePreferences.hardwareBitmapThreshold.let { preference ->
-            if (!preference.isSet()) preference.set(GLUtil.DEVICE_TEXTURE_LIMIT)
-        }
-
-        basePreferences.hardwareBitmapThreshold.changes()
-            .onEach { ImageUtil.hardwareBitmapThreshold = it }
-            .launchIn(scope)
-
         setAppCompatDelegateThemeMode(Injekt.get<UiPreferences>().themeMode.get())
 
         // Updates widget update
@@ -237,7 +226,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 // NetworkFetcher.Factory
                 add(OkHttpNetworkFetcherFactory(callFactoryLazy::value))
                 // Decoder.Factory
-                add(TachiyomiImageDecoder.Factory())
+                add(ImageDecoder.Factory())
                 // Fetcher.Factory
                 add(BufferedSourceFetcher.Factory())
                 add(MangaCoverFetcher.MangaCoverFactory(callFactoryLazy))
@@ -287,19 +276,16 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     }
 
     override fun getPackageName(): String {
-        // This causes freezes in Android 6/7 for some reason
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                // Override the value passed as X-Requested-With in WebView requests
-                val stackTrace = Looper.getMainLooper().thread.stackTrace
-                val isChromiumCall = stackTrace.any { trace ->
-                    trace.className.lowercase() in setOf("org.chromium.base.buildinfo", "org.chromium.base.apkinfo") &&
-                        trace.methodName.lowercase() in setOf("getall", "getpackagename", "<init>")
-                }
-
-                if (isChromiumCall) return WebViewUtil.spoofedPackageName(applicationContext)
-            } catch (_: Exception) {
+        try {
+            // Override the value passed as X-Requested-With in WebView requests
+            val stackTrace = Thread.currentThread().stackTrace
+            val isChromiumCall = stackTrace.any { trace ->
+                trace.className.lowercase() in setOf("org.chromium.base.buildinfo", "org.chromium.base.apkinfo") &&
+                    trace.methodName.lowercase() in setOf("getall", "getpackagename", "<init>")
             }
+
+            if (isChromiumCall) return WebViewUtil.spoofedPackageName(applicationContext)
+        } catch (_: Exception) {
         }
 
         return super.getPackageName()

@@ -28,6 +28,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
@@ -174,6 +175,23 @@ class MangaUpdatesApi(
                 .parseAs<MUSearchResult>()
                 .results
                 .map { it.record }
+        }
+    }
+
+    suspend fun getSeriesDetails(id: Long): MURecord? {
+        return withIOContext {
+            val url = "$BASE_URL/v1/series/$id"
+
+            with(json) {
+                val response = client.newCall(GET(url))
+                    .await()
+
+                if (response.code == 404) {
+                    null
+                } else {
+                    response.parseAs<MURecord>()
+                }
+            }
         }
     }
 

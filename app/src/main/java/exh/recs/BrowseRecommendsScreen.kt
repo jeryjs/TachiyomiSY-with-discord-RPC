@@ -6,7 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.browse.BrowseSourceContent
@@ -47,7 +48,12 @@ class BrowseRecommendsScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { BrowseRecommendsScreenModel(args) }
+        val viewModel = viewModel<BrowseRecommendsViewModel>(
+            factory = BrowseRecommendsViewModel.Factory,
+            extras = CreationExtras {
+                set(BrowseRecommendsViewModel.ARGS_KEY, args)
+            },
+        )
         val snackbarHostState = remember { SnackbarHostState() }
 
         val onClickItem = { manga: Manga ->
@@ -69,28 +75,28 @@ class BrowseRecommendsScreen(
         Scaffold(
             topBar = { scrollBehavior ->
                 val title = remember {
-                    val recSource = screenModel.recommendationSource
+                    val recSource = viewModel.recommendationSource
                     "${recSource.name} (${recSource.category.getString(context)})"
                 }
 
                 BrowseSourceSimpleToolbar(
                     navigateUp = navigator::pop,
                     title = title,
-                    displayMode = screenModel.displayMode,
-                    onDisplayModeChange = { screenModel.displayMode = it },
+                    displayMode = viewModel.displayMode,
+                    onDisplayModeChange = { viewModel.displayMode = it },
                     scrollBehavior = scrollBehavior,
                 )
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
             BrowseSourceContent(
-                source = screenModel.source,
-                mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
-                columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
+                source = viewModel.source,
+                mangaList = viewModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
+                columns = viewModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 // SY -->
                 ehentaiBrowseDisplayMode = false,
                 // SY <--
-                displayMode = screenModel.displayMode,
+                displayMode = viewModel.displayMode,
                 snackbarHostState = snackbarHostState,
                 contentPadding = paddingValues,
                 onWebViewClick = null,

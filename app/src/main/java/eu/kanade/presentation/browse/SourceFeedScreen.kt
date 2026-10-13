@@ -15,7 +15,6 @@ import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.components.SearchToolbar
-import eu.kanade.presentation.util.animateItemFastScroll
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
@@ -153,7 +152,7 @@ fun SourceFeedList(
             key = { it.id },
         ) { item ->
             GlobalSearchResultItem(
-                modifier = Modifier.animateItemFastScroll(),
+                modifier = Modifier.animateItem(),
                 title = item.title,
                 subtitle = null,
                 onLongClick = if (item is SourceFeedUI.SourceSavedSearch) {

@@ -7,7 +7,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -30,19 +30,19 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun Screen.feedTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { FeedScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = viewModel<FeedViewModel>()
+    val state by viewModel.state.collectAsState()
 
     DisposableEffect(navigator.lastEvent) {
         if (navigator.lastEvent == StackEvent.Push) {
-            screenModel.pushed = true
-        } else if (!screenModel.pushed) {
-            screenModel.init()
+            viewModel.pushed = true
+        } else if (!viewModel.pushed) {
+            viewModel.init()
         }
 
         onDispose {
-            if (navigator.lastEvent == StackEvent.Idle && screenModel.pushed) {
-                screenModel.pushed = false
+            if (navigator.lastEvent == StackEvent.Idle && viewModel.pushed) {
+                viewModel.pushed = false
             }
         }
     }
@@ -54,7 +54,7 @@ fun Screen.feedTab(): TabContent {
                 title = stringResource(MR.strings.action_add),
                 icon = Icons.Outlined.Add,
                 onClick = {
-                    screenModel.openAddDialog()
+                    viewModel.openAddDialog()
                 },
             ),
         ),
@@ -63,7 +63,7 @@ fun Screen.feedTab(): TabContent {
                 state = state,
                 contentPadding = contentPadding,
                 onClickSavedSearch = { savedSearch, source ->
-                    screenModel.sourcePreferences.lastUsedSource.set(savedSearch.source)
+                    viewModel.sourcePreferences.lastUsedSource.set(savedSearch.source)
                     navigator.push(
                         BrowseSourceScreen(
                             source.id,
@@ -73,7 +73,7 @@ fun Screen.feedTab(): TabContent {
                     )
                 },
                 onClickSource = { source ->
-                    screenModel.sourcePreferences.lastUsedSource.set(source.id)
+                    viewModel.sourcePreferences.lastUsedSource.set(source.id)
                     navigator.push(
                         BrowseSourceScreen(
                             source.id,
@@ -81,46 +81,46 @@ fun Screen.feedTab(): TabContent {
                         ),
                     )
                 },
-                onClickDelete = screenModel::openDeleteDialog,
+                onClickDelete = viewModel::openDeleteDialog,
                 onClickManga = { manga ->
                     navigator.push(MangaScreen(manga.id, true))
                 },
-                onRefresh = screenModel::init,
-                getMangaState = { manga -> screenModel.getManga(initialManga = manga) },
+                onRefresh = viewModel::init,
+                getMangaState = { manga -> viewModel.getManga(initialManga = manga) },
             )
 
             state.dialog?.let { dialog ->
                 when (dialog) {
-                    is FeedScreenModel.Dialog.AddFeed -> {
+                    is FeedViewModel.Dialog.AddFeed -> {
                         FeedAddDialog(
                             sources = dialog.options,
-                            onDismiss = screenModel::dismissDialog,
+                            onDismiss = viewModel::dismissDialog,
                             onClickAdd = {
                                 if (it != null) {
-                                    screenModel.openAddSearchDialog(it)
+                                    viewModel.openAddSearchDialog(it)
                                 }
-                                screenModel.dismissDialog()
+                                viewModel.dismissDialog()
                             },
                         )
                     }
-                    is FeedScreenModel.Dialog.AddFeedSearch -> {
+                    is FeedViewModel.Dialog.AddFeedSearch -> {
                         FeedAddSearchDialog(
                             source = dialog.source,
                             savedSearches = dialog.options,
-                            onDismiss = screenModel::dismissDialog,
+                            onDismiss = viewModel::dismissDialog,
                             onClickAdd = { source, savedSearch ->
-                                screenModel.createFeed(source, savedSearch)
-                                screenModel.dismissDialog()
+                                viewModel.createFeed(source, savedSearch)
+                                viewModel.dismissDialog()
                             },
                         )
                     }
-                    is FeedScreenModel.Dialog.DeleteFeed -> {
+                    is FeedViewModel.Dialog.DeleteFeed -> {
                         FeedDeleteConfirmDialog(
                             feed = dialog.feed,
-                            onDismiss = screenModel::dismissDialog,
+                            onDismiss = viewModel::dismissDialog,
                             onClickDeleteConfirm = {
-                                screenModel.deleteFeed(it)
-                                screenModel.dismissDialog()
+                                viewModel.deleteFeed(it)
+                                viewModel.dismissDialog()
                             },
                         )
                     }
@@ -130,12 +130,12 @@ fun Screen.feedTab(): TabContent {
             val internalErrString = stringResource(MR.strings.internal_error)
             val tooManyFeedsString = stringResource(SYMR.strings.too_many_in_feed)
             LaunchedEffect(Unit) {
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        FeedScreenModel.Event.FailedFetchingSources -> {
+                        FeedViewModel.Event.FailedFetchingSources -> {
                             launch { snackbarHostState.showSnackbar(internalErrString) }
                         }
-                        FeedScreenModel.Event.TooManyFeeds -> {
+                        FeedViewModel.Event.TooManyFeeds -> {
                             launch { snackbarHostState.showSnackbar(tooManyFeedsString) }
                         }
                     }

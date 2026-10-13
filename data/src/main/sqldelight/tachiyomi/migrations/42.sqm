@@ -1,0 +1,49 @@
+-- Upstream's SyncYomi protocol v2 trigger fixes, re-applied for databases that were already at
+-- schema version 41 of this fork before upstream renumbered its own 39-41 migrations into the same
+-- slots (this fork's reread_count migration took 39.sqm, pushing upstream's 39/40 to 40/41).
+--
+-- Databases created or migrated by upstream already contain these definitions via 41.sqm, and
+-- migrations that were already applied are never re-run, hence this separate idempotent migration.
+-- Every statement drops the previous definition first, so applying it twice is harmless.
+
+DROP TRIGGER IF EXISTS update_chapter_and_manga_version;
+CREATE TRIGGER update_chapter_and_manga_version AFTER UPDATE ON chapters
+WHEN new.is_syncing = 0 AND (
+    new.read != old.read OR
+    new.bookmark != old.bookmark OR
+    new.last_page_read != old.last_page_read
+)
+BEGIN
+    UPDATE chapters SET version = version + 1
+    WHERE _id = new._id;
+END;
+
+DROP TRIGGER IF EXISTS delete_manga_category_update_version;
+CREATE TRIGGER delete_manga_category_update_version AFTER DELETE ON mangas_categories
+BEGIN
+    UPDATE mangas
+    SET version = version + 1
+    WHERE _id = old.manga_id AND (SELECT is_syncing FROM mangas WHERE _id = old.manga_id) = 0;
+END;
+
+DROP TRIGGER IF EXISTS update_last_modified_at_mangas;
+CREATE TRIGGER update_last_modified_at_mangas
+AFTER UPDATE ON mangas
+FOR EACH ROW
+WHEN new.is_syncing = 0 AND old.is_syncing = 0
+BEGIN
+  UPDATE mangas
+  SET last_modified_at = strftime('%s', 'now')
+  WHERE _id = new._id;
+END;
+
+DROP TRIGGER IF EXISTS update_last_modified_at_chapters;
+CREATE TRIGGER update_last_modified_at_chapters
+AFTER UPDATE ON chapters
+FOR EACH ROW
+WHEN new.is_syncing = 0 AND old.is_syncing = 0
+BEGIN
+  UPDATE chapters
+  SET last_modified_at = strftime('%s', 'now')
+  WHERE _id = new._id;
+END;

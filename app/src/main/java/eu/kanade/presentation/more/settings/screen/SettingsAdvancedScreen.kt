@@ -8,8 +8,6 @@ import android.provider.Settings
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -60,7 +58,6 @@ import eu.kanade.tachiyomi.source.AndroidSourceManager
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.storage.DiskUtil
-import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.isPreviewBuildType
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
@@ -83,7 +80,6 @@ import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withUIContext
-import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -401,48 +397,12 @@ object SettingsAdvancedScreen : SearchableSettings {
         basePreferences: BasePreferences,
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val chooseColorProfile = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument(),
-        ) { uri ->
-            uri?.let {
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-                basePreferences.displayProfile.set(uri.toString())
-            }
-        }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reader),
             preferenceItems = listOf(
-                Preference.PreferenceItem.ListPreference(
-                    preference = basePreferences.hardwareBitmapThreshold,
-                    entries = GLUtil.CUSTOM_TEXTURE_LIMIT_OPTIONS
-                        .mapIndexed { index, option ->
-                            val display = if (index == 0) {
-                                stringResource(MR.strings.pref_hardware_bitmap_threshold_default, option)
-                            } else {
-                                option.toString()
-                            }
-                            option to display
-                        }
-                        .toMap(),
-                    title = stringResource(MR.strings.pref_hardware_bitmap_threshold),
-                    subtitleProvider = { value, options ->
-                        stringResource(MR.strings.pref_hardware_bitmap_threshold_summary, options[value].orEmpty())
-                    },
-                    enabled = !ImageUtil.HARDWARE_BITMAP_UNSUPPORTED &&
-                        GLUtil.DEVICE_TEXTURE_LIMIT > GLUtil.SAFE_TEXTURE_LIMIT,
-                ),
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = basePreferences.alwaysDecodeLongStripWithSSIV,
-                    title = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_2),
-                    subtitle = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_summary),
-                ),
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_display_profile),
-                    subtitle = basePreferences.displayProfile.get(),
-                    onClick = {
-                        chooseColorProfile.launch(arrayOf("*/*"))
-                    },
+                    preference = basePreferences.highQualityRenderer,
+                    title = stringResource(MR.strings.pref_high_quality_renderer),
                 ),
             ),
         )

@@ -7,7 +7,6 @@ import tachiyomi.data.Database
 import tachiyomi.data.category.CategoryMapper.mapCategory
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 import tachiyomi.domain.category.repository.CategoryRepository
 
 class CategoryRepositoryImpl(
@@ -46,38 +45,37 @@ class CategoryRepositoryImpl(
 
     // SY -->
     override suspend fun insert(category: Category): Long? {
-        return database.categoriesQueries.insert(
-            name = category.name,
-            order = category.order,
-            flags = category.flags,
-            version = category.version,
-            uid = category.uid,
-            last_modified_at = category.lastModifiedAt,
-        ).awaitAsOneOrNull()
+        return database.transactionWithResult {
+            database.categoriesQueries.insert(
+                name = category.name,
+                order = category.order,
+                flags = category.flags,
+                version = category.version,
+                uid = category.uid,
+                last_modified_at = category.lastModifiedAt,
+            ).awaitAsOneOrNull()
+        }
     }
     // SY <--
 
-    override suspend fun updatePartial(update: CategoryUpdate) {
-        database.categoriesQueries.update(
-            name = update.name,
-            order = update.order,
-            flags = update.flags,
-            version = update.version,
-            uid = update.uid,
-            last_modified_at = update.lastModifiedAt,
-            isSyncing = null,
-            categoryId = update.id,
-        )
+    override suspend fun updateName(categoryId: Long, name: String) {
+        database.categoriesQueries.updateName(name = name, categoryId = categoryId)
     }
 
-    override suspend fun updatePartial(updates: List<CategoryUpdate>) {
-        database.transaction {
-            updates.forEach { updatePartial(it) }
-        }
+    override suspend fun updateFlags(categoryId: Long, flags: Long) {
+        database.categoriesQueries.updateFlags(flags = flags, categoryId = categoryId)
     }
 
     override suspend fun updateAllFlags(flags: Long?) {
-        database.categoriesQueries.updateAllFlags(flags)
+        database.categoriesQueries.updateAllFlags(flags = flags)
+    }
+
+    override suspend fun updateAllOrders(orderedIds: List<Long>) {
+        database.transaction {
+            orderedIds.forEachIndexed { index, categoryId ->
+                database.categoriesQueries.updateOrder(order = index.toLong(), categoryId = categoryId)
+            }
+        }
     }
 
     override suspend fun delete(categoryId: Long) {

@@ -33,7 +33,7 @@ import eu.kanade.presentation.browse.components.GlobalSearchErrorResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchResultItem
 import eu.kanade.tachiyomi.source.Source
-import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenState
+import eu.kanade.tachiyomi.ui.browse.feed.FeedViewModel
 import kotlinx.coroutines.delay
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.manga.model.Manga
@@ -61,7 +61,7 @@ data class FeedItemUI(
 
 @Composable
 fun FeedScreen(
-    state: FeedScreenState,
+    state: FeedViewModel.State,
     contentPadding: PaddingValues,
     onClickSavedSearch: (SavedSearch, Source) -> Unit,
     onClickSource: (Source) -> Unit,

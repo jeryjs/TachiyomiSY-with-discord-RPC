@@ -77,7 +77,7 @@ import eu.kanade.tachiyomi.source.online.english.HBrowse
 import eu.kanade.tachiyomi.source.online.english.Pururin
 import eu.kanade.tachiyomi.source.online.english.Tsumino
 import eu.kanade.tachiyomi.ui.manga.ChapterList
-import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
+import eu.kanade.tachiyomi.ui.manga.MangaViewModel
 import eu.kanade.tachiyomi.ui.manga.MergedMangaData
 import eu.kanade.tachiyomi.ui.manga.PagePreviewState
 import eu.kanade.tachiyomi.util.system.copyToClipboard
@@ -106,13 +106,14 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.shouldExpandFAB
 import tachiyomi.source.local.isLocal
-import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 @Composable
 fun MangaScreen(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     mangaIncognitoState: Boolean?,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -288,7 +289,7 @@ fun MangaScreen(
 
 @Composable
 private fun MangaScreenSmallImpl(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     mangaIncognitoState: Boolean?,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -619,7 +620,7 @@ private fun MangaScreenSmallImpl(
 
 @Composable
 fun MangaScreenLargeImpl(
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     mangaIncognitoState: Boolean?,
     snackbarHostState: SnackbarHostState,
     nextUpdate: Instant?,
@@ -1015,7 +1016,7 @@ private fun LazyListScope.sharedChapterItems(
                             // SY -->
                             if (manga.isEhBasedManga()) {
                                 MetadataUtil.EX_DATE_FORMAT
-                                    .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
+                                    .format(ZonedDateTime.ofInstant(Instant.fromEpochMilliseconds(it).toJavaInstant(), ZoneId.systemDefault()))
                             } else {
                                 relativeDateText(item.chapter.dateUpload)
                             }
@@ -1087,7 +1088,7 @@ private fun onChapterItemClick(
 
 // SY -->
 typealias MetadataDescriptionComposable = @Composable (
-    state: MangaScreenModel.State.Success,
+    state: MangaViewModel.State.Success,
     openMetadataViewer: () -> Unit,
     search: (String) -> Unit,
 ) -> Unit

@@ -2,9 +2,9 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
 import android.view.LayoutInflater
 import androidx.core.view.isVisible
+import ca.mpreg.imagedecoder.ImageDecoder
 import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.databinding.ReaderErrorBinding
 import eu.kanade.tachiyomi.source.model.Page
@@ -29,7 +29,6 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.decoder.ImageDecoder
 import tachiyomi.i18n.MR
 import kotlin.math.max
 
@@ -188,7 +187,7 @@ class PagerPageHolder(
                         // SY <--
                         val isAnimated = ImageUtil.isAnimatedAndSupported(itemSource)
                         val background = if (!isAnimated && viewer.config.automaticBackground) {
-                            ImageUtil.chooseBackground(context, itemSource.peek())
+                            ImageUtil.chooseBackground(context, itemSource.peek().inputStream())
                         } else {
                             null
                         }
@@ -326,15 +325,15 @@ class PagerPageHolder(
             viewer.config.centerMarginType and PagerConfig.CenterMarginType.WIDE_PAGE_CENTER_MARGIN > 0 &&
             !viewer.config.imageCropBorders
         ) {
-            ImageUtil.addHorizontalCenterMargin(imageSource, height, context)
+            ImageUtil.addHorizontalCenterMargin(imageSource.inputStream(), height, context)
         } else {
             imageSource
         }
     }
 
-    private fun decodeImage(imageSource: BufferedSource): Bitmap? {
+    private fun decodeImage(imageSource: BufferedSource): ImageDecoder.DecodeResult? {
         return try {
-            ImageDecoder.newInstance(imageSource.inputStream())?.decode()
+            ImageDecoder.new(imageSource.inputStream()).decode()
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Cannot decode image" }
             null

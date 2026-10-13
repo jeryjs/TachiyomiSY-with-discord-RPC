@@ -32,10 +32,10 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.category.interactor.CreateCategoryWithName
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.category.interactor.RenameCategory
+import tachiyomi.domain.category.interactor.ReorderCategory
 import tachiyomi.domain.category.interactor.SetMangaCategories
-import tachiyomi.domain.category.interactor.UpdateCategory
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 import tachiyomi.domain.manga.interactor.GetLibraryManga
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.FavoriteEntry
@@ -55,7 +55,8 @@ class FavoritesSyncHelper(val context: Context) {
     private val updateManga: UpdateManga by injectLazy()
     private val setMangaCategories: SetMangaCategories by injectLazy()
     private val createCategoryWithName: CreateCategoryWithName by injectLazy()
-    private val updateCategory: UpdateCategory by injectLazy()
+    private val reorderCategory: ReorderCategory by injectLazy()
+    private val renameCategory: RenameCategory by injectLazy()
 
     private val exhPreferences: ExhPreferences by injectLazy()
 
@@ -204,15 +205,15 @@ class FavoritesSyncHelper(val context: Context) {
             }
 
             // Ensure consistent ordering and naming
-            if (local.name != remote || local.order != index.toLong()) {
-                val result = updateCategory.await(
-                    CategoryUpdate(
-                        id = local.id,
-                        order = index.toLong().takeIf { it != local.order },
-                        name = remote.takeIf { it != local.name },
-                    ),
-                )
-                if (result is UpdateCategory.Result.Error) {
+            if (local.order != index.toLong()) {
+                val result = reorderCategory.await(local, index)
+                if (result is ReorderCategory.Result.InternalError) {
+                    throw result.error
+                }
+            }
+            if (local.name != remote) {
+                val result = renameCategory.await(local, remote)
+                if (result is RenameCategory.Result.InternalError) {
                     throw result.error
                 }
             }

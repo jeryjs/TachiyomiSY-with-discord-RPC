@@ -1,12 +1,11 @@
 package eu.kanade.tachiyomi.di
 
 import android.app.Application
+import android.content.Context
 import androidx.core.content.ContextCompat
-import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConcurrencyModel
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteConfiguration
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDatabaseType
 import com.eygraber.sqldelight.androidx.driver.AndroidxSqliteDriver
@@ -32,12 +31,10 @@ import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import exh.eh.EHentaiUpdateHelper
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
-import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import net.zetetic.database.sqlcipher.driver.SQLCipherDriver
 import nl.adaptivity.xmlutil.XmlDeclMode
 import nl.adaptivity.xmlutil.core.XmlVersion
-import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 import nl.adaptivity.xmlutil.serialization.XML
-import nl.adaptivity.xmlutil.serialization.XmlConfig
 import tachiyomi.core.common.storage.AndroidStorageFolderProvider
 import tachiyomi.core.common.storage.UniFileTempFileManager
 import tachiyomi.data.Chapters
@@ -70,6 +67,7 @@ class AppModule(val app: Application) : InjektModule {
 
     override fun InjektRegistrar.registerInjectables() {
         addSingleton(app)
+        addSingleton<Context>(app)
 
         addSingletonFactory<SqlDriver> {
             synchronized(lock) {
@@ -79,25 +77,17 @@ class AppModule(val app: Application) : InjektModule {
                 if (securityPreferences.encryptDatabase.get()) {
                     System.loadLibrary("sqlcipher")
 
-                    return@synchronized AndroidSqliteDriver(
-                        schema = Database.Schema.synchronous(),
-                        context = app,
-                        name = CbzCrypto.DATABASE_NAME,
-                        factory = SupportOpenHelperFactory(CbzCrypto.getDecryptedPasswordSql(), null, false, 25),
-                        callback = object : AndroidSqliteDriver.Callback(Database.Schema.synchronous()) {
-                            override fun onOpen(db: SupportSQLiteDatabase) {
-                                super.onOpen(db)
-                                setPragma(db, "foreign_keys = ON")
-                                setPragma(db, "journal_mode = WAL")
-                                setPragma(db, "synchronous = NORMAL")
-                            }
-
-                            private fun setPragma(db: SupportSQLiteDatabase, pragma: String) {
-                                val cursor = db.query("PRAGMA $pragma")
-                                cursor.moveToFirst()
-                                cursor.close()
-                            }
-                        },
+                    return@synchronized AndroidxSqliteDriver(
+                        driver = SQLCipherDriver(
+                            CbzCrypto.getDecryptedPasswordSql(),
+                            null,
+                            null,
+                        ),
+                        databaseType = AndroidxSqliteDatabaseType.FileProvider(app, CbzCrypto.DATABASE_NAME),
+                        schema = Database.Schema,
+                        configuration = AndroidxSqliteConfiguration(
+                            isForeignKeyConstraintsEnabled = true,
+                        ),
                     ).also { sqlDriverRef = WeakReference(it) }
                 }
             }
@@ -109,6 +99,12 @@ class AppModule(val app: Application) : InjektModule {
                 schema = Database.Schema,
                 configuration = AndroidxSqliteConfiguration(
                     isForeignKeyConstraintsEnabled = true,
+                    // SY -->
+                    // Separate reader connections race the writer during backup/sync
+                    // restores and die with SQLITE_BUSY (#1634); serialize on one
+                    // connection until the driver handles busy retries.
+                    concurrencyModel = AndroidxSqliteConcurrencyModel.SingleReaderWriter(),
+                    // SY <--
                 ),
             ).also { sqlDriverRef = WeakReference(it) }
         }

@@ -49,6 +49,7 @@ END;
 CREATE TRIGGER update_last_modified_at_mangas
 AFTER UPDATE ON mangas
 FOR EACH ROW
+WHEN new.is_syncing = 0 AND old.is_syncing = 0
 BEGIN
   UPDATE mangas
   SET last_modified_at = strftime('%s', 'now')
@@ -104,6 +105,13 @@ getMangasWithFavoriteTimestamp:
 SELECT *
 FROM mangas
 WHERE favorite_modified_at IS NOT NULL;
+
+getMangasModifiedSince:
+SELECT M.*
+FROM mangas M
+WHERE M.favorite_modified_at IS NOT NULL
+AND (M.last_modified_at >= :since
+OR EXISTS (SELECT 1 FROM chapters C WHERE C.manga_id = M._id AND C.last_modified_at >= :since));
 
 getSourceIdWithFavoriteCount:
 SELECT
@@ -165,6 +173,33 @@ FROM mangas
 WHERE next_update >= :startOfDay
 AND favorite = 1
 AND status IN :statuses
+AND (
+    -- includedEmpty being true expresses "don't care" state and bypasses the membership filter
+    :includedEmpty
+    OR EXISTS (
+        SELECT 1 FROM mangas_categories
+        WHERE mangas_categories.manga_id = mangas._id
+        AND COALESCE(mangas_categories.category_id, 0) IN :includedCategories
+    )
+    OR (0 IN :includedCategories AND NOT EXISTS (
+        SELECT 1 FROM mangas_categories WHERE mangas_categories.manga_id = mangas._id)
+    )
+)
+AND (
+    -- excludedEmpty being true expresses "don't care" state and bypasses the membership filter
+    :excludedEmpty
+    OR (
+        NOT EXISTS (
+            SELECT 1 FROM mangas_categories
+            WHERE mangas_categories.manga_id = mangas._id
+            AND COALESCE(mangas_categories.category_id, 0) IN :excludedCategories
+        )
+        AND (
+            0 NOT IN :excludedCategories
+            OR EXISTS (SELECT 1 FROM mangas_categories WHERE mangas_categories.manga_id = mangas._id)
+        )
+    )
+)
 ORDER BY next_update ASC;
 
 resetViewerFlags:
@@ -200,8 +235,8 @@ AND _id NOT IN (
 );
 
 insertReturningId:
-INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, notes, memo)
-VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, 0, :version, :notes, :memo)
+INSERT INTO mangas(source, url, artist, author, description, genre, title, status, thumbnail_url, favorite, last_update, next_update, initialized, viewer, chapter_flags, cover_last_modified, date_added, update_strategy, calculate_interval, last_modified_at, version, is_syncing, notes, memo)
+VALUES (:source, :url, :artist, :author, :description, :genre, :title, :status, :thumbnailUrl, :favorite, :lastUpdate, :nextUpdate, :initialized, :viewerFlags, :chapterFlags, :coverLastModified, :dateAdded, :updateStrategy, :calculateInterval, :lastModifiedAt, :version, :isSyncing, :notes, :memo)
 RETURNING _id;
 
 update:
@@ -226,6 +261,7 @@ UPDATE mangas SET
     update_strategy = coalesce(:updateStrategy, update_strategy),
     calculate_interval = coalesce(:calculateInterval, calculate_interval),
     version = coalesce(:version, version),
+    last_modified_at = coalesce(:lastModifiedAt, last_modified_at),
     is_syncing = coalesce(:isSyncing, is_syncing),
     notes = coalesce(:notes, notes),
     memo = coalesce(:memo, memo)

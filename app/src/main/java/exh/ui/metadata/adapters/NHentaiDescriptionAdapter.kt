@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.databinding.DescriptionAdapterNhBinding
-import eu.kanade.tachiyomi.ui.manga.MangaScreenModel.State
+import eu.kanade.tachiyomi.ui.manga.MangaViewModel.State
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import exh.metadata.MetadataUtil
 import exh.metadata.metadata.NHentaiSearchMetadata
@@ -18,9 +18,10 @@ import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
-import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 
 @Composable
 fun NHentaiDescription(state: State.Success, openMetadataViewer: () -> Unit) {
@@ -55,7 +56,7 @@ fun NHentaiDescription(state: State.Success, openMetadataViewer: () -> Unit) {
             binding.whenPosted.text = MetadataUtil.EX_DATE_FORMAT
                 .format(
                     ZonedDateTime
-                        .ofInstant(Instant.ofEpochSecond(meta.uploadDate ?: 0), ZoneId.systemDefault()),
+                        .ofInstant(Instant.fromEpochSeconds(meta.uploadDate ?: 0).toJavaInstant(), ZoneId.systemDefault()),
                 )
 
             binding.pages.text = context.pluralStringResource(

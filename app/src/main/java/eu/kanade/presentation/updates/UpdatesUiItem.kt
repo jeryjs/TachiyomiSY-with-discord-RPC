@@ -47,7 +47,6 @@ import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadIndicator
 import eu.kanade.presentation.manga.components.DotSeparatorText
 import eu.kanade.presentation.manga.components.MangaCover
-import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -64,7 +63,7 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.selectedBackground
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 
 internal fun LazyListScope.updatesLastUpdatedItem(
     lastUpdated: Long,
@@ -119,7 +118,7 @@ internal fun LazyListScope.updatesUiItems(
         when (groupedItem) {
             is UpdatesUiModel.Header -> {
                 ListGroupHeader(
-                    modifier = Modifier.animateItemFastScroll(),
+                    modifier = Modifier.animateItem(),
                     text = relativeDateText(groupedItem.date),
                 )
             }
@@ -138,16 +137,16 @@ internal fun LazyListScope.updatesUiItems(
                     exit = fadeOut() + shrinkVertically()
                 ) {
                     UpdatesUiItem(
-                        modifier = Modifier.animateItemFastScroll(),
+                        modifier = Modifier.animateItem(),
                         update = updatesItem.update,
                         selected = updatesItem.selected,
                         readProgress = updatesItem.update.lastPageRead
                             .takeIf {
-                                /* SY --> */(
-                                !updatesItem.update.read ||
-                                    (preserveReadingPosition && updatesItem.isEhBasedUpdate())
-                                )/* SY <-- */ &&
-                                it > 0L
+                                /* SY --> */( 
+                                    !updatesItem.update.read ||
+                                        (preserveReadingPosition && updatesItem.isEhBasedUpdate())
+                                    )/* SY <-- */ &&
+                                    it > 0L
                             }
                             ?.let {
                                 stringResource(

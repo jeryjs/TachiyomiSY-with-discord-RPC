@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -22,7 +23,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.setting.connections.DiscordLoginActivity
 import eu.kanade.tachiyomi.util.lang.truncateCenter
 import logcat.LogPriority
-import rikka.sui.Sui
+import rikka.shizuku.ShizukuProvider
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
@@ -108,6 +109,20 @@ fun Context.createFileInCacheDir(name: String): File {
     return file
 }
 
+private val ReaderGrayBackgroundColor = Color.rgb(0x20, 0x21, 0x25)
+
+/**
+ * Background color of the reader for the given [readerTheme] preference value.
+ *
+ * Automatic (3) resolves against the current night mode, matching the activity background.
+ */
+fun Context.readerBackgroundColor(readerTheme: Int): Int = when (readerTheme) {
+    0 -> Color.WHITE // White
+    2 -> ReaderGrayBackgroundColor // Gray
+    3 -> if (isNightMode()) ReaderGrayBackgroundColor else Color.WHITE // Automatic
+    else -> Color.BLACK // Black
+}
+
 /**
  * Creates night mode Context depending on reader theme/background
  *
@@ -164,7 +179,13 @@ fun Context.isPackageInstalled(packageName: String): Boolean {
 
 val Context.hasMiuiPackageInstaller get() = isPackageInstalled("com.miui.packageinstaller")
 
-val Context.isShizukuInstalled get() = isPackageInstalled("moe.shizuku.privileged.api") || Sui.isSui()
+val Context.isShizukuInstalled: Boolean
+    get() = try {
+        packageManager.getPermissionInfo(ShizukuProvider.PERMISSION, 0)
+        true
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
 
 fun Context.launchRequestPackageInstallsPermission() {
     val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

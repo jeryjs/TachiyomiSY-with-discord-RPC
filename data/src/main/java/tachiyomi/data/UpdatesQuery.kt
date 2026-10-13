@@ -37,6 +37,10 @@ fun getUpdatesQuery(
     started: Long?,
     bookmarked: Boolean?,
     hideExcludedScanlators: Long,
+    includedEmpty: Boolean,
+    includedCategories: Collection<Long>,
+    excludedEmpty: Boolean,
+    excludedCategories: Collection<Long>,
 ): UpdatesQuery {
     return UpdatesQuery(
         driver = Injekt.get<SqlDriver>(),
@@ -46,6 +50,10 @@ fun getUpdatesQuery(
         started = started,
         bookmarked = bookmarked,
         hideExcludedScanlators = hideExcludedScanlators,
+        includedEmpty = includedEmpty,
+        includedCategories = includedCategories,
+        excludedEmpty = excludedEmpty,
+        excludedCategories = excludedCategories,
     )
 }
 
@@ -57,10 +65,29 @@ class UpdatesQuery(
     val started: Long?,
     val bookmarked: Boolean?,
     val hideExcludedScanlators: Long,
+    val includedEmpty: Boolean,
+    val includedCategories: Collection<Long>,
+    val excludedEmpty: Boolean,
+    val excludedCategories: Collection<Long>,
 ) : ExecutableQuery<UpdatesView>(mapper) {
+    private fun createArguments(count: Int): String {
+        if (count == 0) return "()"
+
+        return buildString(count * 2 + 1) {
+            append("(?")
+            repeat(count - 1) {
+                append(",?")
+            }
+            append(')')
+        }
+    }
+
     override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> {
+        val includedCategoriesIndexes = createArguments(count = includedCategories.size)
+        val excludedCategoriesIndexes = createArguments(count = excludedCategories.size)
         return driver.executeQuery(
             null,
+            // language=sqldelight
             """
                 SELECT *
                 FROM (
@@ -139,11 +166,38 @@ class UpdatesQuery(
                     AND (
                         excludedScanlator IS NULL OR :hideExcludedScanlators = 0
                     )
+                    AND (
+                        -- includedEmpty being true expresses "don't care" state and bypasses the membership filter
+                        :includedEmpty
+                        OR EXISTS (
+                            SELECT 1 FROM mangas_categories
+                            WHERE mangas_categories.manga_id = mangaId
+                            AND COALESCE(mangas_categories.category_id, 0) IN $includedCategoriesIndexes
+                        )
+                        OR (0 IN $includedCategoriesIndexes AND NOT EXISTS (
+                            SELECT 1 FROM mangas_categories mc WHERE mc.manga_id = mangaId)
+                        )
+                    )
+                    AND (
+                        -- excludedEmpty being true expresses "don't care" state and bypasses the membership filter
+                        :excludedEmpty
+                        OR (
+                            NOT EXISTS (
+                                SELECT 1 FROM mangas_categories
+                                WHERE mangas_categories.manga_id = mangaId
+                                AND COALESCE(mangas_categories.category_id, 0) IN $excludedCategoriesIndexes
+                            )
+                            AND (
+                                0 NOT IN $excludedCategoriesIndexes
+                                OR EXISTS (SELECT 1 FROM mangas_categories WHERE mangas_categories.manga_id = mangaId)
+                            )
+                        )
+                    )
                 ORDER BY datefetch DESC
             LIMIT :limit;
             """.trimIndent(),
             mapper,
-            6,
+            8 + includedCategories.size + includedCategories.size + excludedCategories.size + excludedCategories.size,
             binders = {
                 var parameterIndex = 0
                 bindLong(parameterIndex++, after)
@@ -151,6 +205,20 @@ class UpdatesQuery(
                 bindLong(parameterIndex++, started)
                 bindBoolean(parameterIndex++, bookmarked)
                 bindLong(parameterIndex++, hideExcludedScanlators)
+                bindBoolean(parameterIndex++, includedEmpty)
+                includedCategories.forEach { includedCategories_ ->
+                    bindLong(parameterIndex++, includedCategories_)
+                }
+                includedCategories.forEach { includedCategories__ ->
+                    bindLong(parameterIndex++, includedCategories__)
+                }
+                bindBoolean(parameterIndex++, excludedEmpty)
+                excludedCategories.forEach { excludedCategories_ ->
+                    bindLong(parameterIndex++, excludedCategories_)
+                }
+                excludedCategories.forEach { excludedCategories__ ->
+                    bindLong(parameterIndex++, excludedCategories__)
+                }
                 bindLong(parameterIndex++, limit)
             },
         )

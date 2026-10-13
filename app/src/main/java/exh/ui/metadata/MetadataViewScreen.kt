@@ -18,7 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
@@ -37,14 +38,20 @@ class MetadataViewScreen(private val mangaId: Long, private val sourceId: Long) 
 
     @Composable
     override fun Content() {
-        val screenModel = rememberScreenModel { MetadataViewScreenModel(mangaId, sourceId) }
+        val viewModel = viewModel<MetadataViewViewModel>(
+            factory = MetadataViewViewModel.Factory,
+            extras = CreationExtras {
+                set(MetadataViewViewModel.MANGA_ID_KEY, mangaId)
+                set(MetadataViewViewModel.SOURCE_ID_KEY, sourceId)
+            },
+        )
         val navigator = LocalNavigator.currentOrThrow
 
-        val state by screenModel.state.collectAsState()
+        val state by viewModel.state.collectAsState()
         Scaffold(
             topBar = { scrollBehavior ->
                 AppBar(
-                    title = screenModel.manga.collectAsState().value?.title,
+                    title = viewModel.manga.collectAsState().value?.title,
                     navigateUp = navigator::pop,
                     scrollBehavior = scrollBehavior,
                 )

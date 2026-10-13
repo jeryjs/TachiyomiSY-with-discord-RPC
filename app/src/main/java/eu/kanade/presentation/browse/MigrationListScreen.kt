@@ -27,7 +27,6 @@ import eu.kanade.presentation.browse.components.MigrationItem
 import eu.kanade.presentation.browse.components.MigrationItemResult
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.advanced.process.MigratingManga
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.manga.model.Manga
@@ -93,7 +92,7 @@ fun MigrationListScreen(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .animateItemFastScroll()
+                        .animateItem()
                         .padding(horizontal = 16.dp)
                         .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.SpaceBetween,

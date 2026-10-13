@@ -4,7 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.util.Screen
@@ -40,8 +41,13 @@ class RecommendsScreen(private val args: Args) : Screen() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { RecommendsScreenModel(args) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<RecommendsViewModel>(
+            factory = RecommendsViewModel.Factory,
+            extras = CreationExtras {
+                set(RecommendsViewModel.ARGS_KEY, args)
+            },
+        )
+        val state by viewModel.state.collectAsState()
 
         val onClickItem = { manga: Manga ->
             navigator.push(
@@ -67,7 +73,7 @@ class RecommendsScreen(private val args: Args) : Screen() {
             },
             state = state,
             navigateUp = navigator::pop,
-            getManga = @Composable { manga: Manga -> screenModel.getManga(manga) },
+            getManga = @Composable { manga: Manga -> viewModel.getManga(manga) },
             onClickSource = { pagingSource ->
                 // Pass class name of paging source as screens need to be serializable
                 navigator.push(

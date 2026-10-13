@@ -11,7 +11,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,7 +21,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -102,9 +102,9 @@ data object LibraryTab : Tab {
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
 
-        val screenModel = rememberScreenModel { LibraryScreenModel() }
-        val settingsScreenModel = rememberScreenModel { LibrarySettingsScreenModel() }
-        val state by screenModel.state.collectAsState()
+        val viewModel = viewModel<LibraryViewModel>()
+        val settingsViewModel = viewModel<LibrarySettingsViewModel>()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { SnackbarHostState() }
 
@@ -144,15 +144,15 @@ data object LibraryTab : Tab {
                     hasActiveFilters = state.hasActiveFilters,
                     selectedCount = state.selection.size,
                     title = title,
-                    onClickUnselectAll = screenModel::clearSelection,
-                    onClickSelectAll = screenModel::selectAll,
-                    onClickInvertSelection = screenModel::invertSelection,
-                    onClickFilter = screenModel::showSettingsDialog,
+                    onClickUnselectAll = viewModel::clearSelection,
+                    onClickSelectAll = viewModel::selectAll,
+                    onClickInvertSelection = viewModel::invertSelection,
+                    onClickFilter = viewModel::showSettingsDialog,
                     onClickRefresh = { onClickRefresh(state.activeCategory) },
                     onClickGlobalUpdate = { onClickRefresh(null) },
                     onClickOpenRandomManga = {
                         scope.launch {
-                            val randomItem = screenModel.getRandomLibraryItemForCurrentCategory()
+                            val randomItem = viewModel.getRandomLibraryItemForCurrentCategory()
                             if (randomItem != null) {
                                 navigator.push(MangaScreen(randomItem.libraryManga.manga.id))
                             } else {
@@ -170,11 +170,11 @@ data object LibraryTab : Tab {
                         }
                     },
                     // SY -->
-                    onClickSyncExh = screenModel::openFavoritesSyncDialog.takeIf { state.showSyncExh },
+                    onClickSyncExh = viewModel::openFavoritesSyncDialog.takeIf { state.showSyncExh },
                     isSyncEnabled = state.isSyncEnabled,
                     // SY <--
                     searchQuery = state.searchQuery,
-                    onSearchQueryChange = screenModel::search,
+                    onSearchQueryChange = viewModel::search,
                     // For scroll overlay when no tab
                     scrollBehavior = scrollBehavior.takeIf { !state.showCategoryTabs },
                 )
@@ -182,19 +182,19 @@ data object LibraryTab : Tab {
             bottomBar = {
                 LibraryBottomActionMenu(
                     visible = state.selectionMode,
-                    onChangeCategoryClicked = screenModel::openChangeCategoryDialog,
-                    onMarkAsReadClicked = { screenModel.markReadSelection(true) },
-                    onMarkAsUnreadClicked = { screenModel.markReadSelection(false) },
-                    onDownloadClicked = screenModel::performDownloadAction
+                    onChangeCategoryClicked = viewModel::openChangeCategoryDialog,
+                    onMarkAsReadClicked = { viewModel.markReadSelection(true) },
+                    onMarkAsUnreadClicked = { viewModel.markReadSelection(false) },
+                    onDownloadClicked = viewModel::performDownloadAction
                         .takeIf { state.selectedManga.fastAll { !it.isLocal() } },
-                    onDeleteClicked = screenModel::openDeleteMangaDialog,
+                    onDeleteClicked = viewModel::openDeleteMangaDialog,
                     onMigrateClicked = {
                         val selection = state.selectedManga
                             // SY -->
                             .filterNot { it.source == MERGED_SOURCE_ID }
                             .map { it.id }
                         // <-- SY
-                        screenModel.clearSelection()
+                        viewModel.clearSelection()
                         /* SY --> */if (selection.isNotEmpty()) {
                             /* <-- SY */
                             navigator.push(MigrationConfigScreen(selection))
@@ -205,10 +205,10 @@ data object LibraryTab : Tab {
                         // <-- SY
                     },
                     // SY -->
-                    onClickCleanTitles = screenModel::cleanTitles.takeIf { state.showCleanTitles },
-                    onClickCollectRecommendations = screenModel::showRecommendationSearchDialog.takeIf { state.selection.size > 1 },
-                    onClickAddToMangaDex = screenModel::syncMangaToDex.takeIf { state.showAddToMangadex },
-                    onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
+                    onClickCleanTitles = viewModel::cleanTitles.takeIf { state.showCleanTitles },
+                    onClickCollectRecommendations = viewModel::showRecommendationSearchDialog.takeIf { state.selection.size > 1 },
+                    onClickAddToMangaDex = viewModel::syncMangaToDex.takeIf { state.showAddToMangadex },
+                    onClickResetInfo = viewModel::resetInfo.takeIf { state.showResetInfo },
                     // SY <--
                 )
             },
@@ -243,11 +243,11 @@ data object LibraryTab : Tab {
                         currentPage = state.coercedActiveCategoryIndex,
                         hasActiveFilters = state.hasActiveFilters,
                         showPageTabs = state.showCategoryTabs || !state.searchQuery.isNullOrEmpty(),
-                        onChangeCurrentPage = screenModel::updateActiveCategoryIndex,
+                        onChangeCurrentPage = viewModel::updateActiveCategoryIndex,
                         onClickManga = { navigator.push(MangaScreen(it)) },
                         onContinueReadingClicked = { it: LibraryManga ->
                             scope.launchIO {
-                                val chapter = screenModel.getNextUnreadChapter(it.manga)
+                                val chapter = viewModel.getNextUnreadChapter(it.manga)
                                 if (chapter != null) {
                                     context.startActivity(
                                         ReaderActivity.newIntent(context, chapter.mangaId, chapter.id),
@@ -258,90 +258,88 @@ data object LibraryTab : Tab {
                             }
                             Unit
                         }.takeIf { state.showMangaContinueButton },
-                        onToggleSelection = screenModel::toggleSelection,
+                        onToggleSelection = viewModel::toggleSelection,
                         onToggleRangeSelection = { category, manga ->
-                            screenModel.toggleRangeSelection(category, manga)
+                            viewModel.toggleRangeSelection(category, manga)
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         },
                         onRefresh = { onClickRefresh(state.activeCategory) },
                         onGlobalSearchClicked = {
-                            navigator.push(GlobalSearchScreen(screenModel.state.value.searchQuery ?: ""))
+                            navigator.push(GlobalSearchScreen(viewModel.state.value.searchQuery ?: ""))
                         },
                         getItemCountForCategory = { state.getItemCountForCategory(it) },
-                        getDisplayMode = { screenModel.getDisplayMode() },
-                        getColumnsForOrientation = { screenModel.getColumnsForOrientation(it) },
+                        getDisplayMode = { viewModel.getDisplayMode() },
+                        getColumnsForOrientation = { viewModel.getColumnsForOrientation(it) },
                         getItemsForCategory = { state.getItemsForCategory(it) },
                     )
                 }
             }
         }
 
-        val onDismissRequest = screenModel::closeDialog
+        val onDismissRequest = viewModel::closeDialog
         when (val dialog = state.dialog) {
-            is LibraryScreenModel.Dialog.SettingsSheet -> run {
+            is LibraryViewModel.Dialog.SettingsSheet -> run {
                 LibrarySettingsDialog(
                     onDismissRequest = onDismissRequest,
-                    screenModel = settingsScreenModel,
+                    viewModel = settingsViewModel,
                     category = state.activeCategory,
                     // SY -->
                     hasCategories = state.libraryData.categories.fastAny { !it.isSystemCategory },
                     // SY <--
                 )
             }
-
-            is LibraryScreenModel.Dialog.ChangeCategory -> {
+            is LibraryViewModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
                     onDismissRequest = onDismissRequest,
                     onEditCategories = {
-                        screenModel.clearSelection()
+                        viewModel.clearSelection()
                         navigator.push(CategoryScreen())
                     },
                     onConfirm = { include, exclude ->
-                        screenModel.clearSelection()
-                        screenModel.setMangaCategories(dialog.manga, include, exclude)
+                        viewModel.clearSelection()
+                        viewModel.setMangaCategories(dialog.manga, include, exclude)
                     },
                 )
             }
-
-            is LibraryScreenModel.Dialog.DeleteManga -> {
+            is LibraryViewModel.Dialog.DeleteManga -> {
                 DeleteLibraryMangaDialog(
                     containsLocalManga = dialog.manga.any(Manga::isLocal),
                     onDismissRequest = onDismissRequest,
                     onConfirm = { deleteManga, deleteChapter ->
-                        screenModel.removeMangas(dialog.manga, deleteManga, deleteChapter)
-                        screenModel.clearSelection()
+                        viewModel.removeMangas(dialog.manga, deleteManga, deleteChapter)
+                        viewModel.clearSelection()
                     },
                 )
             }
             // SY -->
-            LibraryScreenModel.Dialog.SyncFavoritesWarning -> {
+            LibraryViewModel.Dialog.SyncFavoritesWarning -> {
                 SyncFavoritesWarningDialog(
                     onDismissRequest = onDismissRequest,
                     onAccept = {
                         onDismissRequest()
-                        screenModel.onAcceptSyncWarning()
+                        viewModel.onAcceptSyncWarning()
                     },
                 )
             }
 
-            LibraryScreenModel.Dialog.SyncFavoritesConfirm -> {
+            LibraryViewModel.Dialog.SyncFavoritesConfirm -> {
                 SyncFavoritesConfirmDialog(
                     onDismissRequest = onDismissRequest,
                     onAccept = {
                         onDismissRequest()
-                        screenModel.runSync()
+                        viewModel.runSync()
                     },
                 )
             }
 
-            is LibraryScreenModel.Dialog.RecommendationSearchSheet -> {
+            is LibraryViewModel.Dialog.RecommendationSearchSheet -> {
                 RecommendationSearchBottomSheetDialog(
                     onDismissRequest = onDismissRequest,
                     onSearchRequest = {
                         onDismissRequest()
-                        screenModel.clearSelection()
-                        screenModel.runRecommendationSearch(dialog.manga)
+                        viewModel.clearSelection()
+                        viewModel.runRecommendationSearch(dialog.manga)
                     },
                 )
             }
@@ -351,22 +349,22 @@ data object LibraryTab : Tab {
 
         // SY -->
         SyncFavoritesProgressDialog(
-            status = screenModel.favoritesSync.status.collectAsState().value,
-            setStatusIdle = { screenModel.favoritesSync.status.value = FavoritesSyncStatus.Idle },
+            status = viewModel.favoritesSync.status.collectAsStateWithLifecycle().value,
+            setStatusIdle = { viewModel.favoritesSync.status.value = FavoritesSyncStatus.Idle },
             openManga = { navigator.push(MangaScreen(it)) },
         )
 
         RecommendationSearchProgressDialog(
-            status = screenModel.recommendationSearch.status.collectAsState().value,
-            setStatusIdle = { screenModel.recommendationSearch.status.value = SearchStatus.Idle },
-            setStatusCancelling = { screenModel.recommendationSearch.status.value = SearchStatus.Cancelling },
+            status = viewModel.recommendationSearch.status.collectAsStateWithLifecycle().value,
+            setStatusIdle = { viewModel.recommendationSearch.status.value = SearchStatus.Idle },
+            setStatusCancelling = { viewModel.recommendationSearch.status.value = SearchStatus.Cancelling },
         )
         // SY <--
 
         BackHandler(enabled = state.selectionMode || state.searchQuery != null) {
             when {
-                state.selectionMode -> screenModel.clearSelection()
-                state.searchQuery != null -> screenModel.search(null)
+                state.selectionMode -> viewModel.clearSelection()
+                state.searchQuery != null -> viewModel.search(null)
             }
         }
 
@@ -382,7 +380,7 @@ data object LibraryTab : Tab {
         }
 
         // SY -->
-        val recSearchState by screenModel.recommendationSearch.status.collectAsState()
+        val recSearchState by viewModel.recommendationSearch.status.collectAsStateWithLifecycle()
         LaunchedEffect(recSearchState) {
             when (val current = recSearchState) {
                 is SearchStatus.Finished.WithResults -> {
@@ -390,17 +388,17 @@ data object LibraryTab : Tab {
                         .let(::RecommendsScreen)
                         .let(navigator::push)
 
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
+                    viewModel.recommendationSearch.status.value = SearchStatus.Idle
                 }
 
                 is SearchStatus.Finished.WithoutResults -> {
                     context.toast(SYMR.strings.rec_no_results)
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
+                    viewModel.recommendationSearch.status.value = SearchStatus.Idle
                 }
 
                 is SearchStatus.Cancelling -> {
-                    screenModel.cancelRecommendationSearch()
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
+                    viewModel.cancelRecommendationSearch()
+                    viewModel.recommendationSearch.status.value = SearchStatus.Idle
                 }
 
                 else -> {}
@@ -409,8 +407,8 @@ data object LibraryTab : Tab {
         // SY <--
 
         LaunchedEffect(Unit) {
-            launch { queryEvent.receiveAsFlow().collect(screenModel::search) }
-            launch { requestSettingsSheetEvent.receiveAsFlow().collectLatest { screenModel.showSettingsDialog() } }
+            launch { queryEvent.receiveAsFlow().collect(viewModel::search) }
+            launch { requestSettingsSheetEvent.receiveAsFlow().collectLatest { viewModel.showSettingsDialog() } }
         }
     }
 

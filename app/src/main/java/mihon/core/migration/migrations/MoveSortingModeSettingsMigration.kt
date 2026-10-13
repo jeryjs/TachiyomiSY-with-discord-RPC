@@ -36,15 +36,9 @@ class MoveSortingModeSettingsMigration : Migration {
             database.categoriesQueries.getCategories(CategoryMapper::mapCategory).awaitAsList()
                 .filter { (it.flags and 0b00111100L) == 0b00100000L }
                 .forEach {
-                    database.categoriesQueries.update(
+                    database.categoriesQueries.updateFlags(
                         categoryId = it.id,
                         flags = it.flags and 0b00111100L.inv(),
-                        name = null,
-                        version = it.version,
-                        uid = it.uid,
-                        last_modified_at = null,
-                        isSyncing = null,
-                        order = null,
                     )
                 }
         }

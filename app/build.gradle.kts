@@ -208,6 +208,8 @@ dependencies {
 
     implementation(libs.sqldelight.async)
 
+    implementation(libs.kotlinx.datetime)
+
     // AndroidX libraries
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.appCompat)
@@ -254,6 +256,9 @@ dependencies {
         exclude(module = "image-decoder")
     }
     implementation(libs.image.decoder)
+
+    implementation(libs.webgpuviewer)
+    implementation(libs.kim)
 
     // UI libraries
     implementation(libs.material)

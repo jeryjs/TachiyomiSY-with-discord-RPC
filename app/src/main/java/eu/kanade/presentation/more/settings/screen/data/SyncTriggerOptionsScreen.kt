@@ -4,14 +4,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.StateScreenModel
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.sync.models.SyncTriggerOptions
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
@@ -28,7 +30,7 @@ class SyncTriggerOptionsScreen : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val model = rememberScreenModel { SyncOptionsScreenModel() }
+        val model = viewModel<SyncOptionsViewModel>()
         val state by model.state.collectAsState()
 
         Scaffold(
@@ -60,8 +62,8 @@ class SyncTriggerOptionsScreen : Screen() {
     @Composable
     private fun Options(
         options: List<SyncTriggerOptions.Entry>,
-        state: SyncOptionsScreenModel.State,
-        model: SyncOptionsScreenModel,
+        state: SyncOptionsViewModel.State,
+        model: SyncOptionsViewModel,
     ) {
         options.forEach { option ->
             LabeledCheckbox(
@@ -76,16 +78,15 @@ class SyncTriggerOptionsScreen : Screen() {
     }
 }
 
-private class SyncOptionsScreenModel(
+class SyncOptionsViewModel(
     val syncPreferences: SyncPreferences = Injekt.get(),
-) : StateScreenModel<SyncOptionsScreenModel.State>(
-    State(
-        syncPreferences.getSyncTriggerOptions(),
-    ),
-) {
+) : ViewModel() {
+
+    val state: StateFlow<State>
+        field = MutableStateFlow(State(syncPreferences.getSyncTriggerOptions()))
 
     fun toggle(setter: (SyncTriggerOptions, Boolean) -> SyncTriggerOptions, enabled: Boolean) {
-        mutableState.update {
+        state.update {
             val updatedTriggerOptions = setter(it.options, enabled)
             syncPreferences.setSyncTriggerOptions(updatedTriggerOptions)
             it.copy(

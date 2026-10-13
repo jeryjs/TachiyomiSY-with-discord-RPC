@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.data.track.shikimori.dto
 
 import eu.kanade.tachiyomi.data.database.models.Track
+import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
 import eu.kanade.tachiyomi.data.track.shikimori.toTrackStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -45,6 +46,7 @@ data class SMUserListManga(
             } else {
                 // if currently adding to list, then initialize volume to show in tracker dialog
                 last_volume_read = 0.0
+                status = Shikimori.PLAN_TO_READ
             }
         }
     }

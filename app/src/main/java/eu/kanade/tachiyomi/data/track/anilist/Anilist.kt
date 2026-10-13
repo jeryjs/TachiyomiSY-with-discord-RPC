@@ -196,6 +196,7 @@ class Anilist(id: Long) : BaseTracker(id, "AniList"), DeletableTracker {
         } else {
             // Set default fields if it's not found in the list
             track.status = if (hasReadChapters) READING else PLAN_TO_READ
+            track.last_volume_read = 0.0
             track.score = 0.0
             add(track)
         }

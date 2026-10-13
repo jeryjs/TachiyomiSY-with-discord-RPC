@@ -120,6 +120,7 @@ class Hikka(id: Long) : BaseTracker(id, "Hikka"), DeletableTracker {
             update(track)
         } else {
             track.status = if (hasReadChapters) READING else PLAN_TO_READ
+            track.last_volume_read = 0.0
             track.score = 0.0
             update(track)
         }

@@ -254,7 +254,22 @@ class LibraryViewModel(
                         // SY -->
                         data.sortingMode.takeIf { data.groupType != LibraryGroup.BY_DEFAULT },
                         // SY <--
-                    ),
+                    )
+                    // SY -->
+                    // Grouping can legitimately produce no categories: a search that no longer matches the
+                    // grouped library, or a group type whose groups are all empty. Keep a single empty category
+                    // so the pager always has at least one page and can render the "No results found" screen
+                    // instead of a blank one.
+                    .ifEmpty {
+                        mapOf(
+                            Category(
+                                id = 0,
+                                name = preferences.context.stringResource(MR.strings.default_category),
+                                order = 0,
+                                flags = 0,
+                            ) to emptyList(),
+                        )
+                    },
                 // SY <--
             )
         }

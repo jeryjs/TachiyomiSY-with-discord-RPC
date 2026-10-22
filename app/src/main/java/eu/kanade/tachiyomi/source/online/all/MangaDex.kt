@@ -86,9 +86,11 @@ class MangaDex(delegate: HttpSource, val context: Context) :
         .add("User-Agent", "TachiyomiSY v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
         .build()
 
-    override val baseHttpClient: OkHttpClient = delegate.client.newBuilder()
-        .addInterceptor(mdList.interceptor)
-        .build()
+    override val baseHttpClient: OkHttpClient by lazy {
+        delegate.client.newBuilder()
+            .addInterceptor(mdList.interceptor)
+            .build()
+    }
 
     private fun dataSaver() = sourcePreferences.getBoolean(getDataSaverPreferenceKey(mdLang.lang), false)
     private fun usePort443Only() = sourcePreferences.getBoolean(getStandardHttpsPreferenceKey(mdLang.lang), false)
@@ -197,6 +199,9 @@ class MangaDex(delegate: HttpSource, val context: Context) :
         val response = client.newCall(request.newBuilder().url(url).build()).awaitSuccess()
         return delegate.latestUpdatesParse(response)
     }
+
+    override val overridesMangaDetails = true
+    override val overridesChapterList = true
 
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getMangaDetails"))
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {

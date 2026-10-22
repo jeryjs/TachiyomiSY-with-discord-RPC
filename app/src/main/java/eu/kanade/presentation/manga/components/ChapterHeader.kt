@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.FilterList
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.SECONDARY_ALPHA
 import tachiyomi.presentation.core.components.material.padding
@@ -61,7 +61,7 @@ fun ChapterHeader(
             )
 
             Icon(
-                imageVector = Icons.Outlined.FilterList,
+                imageVector = MaterialSymbols.Rounded.FilterList,
                 contentDescription = null,
                 tint =  if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current,
             )
@@ -85,3 +85,4 @@ private fun MissingChaptersWarning(count: Int) {
         color = MaterialTheme.colorScheme.error.copy(alpha = SECONDARY_ALPHA),
     )
 }
+

@@ -51,10 +51,6 @@ class Lanraragi(delegate: HttpSource, val context: Context) :
         return READER_ID_REGEX.find(url)?.groupValues?.get(1) ?: ""
     }
 
-    private fun getThumbnailId(url: String): String {
-        return THUMBNAIL_ID_REGEX.find(url)?.groupValues?.get(1) ?: ""
-    }
-
     // Helper
     private suspend fun getRandomID(query: String): String {
         val searchRandom = client.newCall(GET("$baseUrl/api/search/random?count=1&$query", headers)).awaitSuccess()
@@ -76,10 +72,12 @@ class Lanraragi(delegate: HttpSource, val context: Context) :
         return GET(uri.toString(), headers)
     }
 
+    override val overridesMangaDetails = true
+
     @Deprecated("Use the 1.x API instead", replaceWith = ReplaceWith("getMangaDetails"))
     override fun fetchMangaDetails(manga: SManga): Observable<SManga> {
         return runAsObservable {
-            val response = client.newCall(mangaDetailsRequest(manga)).awaitSuccess()
+            val response = client.newCall(customMangaDetailsRequest(manga)).awaitSuccess()
             parseToManga(manga, response)
         }
     }
@@ -140,7 +138,6 @@ class Lanraragi(delegate: HttpSource, val context: Context) :
     @Serializable
     data class Archive(
         val arcid: String,
-        val isnew: String,
         val tags: String?,
         val summary: String?,
         val title: String,

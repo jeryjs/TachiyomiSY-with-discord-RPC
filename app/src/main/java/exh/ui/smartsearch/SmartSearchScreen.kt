@@ -16,10 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
@@ -29,6 +28,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.screens.LoadingScreen
 
 class SmartSearchScreen(
     private val sourceId: Long,
@@ -37,18 +37,21 @@ class SmartSearchScreen(
 
     @Composable
     override fun Content() {
-        val viewModel = viewModel<SmartSearchViewModel>(
-            factory = SmartSearchViewModel.Factory,
-            extras = CreationExtras {
-                set(SmartSearchViewModel.SOURCE_ID_KEY, sourceId)
-                set(SmartSearchViewModel.SMART_SEARCH_CONFIG_KEY, smartSearchConfig)
-            },
-        )
+        val viewModel = assistedMetroViewModel<SmartSearchViewModel, SmartSearchViewModel.Factory> {
+            create(sourceId = sourceId, config = smartSearchConfig)
+        }
 
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val state by viewModel.state.collectAsState()
-        LaunchedEffect(state) {
+        val source by viewModel.source.collectAsState()
+
+        if (source == null) {
+            LoadingScreen()
+            return
+        }
+
+        LaunchedEffect(state, source) {
             val results = state
             if (results != null) {
                 if (results is SmartSearchViewModel.SearchResults.Found) {
@@ -61,7 +64,7 @@ class SmartSearchScreen(
                     }
                     navigator.replace(
                         BrowseSourceScreen(
-                            sourceId = viewModel.source.id,
+                            sourceId = (source ?: return@LaunchedEffect).id,
                             listingQuery = smartSearchConfig.origTitle,
                             smartSearchConfig = smartSearchConfig,
                         ),
@@ -73,7 +76,7 @@ class SmartSearchScreen(
         Scaffold(
             topBar = { scrollBehavior ->
                 AppBar(
-                    title = viewModel.source.name,
+                    title = source?.name.orEmpty(),
                     navigateUp = navigator::pop,
                     scrollBehavior = scrollBehavior,
                 )

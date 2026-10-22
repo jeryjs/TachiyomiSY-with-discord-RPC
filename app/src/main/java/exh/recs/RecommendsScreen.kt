@@ -4,10 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
@@ -17,11 +16,9 @@ import exh.recs.RecommendsScreen.Args.SingleSourceManga
 import exh.recs.batch.RankedSearchResults
 import exh.recs.components.RecommendsScreen
 import exh.recs.sources.StaticResultPagingSource
-import exh.ui.ifSourcesLoaded
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
-import tachiyomi.presentation.core.screens.LoadingScreen
 import java.io.Serializable
 
 class RecommendsScreen(private val args: Args) : Screen() {
@@ -33,20 +30,12 @@ class RecommendsScreen(private val args: Args) : Screen() {
 
     @Composable
     override fun Content() {
-        if (!ifSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel = viewModel<RecommendsViewModel>(
-            factory = RecommendsViewModel.Factory,
-            extras = CreationExtras {
-                set(RecommendsViewModel.ARGS_KEY, args)
-            },
-        )
+        val viewModel = assistedMetroViewModel<RecommendsViewModel, RecommendsViewModel.Factory> {
+            create(args = args)
+        }
         val state by viewModel.state.collectAsState()
 
         val onClickItem = { manga: Manga ->

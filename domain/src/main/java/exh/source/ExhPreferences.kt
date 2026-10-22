@@ -1,13 +1,14 @@
 package exh.source
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
+@Inject
 class ExhPreferences(
     private val preferenceStore: PreferenceStore,
 ) {
 
-    // SY -->
     val isHentaiEnabled: Preference<Boolean> = preferenceStore.getBoolean("eh_is_hentai_enabled", true)
 
     val ehIncognitoMode: Preference<Boolean> = preferenceStore.getBoolean(Preference.Companion.privateKey("eh_incognito_mode"), false)

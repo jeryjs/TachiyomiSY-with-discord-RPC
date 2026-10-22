@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.ui.reader.loader
 
 import android.content.Context
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
@@ -27,6 +29,7 @@ class ChapterLoader(
     private val context: Context,
     private val downloadManager: DownloadManager,
     private val downloadProvider: DownloadProvider,
+    private val chapterCache: ChapterCache,
     private val manga: Manga,
     private val source: Source,
     // SY -->
@@ -34,6 +37,7 @@ class ChapterLoader(
     private val readerPrefs: ReaderPreferences,
     private val mergedReferences: List<MergedMangaReference>,
     private val mergedManga: Map<Long, Manga>,
+    private val sourcePreferences: SourcePreferences,
     // SY <--
 ) {
 
@@ -89,15 +93,14 @@ class ChapterLoader(
     /**
      * Returns the page loader to use for this [chapter].
      */
-    private fun getPageLoader(chapter: ReaderChapter): PageLoader {
+    private suspend fun getPageLoader(chapter: ReaderChapter): PageLoader {
         val dbChapter = chapter.chapter
-        val isDownloaded = downloadManager.isChapterDownloaded(
+        val isDownloaded = downloadManager.isChapterDownloadedOnDisk(
             dbChapter.name,
             dbChapter.scanlator,
             dbChapter.url,
             /* SY --> */ manga.ogTitle, /* SY <-- */
-            manga.source,
-            skipCache = true,
+            source,
         )
         return when {
             // SY -->
@@ -114,7 +117,6 @@ class ChapterLoader(
                     chapterUrl = chapter.chapter.url,
                     mangaTitle = manga.ogTitle,
                     sourceId = manga.source,
-                    skipCache = true,
                 )
                 when {
                     isMergedMangaDownloaded -> DownloadPageLoader(
@@ -123,12 +125,14 @@ class ChapterLoader(
                         source = source,
                         downloadManager = downloadManager,
                         downloadProvider = downloadProvider,
+                        context = context,
+                        readerPreferences = readerPrefs,
                     )
-                    source is HttpSource -> HttpPageLoader(chapter, source)
+                    source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, readerPrefs, sourcePreferences)
                     source is LocalSource -> source.getFormat(chapter.chapter).let { format ->
                         when (format) {
                             is Format.Directory -> DirectoryPageLoader(format.file)
-                            is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context))
+                            is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context), context, readerPrefs)
                             is Format.Epub -> EpubPageLoader(format.file.archiveReader(context))
                         }
                     }
@@ -142,15 +146,17 @@ class ChapterLoader(
                 source,
                 downloadManager,
                 downloadProvider,
+                context,
+                readerPrefs,
             )
             source is LocalSource -> source.getFormat(chapter.chapter).let { format ->
                 when (format) {
                     is Format.Directory -> DirectoryPageLoader(format.file)
-                    is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context))
+                    is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context), context, readerPrefs)
                     is Format.Epub -> EpubPageLoader(format.file.archiveReader(context))
                 }
             }
-            source is HttpSource -> HttpPageLoader(chapter, source)
+            source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, readerPrefs, sourcePreferences)
             source is StubSource -> error(context.stringResource(MR.strings.source_not_installed, source.toString()))
             else -> error(context.stringResource(MR.strings.loader_not_implemented_error))
         }

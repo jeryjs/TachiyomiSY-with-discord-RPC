@@ -7,8 +7,7 @@ import kotlinx.serialization.json.Json
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import uy.kohesive.injekt.injectLazy
 
 class Discord(id: Long) : ConnectionsService(id) {
 
@@ -27,7 +26,7 @@ class Discord(id: Long) : ConnectionsService(id) {
         // Not Needed
     }
 
-    private val json = Injekt.get<Json>()
+    private val json: Json by injectLazy()
 
     fun getAccounts(): List<DiscordAccount> {
         val accountsJson = connectionsPreferences.discordAccounts().get()

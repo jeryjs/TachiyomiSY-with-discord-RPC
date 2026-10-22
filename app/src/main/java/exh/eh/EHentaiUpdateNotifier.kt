@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.app.NotificationCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
@@ -16,13 +17,15 @@ import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 import java.math.RoundingMode
 import java.text.NumberFormat
+import mihon.icons.materialsymbols.R as MaterialSymbolsR
 
-class EHentaiUpdateNotifier(private val context: Context) {
-
-    private val securityPreferences: SecurityPreferences by injectLazy()
+@Inject
+class EHentaiUpdateNotifier(
+    private val context: Context,
+    private val securityPreferences: SecurityPreferences,
+) {
 
     private val percentFormatter = NumberFormat.getPercentInstance().apply {
         roundingMode = RoundingMode.DOWN
@@ -42,7 +45,7 @@ class EHentaiUpdateNotifier(private val context: Context) {
     val progressNotificationBuilder by lazy {
         context.notificationBuilder(Notifications.CHANNEL_LIBRARY_EHENTAI) {
             setContentTitle(context.stringResource(MR.strings.app_name))
-            setSmallIcon(R.drawable.ic_refresh_24dp)
+            setSmallIcon(MaterialSymbolsR.drawable.rounded_refresh)
             setLargeIcon(notificationBitmap)
             setOngoing(true)
             setOnlyAlertOnce(true)

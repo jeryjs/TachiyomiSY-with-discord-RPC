@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -52,14 +49,16 @@ import eu.kanade.tachiyomi.ui.category.biometric.BiometricTimesScreen
 import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
+import mihon.app.di.appGraph
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.Visibility
+import mihon.icons.materialsymbols.roundedfilled.VisibilityOff
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsSecurityScreen : SearchableSettings {
 
@@ -69,8 +68,9 @@ object SettingsSecurityScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val securityPreferences = remember { Injekt.get<SecurityPreferences>() }
-        val privacyPreferences = remember { Injekt.get<PrivacyPreferences>() }
+        val context = LocalContext.current
+        val securityPreferences = remember { context.appGraph.securityPreferences }
+        val privacyPreferences = remember { context.appGraph.privacyPreferences }
         return listOf(
             getSecurityGroup(securityPreferences),
             getFirebaseGroup(privacyPreferences),
@@ -322,9 +322,9 @@ object SettingsSecurityScreen : SearchableSettings {
                         ) {
                             Icon(
                                 imageVector = if (passwordVisibility) {
-                                    Icons.Default.Visibility
+                                    MaterialSymbols.RoundedFilled.Visibility
                                 } else {
-                                    Icons.Default.VisibilityOff
+                                    MaterialSymbols.RoundedFilled.VisibilityOff
                                 },
                                 contentDescription = null,
                             )

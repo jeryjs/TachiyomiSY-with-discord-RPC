@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -38,6 +36,8 @@ import eu.kanade.presentation.history.components.HistoryItem
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.ui.history.HistoryViewModel
 import kotlinx.datetime.LocalDate
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.DeleteSweep
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
@@ -75,7 +75,7 @@ fun HistoryScreen(
                         listOf(
                             AppBar.Action(
                                 title = stringResource(MR.strings.pref_clear_history),
-                                icon = Icons.Outlined.DeleteSweep,
+                                icon = MaterialSymbols.Rounded.DeleteSweep,
                                 onClick = {
                                     onDialogChange(HistoryViewModel.Dialog.DeleteAll)
                                 },
@@ -257,3 +257,4 @@ internal fun HistoryScreenPreviews(
         )
     }
 }
+

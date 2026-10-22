@@ -3,6 +3,7 @@ package exh.favorites
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.PowerManager
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.await
@@ -42,32 +43,25 @@ import tachiyomi.domain.manga.model.FavoriteEntry
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.time.Duration.Companion.seconds
 
 // TODO only apply database changes after sync
-class FavoritesSyncHelper(val context: Context) {
-    private val getLibraryManga: GetLibraryManga by injectLazy()
-    private val getCategories: GetCategories by injectLazy()
-    private val getManga: GetManga by injectLazy()
-    private val updateManga: UpdateManga by injectLazy()
-    private val setMangaCategories: SetMangaCategories by injectLazy()
-    private val createCategoryWithName: CreateCategoryWithName by injectLazy()
-    private val reorderCategory: ReorderCategory by injectLazy()
-    private val renameCategory: RenameCategory by injectLazy()
-
-    private val exhPreferences: ExhPreferences by injectLazy()
-
-    private val exh by lazy {
-        Injekt.get<SourceManager>().get(EXH_SOURCE_ID) as? EHentai
-            ?: EHentai(0, true, context)
-    }
-
-    private val storage by lazy { LocalFavoritesStorage() }
-
-    private val galleryAdder by lazy { GalleryAdder() }
+@Inject
+class FavoritesSyncHelper(
+    val context: Context,
+    private val getLibraryManga: GetLibraryManga,
+    private val getCategories: GetCategories,
+    private val getManga: GetManga,
+    private val updateManga: UpdateManga,
+    private val setMangaCategories: SetMangaCategories,
+    private val createCategoryWithName: CreateCategoryWithName,
+    private val reorderCategory: ReorderCategory,
+    private val renameCategory: RenameCategory,
+    private val exhPreferences: ExhPreferences,
+    private val sourceManager: SourceManager,
+    private val galleryAdder: GalleryAdder,
+    private val storage: LocalFavoritesStorage,
+) {
 
     private val throttleManager by lazy { ThrottleManager() }
 
@@ -90,6 +84,9 @@ class FavoritesSyncHelper(val context: Context) {
     }
 
     private suspend fun beginSync() {
+        val exh = sourceManager.get(EXH_SOURCE_ID) as? EHentai
+            ?: EHentai(0, true, context)
+
         // Check if logged in
         if (!exhPreferences.enableExhentai.get()) {
             status.value = FavoritesSyncStatus.SyncError.NotLoggedInSyncError
@@ -151,9 +148,9 @@ class FavoritesSyncHelper(val context: Context) {
             applyRemoteCategories(favorites.second)
 
             // Apply change sets
-            applyChangeSetToLocal(errorList, remoteChanges)
+            applyChangeSetToLocal(exh, errorList, remoteChanges)
             if (localChanges != null) {
-                applyChangeSetToRemote(errorList, localChanges)
+                applyChangeSetToRemote(exh, errorList, localChanges)
             }
 
             status.value = FavoritesSyncStatus.Processing.CleaningUp
@@ -220,7 +217,7 @@ class FavoritesSyncHelper(val context: Context) {
         }
     }
 
-    private suspend fun addGalleryRemote(errorList: MutableList<FavoritesSyncStatus.SyncError.GallerySyncError>, gallery: FavoriteEntry) {
+    private suspend fun addGalleryRemote(exh: EHentai, errorList: MutableList<FavoritesSyncStatus.SyncError.GallerySyncError>, gallery: FavoriteEntry) {
         val url = "${exh.baseUrl}/gallerypopups.php?gid=${gallery.gid}&t=${gallery.token}&act=addfav"
 
         val request = POST(
@@ -233,7 +230,7 @@ class FavoritesSyncHelper(val context: Context) {
                 .build(),
         )
 
-        if (!explicitlyRetryExhRequest(10, request)) {
+        if (!explicitlyRetryExhRequest(exh, 10, request)) {
             val error = FavoritesSyncStatus.SyncError.GallerySyncError.UnableToAddGalleryToRemote(
                 gallery.title,
                 gallery.gid,
@@ -248,7 +245,7 @@ class FavoritesSyncHelper(val context: Context) {
         }
     }
 
-    private suspend fun explicitlyRetryExhRequest(retryCount: Int, request: Request): Boolean {
+    private suspend fun explicitlyRetryExhRequest(exh: EHentai, retryCount: Int, request: Request): Boolean {
         var success = false
 
         for (i in 1..retryCount) {
@@ -268,6 +265,7 @@ class FavoritesSyncHelper(val context: Context) {
     }
 
     private suspend fun applyChangeSetToRemote(
+        exh: EHentai,
         errorList: MutableList<FavoritesSyncStatus.SyncError.GallerySyncError>,
         changeSet: ChangeSet,
     ) {
@@ -289,7 +287,7 @@ class FavoritesSyncHelper(val context: Context) {
                 body = formBody.build(),
             )
 
-            if (!explicitlyRetryExhRequest(10, request)) {
+            if (!explicitlyRetryExhRequest(exh, 10, request)) {
                 if (exhPreferences.exhLenientSync.get()) {
                     errorList += FavoritesSyncStatus.SyncError.GallerySyncError.UnableToDeleteFromRemote
                 } else {
@@ -311,11 +309,12 @@ class FavoritesSyncHelper(val context: Context) {
 
             throttleManager.throttle()
 
-            addGalleryRemote(errorList, it)
+            addGalleryRemote(exh, errorList, it)
         }
     }
 
     private suspend fun applyChangeSetToLocal(
+        exh: EHentai,
         errorList: MutableList<FavoritesSyncStatus.SyncError.GallerySyncError>,
         changeSet: ChangeSet,
     ) {

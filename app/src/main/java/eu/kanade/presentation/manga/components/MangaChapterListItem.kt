@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +27,9 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.util.chapter.getSwipeAction
 import eu.kanade.tachiyomi.util.chapter.swipeActionThreshold
 import me.saket.swipe.SwipeableActionsBox
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.Bookmark
+import mihon.icons.materialsymbols.roundedfilled.Circle
 import tachiyomi.domain.library.model.ChapterSwipeAction
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
@@ -104,7 +104,7 @@ fun MangaChapterListItem(
                     var textHeight by remember { mutableIntStateOf(0) }
                     if (!read) {
                         Icon(
-                            imageVector = Icons.Filled.Circle,
+                            imageVector = MaterialSymbols.RoundedFilled.Circle,
                             contentDescription = stringResource(MR.strings.unread),
                             modifier = Modifier
                                 .height(8.dp)
@@ -114,7 +114,7 @@ fun MangaChapterListItem(
                     }
                     if (bookmark) {
                         Icon(
-                            imageVector = Icons.Filled.Bookmark,
+                            imageVector = MaterialSymbols.RoundedFilled.Bookmark,
                             contentDescription = stringResource(MR.strings.action_filter_bookmarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
@@ -191,3 +191,5 @@ fun MangaChapterListItem(
         }
     }
 }
+
+

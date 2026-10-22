@@ -47,14 +47,14 @@ class ImageDecoder(private val resources: ImageSource, private val options: Opti
     override suspend fun decode(): DecodeResult {
         // SY -->
         var coverStream: BufferedInputStream? = null
-        if (resources.sourceOrNull()?.peek()?.use { CbzCrypto.detectCoverImageArchive(it.inputStream()) } == true) {
+        if (resources.source().peek().use { CbzCrypto.detectCoverImageArchive(it.inputStream()) }) {
             if (resources.source().peek().use { ImageUtil.findImageType(it.inputStream()) == null }) {
                 coverStream = UniFile.fromFile(resources.file().toFile())
                     ?.archiveReader(context = Injekt.get<Application>())
                     ?.getCoverStream()
             }
         }
-        val decoder = resources.sourceOrNull()?.use {
+        val decoder = resources.source().use {
             try {
                 coverStream.use { coverStream ->
                     ImageDecoder.new(coverStream ?: it.inputStream())

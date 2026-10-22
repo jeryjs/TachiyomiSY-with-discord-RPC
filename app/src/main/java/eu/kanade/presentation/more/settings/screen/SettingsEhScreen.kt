@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -56,6 +54,9 @@ import exh.ui.login.EhLoginActivity
 import exh.util.nullIfBlank
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
+import mihon.app.di.appGraph
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.Error
 import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -122,10 +123,11 @@ object SettingsEhScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val exhPreferences: ExhPreferences = remember { Injekt.get() }
-        val getFlatMetadataById: GetFlatMetadataById = remember { Injekt.get() }
-        val deleteFavoriteEntries: DeleteFavoriteEntries = remember { Injekt.get() }
-        val getExhFavoriteMangaWithMetadata: GetExhFavoriteMangaWithMetadata = remember { Injekt.get() }
+        val context = LocalContext.current
+        val exhPreferences: ExhPreferences = remember { context.appGraph.exhPreferences }
+        val getFlatMetadataById: GetFlatMetadataById = remember { context.appGraph.getFlatMetadataById }
+        val deleteFavoriteEntries: DeleteFavoriteEntries = remember { context.appGraph.deleteFavoriteEntries }
+        val getExhFavoriteMangaWithMetadata: GetExhFavoriteMangaWithMetadata = remember { context.appGraph.getExhFavoriteMangaWithMetadata }
         val exhentaiEnabled by exhPreferences.enableExhentai.collectAsState()
         var runConfigureDialog by remember { mutableStateOf(false) }
         val openWarnConfigureDialogController = { runConfigureDialog = true }
@@ -345,7 +347,7 @@ object SettingsEhScreen : SearchableSettings {
                         isError = !isValid,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = if (!isValid) {
-                            { Icon(Icons.Outlined.Error, outsideRangeError) }
+                            { Icon(MaterialSymbols.RoundedFilled.Error, outsideRangeError) }
                         } else {
                             null
                         },

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.track.mangabaka
 
+import android.content.Context
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
@@ -14,7 +15,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class MangaBaka(id: Long) : BaseTracker(id, "MangaBaka"), DeletableTracker {
+class MangaBaka(context: Context, id: Long) : BaseTracker(context, id, "MangaBaka"), DeletableTracker {
 
     private val json: Json by injectLazy()
 
@@ -107,7 +108,7 @@ class MangaBaka(id: Long) : BaseTracker(id, "MangaBaka"), DeletableTracker {
 
     override suspend fun search(query: String): List<TrackSearch> {
         if (query.startsWith(SEARCH_ID_PREFIX)) {
-            query.substringAfter(SEARCH_ID_PREFIX).toIntOrNull()?.let { id ->
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
                 return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
             }
         }

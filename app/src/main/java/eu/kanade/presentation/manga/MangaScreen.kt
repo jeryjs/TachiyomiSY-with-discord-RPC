@@ -21,8 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.SnackbarHost
@@ -34,6 +32,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -93,6 +92,8 @@ import exh.ui.metadata.adapters.MangaDexDescription
 import exh.ui.metadata.adapters.NHentaiDescription
 import exh.ui.metadata.adapters.PururinDescription
 import exh.ui.metadata.adapters.TsuminoDescription
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.PlayArrow
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.service.missingChaptersCount
 import tachiyomi.domain.library.model.ChapterSwipeAction
@@ -446,7 +447,7 @@ private fun MangaScreenSmallImpl(
                         text = stringResource(if (isReading) MR.strings.action_resume else MR.strings.action_start),
                     )
                 },
-                icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
+                icon = { Icon(imageVector = MaterialSymbols.RoundedFilled.PlayArrow, contentDescription = null) },
                 onClick = onContinueReading,
                 expanded = chapterListState.shouldExpandFAB(),
                 modifier = Modifier.animateFloatingActionButton(
@@ -489,7 +490,7 @@ private fun MangaScreenSmallImpl(
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
-                            isSourceIncognito = remember { state.source.isIncognitoModeEnabled() },
+                            isSourceIncognito = produceState(false, state.source) { value = state.source.isIncognitoModeEnabled() }.value,
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
                         )
@@ -549,6 +550,7 @@ private fun MangaScreenSmallImpl(
                             searchMetadataChips = remember(state.meta, state.source.id, state.manga.genre) {
                                 SearchMetadataChips(state.meta, state.source.id, state.manga.genre)
                             },
+                            hideEmptyDescription = metadataDescription != null,
                             // SY <--
                         )
                     }
@@ -775,7 +777,7 @@ fun MangaScreenLargeImpl(
                         ),
                     )
                 },
-                icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
+                icon = { Icon(imageVector = MaterialSymbols.RoundedFilled.PlayArrow, contentDescription = null) },
                 onClick = onContinueReading,
                 expanded = chapterListState.shouldExpandFAB(),
                 modifier = Modifier.animateFloatingActionButton(
@@ -812,7 +814,7 @@ fun MangaScreenLargeImpl(
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo(state.mergedData?.sources) },
                             isStubSource = remember { state.source is StubSource },
-                            isSourceIncognito = remember { state.source.isIncognitoModeEnabled() },
+                            isSourceIncognito = produceState(false, state.source) { value = state.source.isIncognitoModeEnabled() }.value,
                             onCoverClick = onCoverClicked,
                             doSearch = onSearch,
                         )
@@ -852,6 +854,7 @@ fun MangaScreenLargeImpl(
                             searchMetadataChips = remember(state.meta, state.source.id, state.manga.genre) {
                                 SearchMetadataChips(state.meta, state.source.id, state.manga.genre)
                             },
+                            hideEmptyDescription = metadataDescription != null,
                             // SY <--
                         )
                         // SY -->

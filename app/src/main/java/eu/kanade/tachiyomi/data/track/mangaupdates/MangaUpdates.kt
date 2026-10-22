@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.track.mangaupdates
 
+import android.content.Context
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
@@ -15,7 +16,7 @@ import eu.kanade.tachiyomi.util.lang.htmlDecode
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), DeletableTracker {
+class MangaUpdates(context: Context, id: Long) : BaseTracker(context, id, "MangaUpdates"), DeletableTracker {
 
     companion object {
         const val READING_LIST = 0L
@@ -136,8 +137,8 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), DeletableTracker
                 it.title?.htmlDecode(),
                 it.image?.url?.original,
                 it.description?.htmlDecode(),
-                it.authors?.filter { it.type == "Author" }?.joinToString(separator = ", ") { it.name ?: "" },
-                it.authors?.filter { it.type == "Artist" }?.joinToString(separator = ", ") { it.name ?: "" },
+                authors = it.authors.filter { it.type == "Author" }.ifEmpty { null }?.joinToString { it.name },
+                artists = it.authors.filter { it.type == "Artist" }.ifEmpty { null }?.joinToString { it.name },
             )
         }
     }

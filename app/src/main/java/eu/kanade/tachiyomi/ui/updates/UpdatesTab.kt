@@ -11,14 +11,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.updates.UpdateScreen
 import eu.kanade.presentation.updates.UpdatesDeleteConfirmationDialog
 import eu.kanade.presentation.updates.UpdatesFilterDialog
@@ -33,12 +32,11 @@ import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesViewModel.Event
 import kotlinx.coroutines.flow.collectLatest
+import mihon.app.di.appGraph
 import mihon.feature.upcoming.UpcomingScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object UpdatesTab : Tab {
 
@@ -46,7 +44,7 @@ data object UpdatesTab : Tab {
         @Composable
         get() {
             val isSelected = LocalTabNavigator.current.current.key == key
-            val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_updates_enter)
+            val image = AnimatedImageVector.animatedVectorResource(R.drawable.animated_updates)
             return TabOptions(
                 index = 1u,
                 title = stringResource(MR.strings.label_recent_updates),
@@ -62,8 +60,9 @@ data object UpdatesTab : Tab {
     @Composable
     override fun isEnabled(): Boolean {
         val scope = rememberCoroutineScope()
+        val context = LocalContext.current
         return remember {
-            Injekt.get<UiPreferences>().showNavUpdates.asState(scope)
+            context.appGraph.uiPreferences.showNavUpdates.asState(scope)
         }.value
     }
     // SY <--
@@ -72,8 +71,8 @@ data object UpdatesTab : Tab {
     override fun Content() {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = viewModel<UpdatesViewModel>()
-        val settingsViewModel = viewModel<UpdatesSettingsViewModel>()
+        val viewModel = metroViewModel<UpdatesViewModel>()
+        val settingsViewModel = metroViewModel<UpdatesSettingsViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         UpdateScreen(

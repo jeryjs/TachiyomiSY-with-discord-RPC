@@ -5,8 +5,6 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -22,12 +20,12 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.library.DeleteLibraryMangaDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
@@ -51,6 +49,7 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.util.system.toast
+import eu.kanade.tachiyomi.util.system.workManager
 import exh.favorites.FavoritesSyncStatus
 import exh.recs.RecommendsScreen
 import exh.recs.batch.RecommendationSearchBottomSheetDialog
@@ -62,6 +61,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import mihon.feature.migration.config.MigrationConfigScreen
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Help
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.category.model.Category
@@ -83,7 +84,7 @@ data object LibraryTab : Tab {
         @Composable
         get() {
             val isSelected = LocalTabNavigator.current.current.key == key
-            val image = AnimatedImageVector.animatedVectorResource(R.drawable.anim_library_enter)
+            val image = AnimatedImageVector.animatedVectorResource(R.drawable.animated_library)
             return TabOptions(
                 index = 0u,
                 title = stringResource(MR.strings.label_library),
@@ -102,8 +103,8 @@ data object LibraryTab : Tab {
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
 
-        val viewModel = viewModel<LibraryViewModel>()
-        val settingsViewModel = viewModel<LibrarySettingsViewModel>()
+        val viewModel = metroViewModel<LibraryViewModel>()
+        val settingsViewModel = metroViewModel<LibrarySettingsViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -111,7 +112,7 @@ data object LibraryTab : Tab {
         val onClickRefresh: (Category?) -> Boolean = { category ->
             // SY -->
             val started = LibraryUpdateJob.startNow(
-                context = context,
+                workManager = context.workManager,
                 category = if (state.groupType == LibraryGroup.BY_DEFAULT) category else null,
                 group = state.groupType,
                 groupExtra = when (state.groupType) {
@@ -227,7 +228,7 @@ data object LibraryTab : Tab {
                         actions = listOf(
                             EmptyScreenAction(
                                 stringRes = MR.strings.getting_started_guide,
-                                icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                                icon = MaterialSymbols.AutoMirroredRounded.Help,
                                 onClick = { handler.openUri(GETTING_STARTED_URL) },
                             ),
                         ),
@@ -335,6 +336,7 @@ data object LibraryTab : Tab {
 
             is LibraryViewModel.Dialog.RecommendationSearchSheet -> {
                 RecommendationSearchBottomSheetDialog(
+                    selectedCount = dialog.manga.size,
                     onDismissRequest = onDismissRequest,
                     onSearchRequest = {
                         onDismissRequest()

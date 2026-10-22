@@ -8,15 +8,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.interactor.GetExhSavedSearch
@@ -25,6 +29,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.online.MetadataSource
 import eu.kanade.tachiyomi.source.online.all.MangaDex
@@ -39,6 +44,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -48,7 +54,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import tachiyomi.core.common.preference.CheckboxState
@@ -75,67 +80,61 @@ import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.repository.SourcePagingSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 import kotlin.time.Clock
 import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 
+@AssistedInject
 open class BrowseSourceViewModel(
-    private val sourceId: Long,
-    listingQuery: String?,
+    @Assisted private val sourceId: Long,
+    @Assisted listingQuery: String?,
     // SY -->
-    private val filtersJson: String? = null,
-    private val savedSearch: Long? = null,
+    @Assisted private val filtersJson: String? = null,
+    @Assisted private val savedSearch: Long? = null,
     // SY <--
-    private val sourceManager: SourceManager = Injekt.get(),
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    private val libraryPreferences: LibraryPreferences = Injekt.get(),
-    private val coverCache: CoverCache = Injekt.get(),
-    private val getRemoteManga: GetRemoteManga = Injekt.get(),
-    private val getDuplicateLibraryManga: GetDuplicateLibraryManga = Injekt.get(),
-    private val getCategories: GetCategories = Injekt.get(),
-    private val setMangaCategories: SetMangaCategories = Injekt.get(),
-    private val setMangaDefaultChapterFlags: SetMangaDefaultChapterFlags = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val addTracks: AddTracks = Injekt.get(),
-    getIncognitoState: GetIncognitoState = Injekt.get(),
-
+    private val sourceManager: SourceManager,
+    sourcePreferences: SourcePreferences,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: CoverCache,
+    private val getRemoteManga: GetRemoteManga,
+    private val getDuplicateLibraryManga: GetDuplicateLibraryManga,
+    private val getCategories: GetCategories,
+    private val setMangaCategories: SetMangaCategories,
+    private val setMangaDefaultChapterFlags: SetMangaDefaultChapterFlags,
+    private val getManga: GetManga,
+    private val updateManga: UpdateManga,
+    private val addTracks: AddTracks,
+    getIncognitoState: GetIncognitoState,
     // SY -->
-    exhPreferences: ExhPreferences = Injekt.get(),
-    uiPreferences: UiPreferences = Injekt.get(),
-    private val getFlatMetadataById: GetFlatMetadataById = Injekt.get(),
-    private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
-    private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
-    private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
+    exhPreferences: ExhPreferences,
+    private val uiPreferences: UiPreferences,
+    private val getFlatMetadataById: GetFlatMetadataById,
+    private val deleteSavedSearchById: DeleteSavedSearchById,
+    private val insertSavedSearch: InsertSavedSearch,
+    private val getExhSavedSearch: GetExhSavedSearch,
     // SY <--
 ) : ViewModel() {
 
     val state: StateFlow<BrowseSourceViewModel.State>
         field = MutableStateFlow<BrowseSourceViewModel.State>(State(Listing.valueOf(listingQuery)))
 
-    companion object {
-        val SOURCE_ID_KEY = CreationExtras.Key<Long>()
-        val LISTING_QUERY_KEY = CreationExtras.Key<String?>()
-        val FILTERS_JSON = CreationExtras.Key<String?>()
-        val SAVED_SEARCH = CreationExtras.Key<Long?>()
-
-        val Factory = viewModelFactory {
-            initializer {
-                BrowseSourceViewModel(
-                    sourceId = get(SOURCE_ID_KEY)!!,
-                    listingQuery = get(LISTING_QUERY_KEY),
-                    filtersJson = get(FILTERS_JSON),
-                    savedSearch = get(SAVED_SEARCH),
-                )
-            }
-        }
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    interface Factory : ManualViewModelAssistedFactory {
+        fun create(
+            sourceId: Long,
+            listingQuery: String?,
+            // SY -->
+            filtersJson: String? = null,
+            savedSearch: Long? = null,
+            // SY <--
+        ): BrowseSourceViewModel
     }
 
     var displayMode by sourcePreferences.sourceDisplayMode.asState(viewModelScope)
 
-    val source = sourceManager.getOrStub(sourceId)
+    private val source: Source? get() = state.value.source
 
     // SY -->
     val ehentaiBrowseDisplayMode by exhPreferences.enhancedEHentaiView.asState(viewModelScope)
@@ -148,57 +147,65 @@ open class BrowseSourceViewModel(
     // SY <--
 
     init {
-        state.update {
-            var query: String? = null
-            var listing = it.listing
+        viewModelScope.launchIO {
+            val source = sourceManager.getOrStub(sourceId)
 
-            if (listing is Listing.Search) {
-                query = listing.query
-                listing = Listing.Search(query, source.getFilterList())
+            state.update {
+                var query: String? = null
+                var listing = it.listing
+
+                if (listing is Listing.Search) {
+                    query = listing.query
+                    listing = Listing.Search(query, source.getFilterList())
+                }
+
+                it.copy(
+                    source = source,
+                    listing = listing,
+                    filters = source.getFilterList(),
+                    toolbarQuery = query,
+                )
             }
 
-            it.copy(
-                listing = listing,
-                filters = source.getFilterList(),
-                toolbarQuery = query,
-                hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get()
-            )
+            // SY -->
+            val savedSearchFilters = savedSearch
+            val jsonFilters = filtersJson
+            val filters = state.value.filters
+            if (savedSearchFilters != null) {
+                val savedSearch = getExhSavedSearch.awaitOne(savedSearchFilters) { filters }
+                if (savedSearch != null) {
+                    search(query = savedSearch.query, filters = savedSearch.filterList)
+                }
+            } else if (jsonFilters != null) {
+                runCatching {
+                    val filtersJson = Json.decodeFromString<JsonArray>(jsonFilters)
+                    filterSerializer.deserialize(filters, filtersJson)
+                    search(filters = filters)
+                }
+            }
+
+            getExhSavedSearch.subscribe(source.id, source::getFilterList)
+                .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
+                .onEach { savedSearches ->
+                    state.update { it.copy(savedSearches = savedSearches) }
+                }
+                .launchIn(viewModelScope)
+            // SY <--
+
+            if (!getIncognitoState.await(source.id)) {
+                sourcePreferences.lastUsedSource.set(source.id)
+            }
+
         }
-
-        if (!getIncognitoState.await(source.id)) {
-            sourcePreferences.lastUsedSource.set(source.id)
-        }
-
-        // SY -->
-        val savedSearchFilters = savedSearch
-        val jsonFilters = filtersJson
-        val filters = state.value.filters
-        if (savedSearchFilters != null) {
-            val savedSearch = runBlocking { getExhSavedSearch.awaitOne(savedSearchFilters) { filters } }
-            if (savedSearch != null) {
-                search(query = savedSearch.query, filters = savedSearch.filterList)
-            }
-        } else if (jsonFilters != null) {
-            runCatching {
-                val filtersJson = Json.decodeFromString<JsonArray>(jsonFilters)
-                filterSerializer.deserialize(filters, filtersJson)
-                search(filters = filters)
-            }
-        }
-
-        getExhSavedSearch.subscribe(source.id, source::getFilterList)
-            .map { it.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, EXHSavedSearch::name)) }
-            .onEach { savedSearches ->
-                state.update { it.copy(savedSearches = savedSearches) }
-            }
-            .launchIn(viewModelScope)
-        // SY <--
     }
 
     /**
      * Flow of Pager flow tied to [State.listing]
      */
-    val mangaPagerFlowFlow = state.map { it.listing }
+    private val hideInLibraryItems = sourcePreferences.hideInLibraryItems.get()
+    val mangaPagerFlowFlow = state.map { it.source to it.listing }
+        .filter { (source, _) -> source != null }
+        .map { (_, listing) -> listing }
         .distinctUntilChanged()
         .map { listing ->
             Pager(PagingConfig(pageSize = 25)) {
@@ -232,7 +239,7 @@ open class BrowseSourceViewModel(
 
     // SY -->
     open fun Flow<Manga>.combineMetadata(metadata: RaisedSearchMetadata?): Flow<Pair<Manga, RaisedSearchMetadata?>> {
-        val metadataSource = source.getMainSource<MetadataSource<*, *>>()
+        val metadataSource = source!!.getMainSource<MetadataSource<*, *>>()
         return flatMapLatest { manga ->
             if (metadataSource != null) {
                 getFlatMetadataById.subscribe(manga.id)
@@ -247,10 +254,8 @@ open class BrowseSourceViewModel(
     // SY <--
 
     fun resetFilters() {
-        state.update { it.copy(
-            filters = source.getFilterList(),
-            hideEntriesInLibraryState = sourcePreferences.hideInLibraryItems.get()
-        ) }
+        val source = source ?: return
+        state.update { it.copy(filters = source.getFilterList()) }
     }
 
     fun setListing(listing: Listing) {
@@ -272,7 +277,7 @@ open class BrowseSourceViewModel(
         }
         // SY <--
         val input = state.value.listing as? Listing.Search
-            ?: Listing.Search(query = null, filters = source.getFilterList())
+            ?: Listing.Search(query = null, filters = source?.getFilterList() ?: FilterList())
 
         state.update {
             it.copy(
@@ -286,7 +291,7 @@ open class BrowseSourceViewModel(
     }
 
     fun searchGenre(genreName: String) {
-        val defaultFilters = source.getFilterList()
+        val defaultFilters = source?.getFilterList() ?: return
         var genreExists = false
 
         filter@ for (sourceFilter in defaultFilters) {
@@ -347,7 +352,7 @@ open class BrowseSourceViewModel(
                 new = new.removeCovers(coverCache)
             } else {
                 setMangaDefaultChapterFlags.await(manga)
-                addTracks.bindEnhancedTrackers(manga, source)
+                addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source))
             }
 
             updateManga.await(new.toMangaUpdate())
@@ -474,6 +479,7 @@ open class BrowseSourceViewModel(
     @Immutable
     data class State(
         val listing: Listing,
+        val source: Source? = null,
         val filters: FilterList = FilterList(),
         val toolbarQuery: String? = null,
         val dialog: Dialog? = null,
@@ -506,12 +512,12 @@ open class BrowseSourceViewModel(
                 return@launchIO
             }
 
-            val allDefault = search.filterList != null && search.filterList == source.getFilterList()
+            val allDefault = search.filterList != null && search.filterList == source!!.getFilterList()
             setDialog(null)
 
             val filters = search.filterList
                 ?.takeUnless { allDefault }
-                ?: source.getFilterList()
+                ?: source!!.getFilterList()
 
             state.update {
                 it.copy(
@@ -537,11 +543,11 @@ open class BrowseSourceViewModel(
             val query = state.value.toolbarQuery?.takeUnless {
                 it.isBlank() || it == GetRemoteManga.QUERY_POPULAR || it == GetRemoteManga.QUERY_LATEST
             }?.trim()
-            val filterList = state.value.filters.ifEmpty { source.getFilterList() }
+            val filterList = state.value.filters.ifEmpty { source!!.getFilterList() }
             insertSavedSearch.await(
                 SavedSearch(
                     id = -1,
-                    source = source.id,
+                    source = source!!.id,
                     name = name.trim(),
                     query = query,
                     filtersJson = runCatching {
@@ -560,7 +566,7 @@ open class BrowseSourceViewModel(
 
     fun onMangaDexRandom(onRandomFound: (String) -> Unit) {
         viewModelScope.launchIO {
-            val random = source.getMainSource<MangaDex>()?.fetchRandomMangaUrl()
+            val random = source!!.getMainSource<MangaDex>()?.fetchRandomMangaUrl()
                 ?: return@launchIO
             onRandomFound(random)
         }

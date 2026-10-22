@@ -1,17 +1,15 @@
 package eu.kanade.tachiyomi.ui.browse.feed
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.FeedAddDialog
 import eu.kanade.presentation.browse.FeedAddSearchDialog
 import eu.kanade.presentation.browse.FeedDeleteConfirmDialog
@@ -22,6 +20,8 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Add
 import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
@@ -30,7 +30,7 @@ import tachiyomi.presentation.core.i18n.stringResource
 @Composable
 fun Screen.feedTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val viewModel = viewModel<FeedViewModel>()
+    val viewModel = metroViewModel<FeedViewModel>()
     val state by viewModel.state.collectAsState()
 
     DisposableEffect(navigator.lastEvent) {
@@ -52,7 +52,7 @@ fun Screen.feedTab(): TabContent {
         actions = listOf(
             AppBar.Action(
                 title = stringResource(MR.strings.action_add),
-                icon = Icons.Outlined.Add,
+                icon = MaterialSymbols.Rounded.Add,
                 onClick = {
                     viewModel.openAddDialog()
                 },

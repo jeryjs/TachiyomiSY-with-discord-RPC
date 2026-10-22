@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -61,35 +58,35 @@ import eu.kanade.presentation.more.settings.widget.TrailingWidgetBuffer
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.data.backup.create.BackupCreateJob
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
-import eu.kanade.tachiyomi.data.cache.ChapterCache
-import eu.kanade.tachiyomi.data.cache.PagePreviewCache
 import eu.kanade.tachiyomi.data.export.LibraryExporter
 import eu.kanade.tachiyomi.data.export.LibraryExporter.ExportOptions
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.data.sync.SyncManager
-import eu.kanade.tachiyomi.data.sync.service.GoogleDriveService
 import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
+import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
+import mihon.app.di.appGraph
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Help
+import mihon.icons.sy.materialsymbols.SYMaterialSymbols
+import mihon.icons.sy.materialsymbols.rounded.QrCodeScanner
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.backup.service.BackupPreferences
-import tachiyomi.domain.library.service.LibraryPreferences
-import tachiyomi.domain.manga.interactor.GetFavorites
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsDataScreen : SearchableSettings {
 
@@ -105,7 +102,7 @@ object SettingsDataScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         IconButton(onClick = { uriHandler.openUri(HELP_URL) }) {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                imageVector = MaterialSymbols.AutoMirroredRounded.Help,
                 contentDescription = stringResource(MR.strings.tracking_guide),
             )
         }
@@ -113,10 +110,11 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val backupPreferences = Injekt.get<BackupPreferences>()
-        val storagePreferences = Injekt.get<StoragePreferences>()
+        val context = LocalContext.current
+        val backupPreferences = remember { context.appGraph.backupPreferences }
+        val storagePreferences = remember { context.appGraph.storagePreferences }
 
-        val syncPreferences = remember { Injekt.get<SyncPreferences>() }
+        val syncPreferences = remember { context.appGraph.syncPreferences }
         val syncService by syncPreferences.syncService.collectAsState()
 
         return listOf(
@@ -248,7 +246,7 @@ object SettingsDataScreen : SearchableSettings {
                                     modifier = Modifier.fillMaxHeight(),
                                     checked = false,
                                     onCheckedChange = {
-                                        if (!BackupRestoreJob.isRunning(context)) {
+                                        if (!BackupRestoreJob.isRunning(context.workManager)) {
                                             if (DeviceUtil.isMiui && DeviceUtil.isMiuiOptimizationDisabled()) {
                                                 context.toast(MR.strings.restore_miui_warning)
                                             }
@@ -297,14 +295,14 @@ object SettingsDataScreen : SearchableSettings {
     private fun getDataGroup(): Preference.PreferenceGroup {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
-        val chapterCache = remember { Injekt.get<ChapterCache>() }
+        val chapterCache = remember { context.appGraph.chapterCache }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
         val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
 
         // SY -->
-        val pagePreviewCache = remember { Injekt.get<PagePreviewCache>() }
+        val pagePreviewCache = remember { context.appGraph.pagePreviewCache }
         var pagePreviewReadableSizeSema by remember { mutableIntStateOf(0) }
         val pagePreviewReadableSize = remember(pagePreviewReadableSizeSema) { pagePreviewCache.readableSize }
         // SY <--
@@ -385,7 +383,7 @@ object SettingsDataScreen : SearchableSettings {
 
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val getFavorites = remember { Injekt.get<GetFavorites>() }
+        val getFavorites = remember { context.appGraph.getFavorites }
         var favorites by remember { mutableStateOf<List<Manga>>(emptyList()) }
         LaunchedEffect(Unit) {
             favorites = getFavorites.await()
@@ -574,7 +572,7 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getGoogleDrivePreferences(): List<Preference> {
         val context = LocalContext.current
-        val googleDriveSync = Injekt.get<GoogleDriveService>()
+        val googleDriveSync = context.appGraph.googleDriveService
         return listOf(
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(SYMR.strings.pref_google_drive_sign_in),
@@ -591,7 +589,7 @@ object SettingsDataScreen : SearchableSettings {
     private fun getGoogleDrivePurge(): Preference.PreferenceItem.TextPreference {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val googleDriveSync = remember { GoogleDriveSyncService(context) }
+        val googleDriveSync = remember { GoogleDriveSyncService(context, context.appGraph.json, context.appGraph.syncPreferences, ProtoBuf) }
         var showPurgeDialog by remember { mutableStateOf(false) }
 
         if (showPurgeDialog) {
@@ -705,7 +703,7 @@ object SettingsDataScreen : SearchableSettings {
                             modifier = Modifier.padding(start = TrailingWidgetBuffer),
                         ) {
                             Icon(
-                                Icons.Filled.QrCodeScanner,
+                                SYMaterialSymbols.Rounded.QrCodeScanner,
                                 contentDescription = stringResource(SYMR.strings.scan_qr_code),
                             )
                         }

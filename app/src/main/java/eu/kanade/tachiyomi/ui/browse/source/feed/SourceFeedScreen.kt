@@ -5,11 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.SourceFeedScreen
 import eu.kanade.presentation.browse.components.SourceFeedAddDialog
 import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
@@ -20,7 +19,6 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.util.system.toast
 import exh.md.follows.MangaDexFollowsScreen
-import exh.ui.ifSourcesLoaded
 import exh.util.nullIfBlank
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.interactor.GetRemoteManga
@@ -31,33 +29,30 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
 
     @Composable
     override fun Content() {
-        if (!ifSourcesLoaded()) {
-            LoadingScreen()
-            return
+        val viewModel = assistedMetroViewModel<SourceFeedViewModel, SourceFeedViewModel.Factory> {
+            create(sourceId = sourceId)
         }
-
-        val viewModel = viewModel<SourceFeedViewModel>(
-            factory = SourceFeedViewModel.Factory,
-            extras = CreationExtras {
-                set(SourceFeedViewModel.SOURCE_ID_KEY, sourceId)
-            },
-        )
         val state by viewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
 
+        if (state.source == null) {
+            LoadingScreen()
+            return
+        }
+
         SourceFeedScreen(
-            name = viewModel.source.name,
+            name = state.source?.name ?: return,
             isLoading = state.isLoading,
             items = state.items,
             hasFilters = state.filters.isNotEmpty(),
             onFabClick = viewModel::openFilterSheet,
-            onClickBrowse = { onBrowseClick(navigator, viewModel.source) },
-            onClickLatest = { onLatestClick(navigator, viewModel.source) },
-            onClickSavedSearch = { onSavedSearchClick(navigator, viewModel.source, it) },
+            onClickBrowse = { onBrowseClick(navigator, state.source ?: return@SourceFeedScreen) },
+            onClickLatest = { onLatestClick(navigator, state.source ?: return@SourceFeedScreen) },
+            onClickSavedSearch = { onSavedSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
             onClickDelete = viewModel::openDeleteFeed,
             onClickManga = { onMangaClick(navigator, it) },
-            onClickSearch = { onSearchClick(navigator, viewModel.source, it) },
+            onClickSearch = { onSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
             searchQuery = state.searchQuery,
             onSearchQueryChange = viewModel::search,
             getMangaState = { viewModel.getManga(initialManga = it) },
@@ -124,7 +119,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                             context.toast(it)
                         }
                     },
-                    openMangaDexRandom = if (viewModel.sourceIsMangaDex) {
+                    openMangaDexRandom = if (state.sourceIsMangaDex) {
                         {
                             viewModel.onMangaDexRandom {
                                 navigator.replace(
@@ -138,7 +133,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     } else {
                         null
                     },
-                    openMangaDexFollows = if (viewModel.sourceIsMangaDex) {
+                    openMangaDexFollows = if (state.sourceIsMangaDex) {
                         {
                             navigator.replace(MangaDexFollowsScreen(sourceId))
                         }

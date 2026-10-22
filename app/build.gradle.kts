@@ -11,6 +11,7 @@ plugins {
 
     kotlin("plugin.parcelize")
 
+    alias(libs.plugins.metro)
     alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.androidx.baselineProfile)
     alias(libs.plugins.kotlin.serialization)
@@ -172,7 +173,16 @@ dependencies {
     // SY -->
     implementation(projects.i18nSy)
     // SY <--
+    implementation(projects.icons.customMaterialSymbols)
+    implementation(projects.icons.materialSymbols)
+    implementation(projects.icons.simpleIcons)
+    // SY -->
+    implementation(projects.iconsSy.brands)
+    implementation(projects.iconsSy.customMaterialSymbols)
+    implementation(projects.iconsSy.materialSymbols)
+    // SY <--
     implementation(projects.core.common)
+    implementation(projects.core.metro)
     implementation(projects.coreMetadata)
     implementation(projects.sourceApi)
     implementation(projects.sourceLocal)
@@ -185,7 +195,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.materialIcons)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animationGraphics)
     debugImplementation(libs.androidx.compose.uiTooling)
@@ -249,6 +258,9 @@ dependencies {
 
     // Dependency injection
     implementation(libs.injekt)
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 
     // Image loading
     implementation(libs.bundles.coil)
@@ -312,7 +324,6 @@ dependencies {
     implementation(sylibs.xlog)
 
     // RatingBar (SY)
-    implementation(sylibs.ratingbar)
     implementation(sylibs.composeRatingbar)
 
     // Google drive

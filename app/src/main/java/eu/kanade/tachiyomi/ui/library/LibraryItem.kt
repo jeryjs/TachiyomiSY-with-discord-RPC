@@ -1,10 +1,6 @@
 package eu.kanade.tachiyomi.ui.library
 
-import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import tachiyomi.domain.library.model.LibraryManga
-import tachiyomi.domain.source.service.SourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data class LibraryItem(
     val libraryManga: LibraryManga,
@@ -12,7 +8,6 @@ data class LibraryItem(
     val unreadCount: Long = -1,
     val isLocal: Boolean = false,
     val sourceLanguage: String = "",
-    private val sourceManager: SourceManager = Injekt.get(),
     val badges: Badges,
 ) {
     val id: Long = libraryManga.id
@@ -24,7 +19,7 @@ data class LibraryItem(
      * @return true if the manga matches the query, false otherwise.
      */
     fun matches(constraint: String): Boolean {
-        val sourceName by lazy { sourceManager.getOrStub(libraryManga.manga.source).getNameForMangaInfo() }
+        val sourceName  = ""
         if (constraint.startsWith("id:", true)) {
             return id == constraint.substringAfter("id:").toLongOrNull()
         }

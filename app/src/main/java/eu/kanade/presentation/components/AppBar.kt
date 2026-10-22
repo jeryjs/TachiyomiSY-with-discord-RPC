@@ -8,11 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +47,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.ArrowBack
+import mihon.icons.materialsymbols.rounded.Close
+import mihon.icons.materialsymbols.rounded.MoreVert
+import mihon.icons.materialsymbols.rounded.Search
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clearFocusOnSoftKeyboardHide
@@ -134,7 +134,7 @@ fun AppBar(
                 if (isActionMode) {
                     IconButton(onClick = onCancelActionMode) {
                         Icon(
-                            imageVector = Icons.Outlined.Close,
+                            imageVector = MaterialSymbols.Rounded.Close,
                             contentDescription = stringResource(MR.strings.action_cancel),
                         )
                     }
@@ -240,7 +240,7 @@ fun AppBarActions(
                 onClick = { showMenu = !showMenu },
             ) {
                 Icon(
-                    Icons.Outlined.MoreVert,
+                    MaterialSymbols.Rounded.MoreVert,
                     contentDescription = stringResource(MR.strings.action_menu_overflow_description),
                 )
             }
@@ -369,7 +369,7 @@ fun SearchToolbar(
                             onClick = onClick,
                         ) {
                             Icon(
-                                Icons.Outlined.Search,
+                                MaterialSymbols.Rounded.Search,
                                 contentDescription = stringResource(MR.strings.action_search),
                             )
                         }
@@ -392,7 +392,7 @@ fun SearchToolbar(
                             },
                         ) {
                             Icon(
-                                Icons.Outlined.Close,
+                                MaterialSymbols.Rounded.Close,
                                 contentDescription = stringResource(MR.strings.action_reset),
                             )
                         }
@@ -413,7 +413,7 @@ fun UpIcon(
     navigationIcon: ImageVector? = null,
 ) {
     val icon = navigationIcon
-        ?: Icons.AutoMirrored.Outlined.ArrowBack
+        ?: MaterialSymbols.AutoMirroredRounded.ArrowBack
     Icon(
         imageVector = icon,
         contentDescription = stringResource(MR.strings.action_bar_up_description),

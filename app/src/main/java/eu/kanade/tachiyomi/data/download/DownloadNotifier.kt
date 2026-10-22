@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.download.model.Download
@@ -16,17 +17,19 @@ import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 import java.util.regex.Pattern
+import mihon.icons.materialsymbols.R as MaterialSymbolsR
 
 /**
  * DownloadNotifier is used to show notifications when downloading one or multiple chapters.
  *
  * @param context context of application
  */
-internal class DownloadNotifier(private val context: Context) {
-
-    private val preferences: SecurityPreferences by injectLazy()
+@Inject
+class DownloadNotifier(
+    private val context: Context,
+    private val preferences: SecurityPreferences,
+) {
 
     private val progressNotificationBuilder by lazy {
         context.notificationBuilder(Notifications.CHANNEL_DOWNLOADER_PROGRESS) {
@@ -79,12 +82,12 @@ internal class DownloadNotifier(private val context: Context) {
                 isDownloading = true
                 // Pause action
                 addAction(
-                    R.drawable.ic_pause_24dp,
+                    MaterialSymbolsR.drawable.rounded_filled_pause,
                     context.stringResource(MR.strings.action_pause),
                     NotificationReceiver.pauseDownloadsPendingBroadcast(context),
                 )
                 addAction(
-                    R.drawable.ic_book_24dp,
+                    MaterialSymbolsR.drawable.rounded_book,
                     context.stringResource(MR.strings.action_show_manga),
                     NotificationReceiver.openEntryPendingActivity(context, download.manga.id),
                 )
@@ -124,7 +127,7 @@ internal class DownloadNotifier(private val context: Context) {
         with(progressNotificationBuilder) {
             setContentTitle(context.stringResource(MR.strings.chapter_paused))
             setContentText(context.stringResource(MR.strings.download_notifier_download_paused))
-            setSmallIcon(R.drawable.ic_pause_24dp)
+            setSmallIcon(MaterialSymbolsR.drawable.rounded_filled_pause)
             setProgress(0, 0, false)
             setOngoing(false)
             clearActions()
@@ -132,13 +135,13 @@ internal class DownloadNotifier(private val context: Context) {
             setContentIntent(NotificationHandler.openDownloadManagerPendingActivity(context))
             // Resume action
             addAction(
-                R.drawable.ic_play_arrow_24dp,
+                MaterialSymbolsR.drawable.rounded_filled_play_arrow,
                 context.stringResource(MR.strings.action_resume),
                 NotificationReceiver.resumeDownloadsPendingBroadcast(context),
             )
             // Clear action
             addAction(
-                R.drawable.ic_close_24dp,
+                MaterialSymbolsR.drawable.rounded_close,
                 context.stringResource(MR.strings.action_cancel_all),
                 NotificationReceiver.clearDownloadsPendingBroadcast(context),
             )
@@ -172,13 +175,13 @@ internal class DownloadNotifier(private val context: Context) {
         with(errorNotificationBuilder) {
             setContentTitle(context.stringResource(MR.strings.download_notifier_downloader_title))
             setStyle(NotificationCompat.BigTextStyle().bigText(reason))
-            setSmallIcon(R.drawable.ic_warning_white_24dp)
+            setSmallIcon(MaterialSymbolsR.drawable.rounded_filled_warning)
             setAutoCancel(true)
             clearActions()
             setContentIntent(NotificationHandler.openDownloadManagerPendingActivity(context))
             if (mangaId != null) {
                 addAction(
-                    R.drawable.ic_book_24dp,
+                    MaterialSymbolsR.drawable.rounded_book,
                     context.stringResource(MR.strings.action_show_manga),
                     NotificationReceiver.openEntryPendingActivity(context, mangaId),
                 )
@@ -209,12 +212,12 @@ internal class DownloadNotifier(private val context: Context) {
                 mangaTitle?.plus(": $chapter") ?: context.stringResource(MR.strings.download_notifier_downloader_title),
             )
             setContentText(error ?: context.stringResource(MR.strings.download_notifier_unknown_error))
-            setSmallIcon(R.drawable.ic_warning_white_24dp)
+            setSmallIcon(MaterialSymbolsR.drawable.rounded_filled_warning)
             clearActions()
             setContentIntent(NotificationHandler.openDownloadManagerPendingActivity(context))
             if (mangaId != null) {
                 addAction(
-                    R.drawable.ic_book_24dp,
+                    MaterialSymbolsR.drawable.rounded_book,
                     context.stringResource(MR.strings.action_show_manga),
                     NotificationReceiver.openEntryPendingActivity(context, mangaId),
                 )

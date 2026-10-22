@@ -5,9 +5,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
@@ -22,15 +27,13 @@ import tachiyomi.presentation.core.components.LazyColumnWithAction
 import tachiyomi.presentation.core.components.SectionCard
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class SyncTriggerOptionsScreen : Screen() {
 
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val model = viewModel<SyncOptionsViewModel>()
+        val model = metroViewModel<SyncOptionsViewModel>()
         val state by model.state.collectAsState()
 
         Scaffold(
@@ -78,8 +81,11 @@ class SyncTriggerOptionsScreen : Screen() {
     }
 }
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class SyncOptionsViewModel(
-    val syncPreferences: SyncPreferences = Injekt.get(),
+    val syncPreferences: SyncPreferences,
 ) : ViewModel() {
 
     val state: StateFlow<State>

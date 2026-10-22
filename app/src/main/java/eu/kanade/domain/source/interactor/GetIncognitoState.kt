@@ -1,5 +1,6 @@
 package eu.kanade.domain.source.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
@@ -11,14 +12,15 @@ import kotlinx.coroutines.flow.flow
 import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.source.service.SourceManager
 
+@Inject
 class GetIncognitoState(
     private val basePreferences: BasePreferences,
     private val sourcePreferences: SourcePreferences,
     private val extensionManager: ExtensionManager,
     private val sourceManager: SourceManager,
     private val customMangaManager: GetCustomMangaInfo,
-){
-    fun await(sourceId: Long? = null, mangaId: Long? = null): Boolean {
+) {
+    suspend fun await(sourceId: Long? = null, mangaId: Long? = null): Boolean {
         if (basePreferences.incognitoMode.get()) return true
         var isIncognito = false
         if (sourceId != null) {

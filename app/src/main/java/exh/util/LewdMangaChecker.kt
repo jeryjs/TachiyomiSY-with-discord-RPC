@@ -7,7 +7,7 @@ import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-fun Manga.isLewd(): Boolean {
+suspend fun Manga.isLewd(): Boolean {
     val sourceName = Injekt.get<SourceManager>().get(source)?.name
 
     if (isEhBasedManga() || source in nHentaiSourceIds) {

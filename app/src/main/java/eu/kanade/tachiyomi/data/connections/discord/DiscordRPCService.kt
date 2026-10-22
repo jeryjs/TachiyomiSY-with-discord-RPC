@@ -28,6 +28,7 @@ import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import mihon.icons.materialsymbols.R as MaterialSymbolsR
 
 class DiscordRPCService : Service() {
 
@@ -92,7 +93,7 @@ class DiscordRPCService : Service() {
     }
 
     private fun notification(context: Context) {
-        val toggleIcon = if (isPaused) R.drawable.ic_play_arrow_24dp else R.drawable.ic_pause_24dp
+        val toggleIcon = if (isPaused) MaterialSymbolsR.drawable.rounded_filled_play_arrow else MaterialSymbolsR.drawable.rounded_filled_pause
         val toggleText = if (isPaused) getString(R.string.action_resume) else getString(R.string.action_pause)
         val builder = context.notificationBuilder(Notifications.CHANNEL_DISCORD_RPC) {
             setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
@@ -104,7 +105,7 @@ class DiscordRPCService : Service() {
             setShowWhen(true)
             setUsesChronometer(true)
             addAction(toggleIcon, toggleText, togglePauseResumePendingIntent(context))
-            addAction(R.drawable.ic_format_list_numbered_24dp, getString(R.string.status), openStatusDialogPendingIntent(context))
+            addAction(MaterialSymbolsR.drawable.rounded_format_list_numbered, getString(R.string.status), openStatusDialogPendingIntent(context))
         }
 
         try {

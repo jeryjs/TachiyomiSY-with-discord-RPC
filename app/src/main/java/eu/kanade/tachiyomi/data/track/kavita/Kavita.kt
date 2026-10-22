@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.track.kavita
 
+import android.content.Context
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.database.models.Track
@@ -9,14 +10,14 @@ import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.sourcePreferences
+import kotlinx.coroutines.runBlocking
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.injectLazy
 import java.security.MessageDigest
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedTracker {
+class Kavita(context: Context, id: Long) : BaseTracker(context, id, "Kavita"), EnhancedTracker {
 
     companion object {
         const val UNREAD = 1L
@@ -29,7 +30,7 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedTracker {
     private val interceptor by lazy { KavitaInterceptor(this) }
     val api by lazy { KavitaApi(client, interceptor) }
 
-    private val sourceManager: SourceManager by injectLazy()
+    private val sourceManager: SourceManager by lazy { appGraph.sourceManager }
 
     override fun getLogo(): Int = R.drawable.brand_kavita
 
@@ -119,7 +120,8 @@ class Kavita(id: Long) : BaseTracker(id, "Kavita"), EnhancedTracker {
                 (0..7).map { bytes[it].toLong() and 0xff shl 8 * (7 - it) }
                     .reduce(Long::or) and Long.MAX_VALUE
             }
-            val preferences = (sourceManager.get(sourceId) as ConfigurableSource).sourcePreferences()
+            val preferences = runBlocking { sourceManager.get(sourceId) as ConfigurableSource }
+                .sourcePreferences()
 
             val prefApiUrl = preferences.getString("APIURL", "")
             val prefApiKey = preferences.getString("APIKEY", "")

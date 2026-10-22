@@ -7,10 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,6 +41,10 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsService
 import eu.kanade.tachiyomi.util.system.openDiscordLoginActivity
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Close
+import mihon.icons.materialsymbols.roundedfilled.Visibility
+import mihon.icons.materialsymbols.roundedfilled.VisibilityOff
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
@@ -124,7 +124,7 @@ object SettingsConnectionsScreen : SearchableSettings {
                     )
                     IconButton(onClick = onDismissRequest) {
                         Icon(
-                            imageVector = Icons.Outlined.Close,
+                            imageVector = MaterialSymbols.Rounded.Close,
                             contentDescription = stringResource(MR.strings.action_close),
                         )
                     }
@@ -152,9 +152,9 @@ object SettingsConnectionsScreen : SearchableSettings {
                             IconButton(onClick = { hidePassword = !hidePassword }) {
                                 Icon(
                                     imageVector = if (hidePassword) {
-                                        Icons.Filled.Visibility
+                                        MaterialSymbols.RoundedFilled.Visibility
                                     } else {
-                                        Icons.Filled.VisibilityOff
+                                        MaterialSymbols.RoundedFilled.VisibilityOff
                                     },
                                     contentDescription = null,
                                 )
@@ -274,3 +274,4 @@ private data class LoginConnectionsDialog(
 internal data class LogoutConnectionsDialog(
     val service: ConnectionsService,
 )
+

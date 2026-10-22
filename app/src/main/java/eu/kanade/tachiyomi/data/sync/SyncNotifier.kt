@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.sync
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
@@ -10,11 +11,13 @@ import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
-import uy.kohesive.injekt.injectLazy
+import mihon.icons.materialsymbols.R as MaterialSymbolsR
 
-class SyncNotifier(private val context: Context) {
-
-    private val preferences: SecurityPreferences by injectLazy()
+@Inject
+class SyncNotifier(
+    private val context: Context,
+    private val preferences: SecurityPreferences,
+) {
 
     private val progressNotificationBuilder = context.notificationBuilder(
         Notifications.CHANNEL_SYNC_LIBRARY,
@@ -51,7 +54,7 @@ class SyncNotifier(private val context: Context) {
 
             clearActions()
             addAction(
-                R.drawable.ic_close_24dp,
+                MaterialSymbolsR.drawable.rounded_close,
                 context.getString(R.string.action_cancel),
                 NotificationReceiver.cancelSyncPendingBroadcast(context, Notifications.ID_SYNC_PROGRESS),
             )

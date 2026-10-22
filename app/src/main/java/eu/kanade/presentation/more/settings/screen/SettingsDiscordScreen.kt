@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +38,8 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.runBlocking
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Help
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -82,7 +82,7 @@ object SettingsDiscordScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         IconButton(onClick = { uriHandler.openUri("https://tachiyomi.org/help/guides/tracking/") }) {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                imageVector = MaterialSymbols.AutoMirroredRounded.Help,
                 contentDescription = stringResource(MR.strings.tracking_guide),
             )
         }
@@ -270,3 +270,4 @@ object SettingsDiscordScreen : SearchableSettings {
         }
     }
 }
+

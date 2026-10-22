@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -29,8 +29,6 @@ import kotlinx.datetime.toLocalDateTime
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.ChapterSwipeAction
 import tachiyomi.source.local.isLocal
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.time.Clock
@@ -46,14 +44,14 @@ fun ChapterListDialog(
     onDownloadChapter: (List<Chapter>, ChapterDownloadAction) -> Unit,
     onBookmark: (Chapter) -> Unit,
     dateRelativeTime: Boolean,
+    downloadManager: DownloadManager,
 ) {
     val manga by viewModel.mangaFlow.collectAsState()
     val context = LocalContext.current
     val state = rememberLazyListState(chapters.indexOfFirst { it.isCurrent }.coerceAtLeast(0))
-    val downloadManager: DownloadManager = remember { Injekt.get() }
     val downloadQueueState by downloadManager.queueState.collectAsState()
-    val tmpArtifactNames = remember(chapters) {
-        chapters.firstOrNull()?.let {
+    val tmpArtifactNames by produceState(emptySet<String>(), chapters) {
+        value = chapters.firstOrNull()?.let {
             if (it.manga.isLocal()) {
                 emptySet()
             } else {
@@ -92,15 +90,17 @@ fun ChapterListDialog(
                         chapterItem.manga.source,
                     )
                 }
-                val hasIncompleteDownload = !chapterItem.manga.isLocal() && !downloaded && activeDownload == null &&
-                    downloadManager.hasIncompleteChapterDownload(
-                        chapterItem.chapter.name,
-                        chapterItem.chapter.scanlator,
-                        chapterItem.chapter.url,
-                        chapterItem.manga.ogTitle,
-                        chapterItem.manga.source,
-                        tmpArtifactNames,
-                    )
+                val hasIncompleteDownload by produceState(false, chapterItem, downloaded, activeDownload) {
+                    value = !chapterItem.manga.isLocal() && !downloaded && activeDownload == null &&
+                        downloadManager.hasIncompleteChapterDownload(
+                            chapterItem.chapter.name,
+                            chapterItem.chapter.scanlator,
+                            chapterItem.chapter.url,
+                            chapterItem.manga.ogTitle,
+                            chapterItem.manga.source,
+                            tmpArtifactNames,
+                        )
+                }
                 val downloadState = when {
                     activeDownload != null -> activeDownload.status
                     downloaded -> Download.State.DOWNLOADED

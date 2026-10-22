@@ -1,6 +1,7 @@
 package exh.debug
 
 import android.app.Application
+import android.content.Context
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.backup.models.Backup
 import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
@@ -17,11 +18,11 @@ import exh.util.ThrottleManager
 import exh.util.jobScheduler
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.protobuf.schema.ProtoBufSchemaGenerator
+import mihon.app.di.appGraph
 import mihon.core.migration.MigrationContext
 import mihon.core.migration.MigrationJobFactory
 import mihon.core.migration.MigrationStrategyFactory
 import mihon.core.migration.Migrator
-import mihon.core.migration.migrations.migrations
 import mihon.domain.source.interactor.UpdateMangaFromRemote
 import tachiyomi.data.Database
 import tachiyomi.domain.manga.interactor.GetAllManga
@@ -38,7 +39,7 @@ import java.util.UUID
 
 @Suppress("unused")
 object DebugFunctions {
-    private val app: Application by injectLazy()
+    private val context: Context by injectLazy()
     private val database: Database by injectLazy()
     private val sourceManager: SourceManager by injectLazy()
     private val updateMangaFromRemote: UpdateMangaFromRemote by injectLazy()
@@ -54,7 +55,7 @@ object DebugFunctions {
         val migrationJobFactory = MigrationJobFactory(migrationContext, Migrator.scope)
         val migrationStrategyFactory = MigrationStrategyFactory(migrationJobFactory, {})
         val strategy = migrationStrategyFactory.create(1, BuildConfig.VERSION_CODE)
-        return runBlocking { strategy(migrations).await() }
+        return runBlocking { strategy(context.appGraph.migrations.toList()).await() }
     }
 
     fun forceSetupJobs(): Boolean {
@@ -62,7 +63,7 @@ object DebugFunctions {
         val migrationJobFactory = MigrationJobFactory(migrationContext, Migrator.scope)
         val migrationStrategyFactory = MigrationStrategyFactory(migrationJobFactory, {})
         val strategy = migrationStrategyFactory.create(0, BuildConfig.VERSION_CODE)
-        return runBlocking { strategy(migrations).await() }
+        return runBlocking { strategy(context.appGraph.migrations.toList()).await() }
     }
 
     fun resetAgedFlagInEXHManga() {
@@ -147,23 +148,33 @@ object DebugFunctions {
 
     fun clearSavedSearches() = runBlocking { database.saved_searchQueries.deleteAll() }
 
-    fun listAllSources() = sourceManager.getAll().joinToString("\n") {
-        "${it.id}: ${it.name} (${it.lang.uppercase()})"
+    fun listAllSources() = runBlocking {
+        sourceManager.getAll().joinToString("\n") {
+            "${it.id}: ${it.name} (${it.lang.uppercase()})"
+        }
     }
 
-    fun listAllSourcesClassName() = sourceManager.getAll().joinToString("\n") {
-        "${it::class.qualifiedName}: ${it.name} (${it.lang.uppercase()})"
+    fun listAllSourcesClassName() = runBlocking {
+        sourceManager.getAll().joinToString("\n") {
+            "${it::class.qualifiedName}: ${it.name} (${it.lang.uppercase()})"
+        }
     }
 
-    fun listVisibleSources() = sourceManager.getVisibleSources().joinToString("\n") {
-        "${it.id}: ${it.name} (${it.lang.uppercase()})"
+    fun listVisibleSources() = runBlocking {
+        sourceManager.getVisibleSources().joinToString("\n") {
+            "${it.id}: ${it.name} (${it.lang.uppercase()})"
+        }
     }
 
-    fun listAllHttpSources() = sourceManager.getOnlineSources().joinToString("\n") {
-        "${it.id}: ${it.name} (${it.lang.uppercase()})"
+    fun listAllHttpSources() = runBlocking {
+        sourceManager.getOnlineSources().joinToString("\n") {
+            "${it.id}: ${it.name} (${it.lang.uppercase()})"
+        }
     }
-    fun listVisibleHttpSources() = sourceManager.getVisibleOnlineSources().joinToString("\n") {
-        "${it.id}: ${it.name} (${it.lang.uppercase()})"
+    fun listVisibleHttpSources() = runBlocking {
+        sourceManager.getVisibleOnlineSources().joinToString("\n") {
+            "${it.id}: ${it.name} (${it.lang.uppercase()})"
+        }
     }
 
     fun convertAllEhentaiGalleriesToExhentai() = convertSources(EH_SOURCE_ID, EXH_SOURCE_ID)
@@ -171,16 +182,16 @@ object DebugFunctions {
     fun convertAllExhentaiGalleriesToEhentai() = convertSources(EXH_SOURCE_ID, EH_SOURCE_ID)
 
     fun testLaunchEhentaiBackgroundUpdater() {
-        EHentaiUpdateWorker.launchBackgroundTest(app)
+        EHentaiUpdateWorker.launchBackgroundTest(context)
     }
 
     fun rescheduleEhentaiBackgroundUpdater() {
-        EHentaiUpdateWorker.scheduleBackground(app)
+        EHentaiUpdateWorker.scheduleBackground(context)
     }
 
-    fun listScheduledJobs() = app.jobScheduler.allPendingJobs.joinToString(",\n") { j ->
+    fun listScheduledJobs() = context.jobScheduler.allPendingJobs.joinToString(",\n") { j ->
         val info = j.extras.getString("EXTRA_WORK_SPEC_ID")?.let {
-            app.workManager.getWorkInfoById(UUID.fromString(it)).get()
+            context.workManager.getWorkInfoById(UUID.fromString(it)).get()
         }
 
         if (info != null) {
@@ -206,7 +217,7 @@ object DebugFunctions {
         }
     }
 
-    fun cancelAllScheduledJobs() = app.jobScheduler.cancelAll()
+    fun cancelAllScheduledJobs() = context.jobScheduler.cancelAll()
 
     private fun convertSources(from: Long, to: Long) {
         runBlocking {

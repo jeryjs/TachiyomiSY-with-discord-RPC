@@ -20,9 +20,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +50,11 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.util.chapter.getSwipeAction
 import eu.kanade.tachiyomi.util.chapter.swipeActionThreshold
+import kotlinx.datetime.LocalDate
 import me.saket.swipe.SwipeableActionsBox
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.roundedfilled.Bookmark
+import mihon.icons.materialsymbols.roundedfilled.Circle
 import tachiyomi.domain.library.model.ChapterSwipeAction
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.i18n.MR
@@ -63,7 +64,6 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 import tachiyomi.presentation.core.util.selectedBackground
-import kotlinx.datetime.LocalDate
 
 internal fun LazyListScope.updatesLastUpdatedItem(
     lastUpdated: Long,
@@ -142,7 +142,7 @@ internal fun LazyListScope.updatesUiItems(
                         selected = updatesItem.selected,
                         readProgress = updatesItem.update.lastPageRead
                             .takeIf {
-                                /* SY --> */( 
+                                /* SY --> */(
                                     !updatesItem.update.read ||
                                         (preserveReadingPosition && updatesItem.isEhBasedUpdate())
                                     )/* SY <-- */ &&
@@ -271,7 +271,7 @@ private fun UpdatesUiItem(
                     var textHeight by remember { mutableIntStateOf(0) }
                     if (!update.read) {
                         Icon(
-                            imageVector = Icons.Filled.Circle,
+                            imageVector = MaterialSymbols.RoundedFilled.Circle,
                             contentDescription = stringResource(MR.strings.unread),
                             modifier = Modifier
                                 .height(8.dp)
@@ -281,7 +281,7 @@ private fun UpdatesUiItem(
                     }
                     if (update.bookmark) {
                         Icon(
-                            imageVector = Icons.Filled.Bookmark,
+                            imageVector = MaterialSymbols.RoundedFilled.Bookmark,
                             contentDescription = stringResource(MR.strings.action_filter_bookmarked),
                             modifier = Modifier
                                 .sizeIn(maxHeight = with(LocalDensity.current) { textHeight.toDp() - 2.dp }),
@@ -314,7 +314,7 @@ private fun UpdatesUiItem(
             if (onExpandClick != null) {
                 Icon(
                     painter = rememberAnimatedVectorPainter(
-                        AnimatedImageVector.animatedVectorResource(R.drawable.anim_caret_down),
+                        AnimatedImageVector.animatedVectorResource(R.drawable.animated_caret_flip),
                         !expanded,
                     ),
                     contentDescription = null,
@@ -336,3 +336,4 @@ private fun UpdatesUiItem(
         }
     }
 }
+

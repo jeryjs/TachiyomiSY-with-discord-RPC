@@ -1,19 +1,16 @@
 package exh.md.service
 
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
 import exh.md.dto.AggregateDto
 import exh.md.dto.AtHomeDto
-import exh.md.dto.AtHomeImageReportDto
 import exh.md.dto.ChapterDto
 import exh.md.dto.ChapterListDto
 import exh.md.dto.CoverListDto
 import exh.md.dto.MangaDto
 import exh.md.dto.MangaListDto
 import exh.md.dto.RelationListDto
-import exh.md.dto.ResultDto
 import exh.md.dto.StatisticsDto
 import exh.md.utils.MdApi
 import exh.md.utils.MdConstants
@@ -175,19 +172,6 @@ class MangaDexService(
             client.newCall(GET("${MdApi.manga}/random", headers = headers, cache = CacheControl.FORCE_NETWORK))
                 .awaitSuccess()
                 .parseAs()
-        }
-    }
-
-    suspend fun atHomeImageReport(atHomeImageReportDto: AtHomeImageReportDto): ResultDto {
-        return with(MdUtil.jsonParser) {
-            client.newCall(
-                POST(
-                    MdConstants.atHomeReportUrl,
-                    body = MdUtil.encodeToBody(atHomeImageReportDto),
-                    headers = headers,
-                    cache = CacheControl.FORCE_NETWORK,
-                ),
-            ).awaitSuccess().parseAs()
         }
     }
 

@@ -17,12 +17,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.interactor.GetIncognitoState
@@ -45,6 +44,7 @@ import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.connections.discord.ReaderData
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.extension.details.ExtensionDetailsScreen
@@ -68,7 +68,6 @@ import exh.recs.RecommendsScreen
 import exh.source.MERGED_SOURCE_ID
 import exh.source.getMainSource
 import exh.source.isEhBasedSource
-import exh.ui.ifSourcesLoaded
 import exh.ui.metadata.MetadataViewScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -77,16 +76,18 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import mihon.feature.migration.config.MigrationConfigScreen
 import mihon.feature.migration.dialog.MigrateMangaDialog
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
+import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -105,25 +106,20 @@ class MangaScreen(
 
     @Composable
     override fun Content() {
-        if (!ifSourcesLoaded()) {
-            LoadingScreen()
-            return
-        }
-
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val haptic = LocalHapticFeedback.current
         val scope = rememberCoroutineScope()
-        val viewModel = viewModel<MangaViewModel>(
-            factory = MangaViewModel.Factory,
-            extras = CreationExtras {
-                set(MangaViewModel.MANGA_ID_KEY, mangaId)
-                set(MangaViewModel.IS_FROM_SOURCE_KEY, fromSource)
-                // SY -->
-                set(MangaViewModel.SMART_SEARCHED_KEY, smartSearchConfig != null)
-                // SY <--
-            },
-        )
+        val viewModel =
+            assistedMetroViewModel<MangaViewModel, MangaViewModel.Factory> {
+                create(
+                    mangaId = mangaId,
+                    isFromSource = fromSource,
+                    // SY -->
+                    smartSearched = smartSearchConfig != null,
+                    // SY <--
+                )
+            }
 
         val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -191,11 +187,14 @@ class MangaScreen(
                         viewModel.source,
                     )
                 } else {
-                    openMergedMangaWebview(
-                        context,
-                        navigator,
-                        successState.mergedData,
-                    )
+                    scope.launchIO {
+                        openMergedMangaWebview(
+                            context,
+                            navigator,
+                            successState.mergedData,
+                        )
+                    }
+                    Unit
                 }
             }.takeIf { isHttpSource },
             // SY <--
@@ -263,9 +262,11 @@ class MangaScreen(
                     successState.source.isLocalOrStub() -> null
                     successState.source.isEhBasedSource() -> navigator.push(SettingsEhScreen)
                     else -> {
-                        val extensionManager = Injekt.get<ExtensionManager>()
-                        val pkgName = extensionManager.getExtensionPackage(successState.manga.source)
-                        pkgName?.let { navigator.push(ExtensionDetailsScreen(it)) }
+                        scope.launchIO {
+                            val extensionManager = Injekt.get<ExtensionManager>()
+                            val pkgName = extensionManager.getExtensionPackage(successState.manga.source)
+                            pkgName?.let { navigator.push(ExtensionDetailsScreen(it)) }
+                        }
                     }
                 }
             },
@@ -340,28 +341,26 @@ class MangaScreen(
                 )
             }
             MangaViewModel.Dialog.FullCover -> {
-                val sm = viewModel<MangaCoverViewModel>(
-                    factory = MangaCoverViewModel.Factory,
-                    extras = CreationExtras {
-                        set(MangaCoverViewModel.MANGA_ID_KEY, successState.manga.id)
-                    },
-                )
-                val manga by sm.state.collectAsStateWithLifecycle()
+                val vm =
+                    assistedMetroViewModel<MangaCoverViewModel, MangaCoverViewModel.Factory> {
+                        create(mangaId = mangaId)
+                    }
+                val manga by vm.state.collectAsStateWithLifecycle()
                 if (manga != null) {
                     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
                         if (it == null) return@rememberLauncherForActivityResult
-                        sm.editCover(context, it)
+                        vm.editCover(context, it)
                     }
                     MangaCoverDialog(
                         manga = manga!!,
-                        snackbarHostState = sm.snackbarHostState,
+                        snackbarHostState = vm.snackbarHostState,
                         isCustomCover = remember(manga) { manga!!.hasCustomCover() },
-                        onShareClick = { sm.shareCover(context) },
-                        onSaveClick = { sm.saveCover(context) },
+                        onShareClick = { vm.shareCover(context) },
+                        onSaveClick = { vm.saveCover(context) },
                         onEditClick = {
                             when (it) {
                                 EditCoverAction.EDIT -> getContent.launch("image/*")
-                                EditCoverAction.DELETE -> sm.deleteCustomCover(context)
+                                EditCoverAction.DELETE -> vm.deleteCustomCover(context)
                             }
                         },
                         onDismissRequest = onDismissRequest,
@@ -383,6 +382,7 @@ class MangaScreen(
             is MangaViewModel.Dialog.EditMangaInfo -> {
                 EditMangaDialog(
                     manga = dialog.manga,
+                    sourceName = successState.source.getNameForMangaInfo(),
                     onDismissRequest = viewModel::dismissDialog,
                     onPositiveClick = viewModel::updateMangaInfo,
                 )
@@ -518,21 +518,23 @@ class MangaScreen(
         navigator.push(MetadataViewScreen(manga.id, manga.source))
     }
 
-    private fun openMergedMangaWebview(context: Context, navigator: Navigator, mergedMangaData: MergedMangaData) {
-        val sourceManager: SourceManager = Injekt.get()
+    private suspend fun openMergedMangaWebview(context: Context, navigator: Navigator, mergedMangaData: MergedMangaData) {
+        val sourceManager = context.appGraph.sourceManager
         val mergedManga = mergedMangaData.manga.values.filterNot { it.source == MERGED_SOURCE_ID }
         val sources = mergedManga.map { sourceManager.getOrStub(it.source) }
-        MaterialAlertDialogBuilder(context)
-            .setTitle(MR.strings.action_open_in_web_view.getString(context))
-            .setSingleChoiceItems(
-                Array(mergedManga.size) { index -> sources[index].toString() },
-                -1,
-            ) { dialog, index ->
-                dialog.dismiss()
-                openMangaInWebView(navigator, mergedManga[index], sources[index] as? HttpSource)
-            }
-            .setNegativeButton(MR.strings.action_cancel.getString(context), null)
-            .show()
+        withUIContext {
+            MaterialAlertDialogBuilder(context)
+                .setTitle(MR.strings.action_open_in_web_view.getString(context))
+                .setSingleChoiceItems(
+                    Array(mergedManga.size) { index -> sources[index].toString() },
+                    -1,
+                ) { dialog, index ->
+                    dialog.dismiss()
+                    openMangaInWebView(navigator, mergedManga[index], sources[index] as? HttpSource)
+                }
+                .setNegativeButton(MR.strings.action_cancel.getString(context), null)
+                .show()
+        }
     }
 
     private fun openMorePagePreviews(navigator: Navigator, manga: Manga) {

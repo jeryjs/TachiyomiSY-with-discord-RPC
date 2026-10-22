@@ -47,3 +47,13 @@ BEGIN
   SET last_modified_at = strftime('%s', 'now')
   WHERE _id = new._id;
 END;
+
+-- Upstream's 42.sqm (Kitsu score rescale), folded in here so this fork stays numerically aligned
+-- with upstream from 42 onward. Future upstream 43, 44, ... can then be taken as-is instead of
+-- being renumbered by one.
+
+-- rescale Kitsu (sync_id 3) scores to native 2-20 int scale
+-- old scores were rescaled from Kitsu's 2-20 down to 1, 1.5, ..., 10 at the API boundary
+UPDATE manga_sync
+SET score = score * 2
+WHERE sync_id = 3;

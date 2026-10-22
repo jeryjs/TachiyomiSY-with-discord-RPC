@@ -1,20 +1,23 @@
 package eu.kanade.presentation.more.settings.screen.data
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.sync.models.SyncSettings
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
-import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -25,14 +28,12 @@ import tachiyomi.presentation.core.components.LazyColumnWithAction
 import tachiyomi.presentation.core.components.SectionCard
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class SyncSettingsSelector : Screen() {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val model = viewModel<SyncSettingsSelectorModel>()
+        val model = metroViewModel<SyncSettingsSelectorModel>()
         val state by model.state.collectAsState()
 
         Scaffold(
@@ -86,8 +87,11 @@ class SyncSettingsSelector : Screen() {
     }
 }
 
+@Inject
+@ViewModelKey
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class SyncSettingsSelectorModel(
-    val syncPreferences: SyncPreferences = Injekt.get(),
+    val syncPreferences: SyncPreferences,
 ) : ViewModel() {
 
     val state: StateFlow<State>
@@ -99,10 +103,6 @@ class SyncSettingsSelectorModel(
             syncPreferences.setSyncSettings(backupOptionsToSyncOptions(updatedOptions))
             it.copy(options = updatedOptions)
         }
-    }
-
-    fun syncNow(context: Context) {
-        SyncDataJob.startNow(context)
     }
 
     @Immutable

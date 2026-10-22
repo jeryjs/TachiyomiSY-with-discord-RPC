@@ -3,24 +3,7 @@ package eu.kanade.presentation.more
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.GetApp
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.NewReleases
-import androidx.compose.material.icons.outlined.QueryStats
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,6 +12,19 @@ import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.automirroredrounded.Help
+import mihon.icons.materialsymbols.automirroredrounded.Label
+import mihon.icons.materialsymbols.rounded.CloudOff
+import mihon.icons.materialsymbols.rounded.Download
+import mihon.icons.materialsymbols.rounded.Info
+import mihon.icons.materialsymbols.rounded.QueryStats
+import mihon.icons.materialsymbols.rounded.Settings
+import mihon.icons.materialsymbols.rounded.Storage
+import mihon.icons.materialsymbols.rounded.Verified
+import mihon.icons.sy.materialsymbols.SYMaterialSymbols
+import mihon.icons.sy.materialsymbols.automirroredrounded.PlaylistAdd
+import mihon.icons.sy.materialsymbols.rounded.History
 import tachiyomi.core.common.Constants
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
@@ -71,7 +67,7 @@ fun MoreScreen(
                 SwitchPreferenceWidget(
                     title = stringResource(MR.strings.label_downloaded_only),
                     subtitle = stringResource(MR.strings.downloaded_only_summary),
-                    icon = Icons.Outlined.CloudOff,
+                    icon = MaterialSymbols.Rounded.CloudOff,
                     checked = downloadedOnly,
                     onCheckedChanged = onDownloadedOnlyChange,
                 )
@@ -96,7 +92,7 @@ fun MoreScreen(
                 item {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.label_recent_updates),
-                        icon = Icons.Outlined.NewReleases,
+                        icon = MaterialSymbols.Rounded.Verified,
                         onPreferenceClick = onClickUpdates,
                     )
                 }
@@ -105,7 +101,7 @@ fun MoreScreen(
                 item {
                     TextPreferenceWidget(
                         title = stringResource(MR.strings.label_recent_manga),
-                        icon = Icons.Outlined.History,
+                        icon = SYMaterialSymbols.Rounded.History,
                         onPreferenceClick = onClickHistory,
                     )
                 }
@@ -137,28 +133,28 @@ fun MoreScreen(
                             pluralStringResource(MR.plurals.download_queue_summary, count = pending, pending)
                         }
                     },
-                    icon = Icons.Outlined.GetApp,
+                    icon = MaterialSymbols.Rounded.Download,
                     onPreferenceClick = onClickDownloadQueue,
                 )
             }
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.categories),
-                    icon = Icons.AutoMirrored.Outlined.Label,
+                    icon = MaterialSymbols.AutoMirroredRounded.Label,
                     onPreferenceClick = onClickCategories,
                 )
             }
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_stats),
-                    icon = Icons.Outlined.QueryStats,
+                    icon = MaterialSymbols.Rounded.QueryStats,
                     onPreferenceClick = onClickStats,
                 )
             }
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_data_storage),
-                    icon = Icons.Outlined.Storage,
+                    icon = MaterialSymbols.Rounded.Storage,
                     onPreferenceClick = onClickDataAndStorage,
                 )
             }
@@ -166,7 +162,7 @@ fun MoreScreen(
             item {
                 TextPreferenceWidget(
                     title = stringResource(SYMR.strings.eh_batch_add),
-                    icon = Icons.AutoMirrored.Outlined.PlaylistAdd,
+                    icon = SYMaterialSymbols.AutoMirroredRounded.PlaylistAdd,
                     onPreferenceClick = onClickBatchAdd,
                 )
             }
@@ -177,21 +173,21 @@ fun MoreScreen(
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_settings),
-                    icon = Icons.Outlined.Settings,
+                    icon = MaterialSymbols.Rounded.Settings,
                     onPreferenceClick = onClickSettings,
                 )
             }
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.pref_category_about),
-                    icon = Icons.Outlined.Info,
+                    icon = MaterialSymbols.Rounded.Info,
                     onPreferenceClick = onClickAbout,
                 )
             }
             item {
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_help),
-                    icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                    icon = MaterialSymbols.AutoMirroredRounded.Help,
                     onPreferenceClick = { uriHandler.openUri(Constants.URL_HELP) },
                 )
             }

@@ -28,7 +28,7 @@ class Kavita(context: Context, id: Long) : BaseTracker(context, id, "Kavita"), E
     var authentications: OAuth? = null
 
     private val interceptor by lazy { KavitaInterceptor(this) }
-    val api by lazy { KavitaApi(client, interceptor) }
+    val api by lazy { KavitaApi(id, client, interceptor) }
 
     private val sourceManager: SourceManager by lazy { appGraph.sourceManager }
 
@@ -96,7 +96,7 @@ class Kavita(context: Context, id: Long) : BaseTracker(context, id, "Kavita"), E
     override suspend fun match(manga: Manga): TrackSearch? =
         try {
             api.getTrackSearch(manga.url)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
@@ -141,4 +141,6 @@ class Kavita(context: Context, id: Long) : BaseTracker(context, id, "Kavita"), E
         }
         authentications = oauth
     }
+
+    override suspend fun updateUserConfig() = Unit
 }

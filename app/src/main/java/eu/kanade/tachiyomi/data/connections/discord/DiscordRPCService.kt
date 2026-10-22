@@ -25,6 +25,7 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
+import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
@@ -94,18 +95,18 @@ class DiscordRPCService : Service() {
 
     private fun notification(context: Context) {
         val toggleIcon = if (isPaused) MaterialSymbolsR.drawable.rounded_filled_play_arrow else MaterialSymbolsR.drawable.rounded_filled_pause
-        val toggleText = if (isPaused) getString(R.string.action_resume) else getString(R.string.action_pause)
+        val toggleText = if (isPaused) getString(MR.strings.action_resume.resourceId) else getString(MR.strings.action_pause.resourceId)
         val builder = context.notificationBuilder(Notifications.CHANNEL_DISCORD_RPC) {
             setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
             setSmallIcon(R.drawable.ic_discord_24dp)
-            setContentText(context.resources.getString(R.string.pref_discord_rpc))
+            setContentText(context.resources.getString(MR.strings.pref_discord_rpc.resourceId))
             setAutoCancel(false)
             setOngoing(true)
             setWhen(since)
             setShowWhen(true)
             setUsesChronometer(true)
             addAction(toggleIcon, toggleText, togglePauseResumePendingIntent(context))
-            addAction(MaterialSymbolsR.drawable.rounded_format_list_numbered, getString(R.string.status), openStatusDialogPendingIntent(context))
+            addAction(MaterialSymbolsR.drawable.rounded_format_list_numbered, getString(MR.strings.status.resourceId), openStatusDialogPendingIntent(context))
         }
 
         try {
@@ -191,7 +192,7 @@ class DiscordRPCService : Service() {
             val details = readerData.mangaTitle ?: context.resources.getString(discordScreen.details)
 
             val state = if (readerData.incognitoMode) {
-                context.resources.getString(R.string.comic)
+                context.resources.getString(MR.strings.comic.resourceId)
             } else {
                 readerData.chapterTitle ?: context.resources.getString(discordScreen.state)
             }
@@ -244,7 +245,7 @@ class DiscordRPCService : Service() {
                     connectionsPreferences.useChapterTitles().get() -> it
                     else -> readerData.chapterNumber.let {
                         context.resources.getString(
-                            R.string.display_mode_chapter,
+                            MR.strings.display_mode_chapter.resourceId,
                             formatChapterNumber(it.first.toDouble()),
                         ) + "/${it.second}"
                     }

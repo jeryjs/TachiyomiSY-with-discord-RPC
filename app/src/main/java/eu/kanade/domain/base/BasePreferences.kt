@@ -40,4 +40,9 @@ class BasePreferences(
     val highQualityRenderer: Preference<Boolean> = preferenceStore.getBoolean("pref_high_quality_renderer_key", false)
 
     val installationId: Preference<String> = preferenceStore.getString(Preference.appStateKey("installation_id"), "")
+
+    val skippedAppUpdate: Preference<String> = preferenceStore.getString(
+        Preference.appStateKey("skipped_app_update"),
+        "",
+    )
 }

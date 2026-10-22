@@ -6,9 +6,10 @@ import app.cash.sqldelight.db.SqlDriver
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 
 /**
  * Upstream's 40.sqm (extension_store, its extension_list_url column and the memo columns on
@@ -28,7 +29,7 @@ class RepairExtensionStoreMigration(
 ) : Migration {
     override val version: Float = Migration.ALWAYS
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         if (driver.tableExists("extension_repos")) {
             driver.execSql(
                 """

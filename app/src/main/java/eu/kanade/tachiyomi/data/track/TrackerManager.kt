@@ -6,6 +6,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
+import eu.kanade.tachiyomi.data.track.comick.Comick
 import eu.kanade.tachiyomi.data.track.hikka.Hikka
 import eu.kanade.tachiyomi.data.track.kavita.Kavita
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
@@ -24,36 +25,33 @@ class TrackerManager(
     context: Context,
 ) {
 
+    // SY -->
     companion object {
-        const val ANILIST = 2L
-        const val KITSU = 3L
-        const val KAVITA = 8L
-
-        // SY --> Mangadex from Neko
+        // Mangadex from Neko
         const val MDLIST = 60L
-        // SY <--
-
-        const val MANGABAKA = 11L
     }
 
     val mdList = MdList(context, MDLIST)
+    // SY <--
 
     val myAnimeList = MyAnimeList(context, 1L)
-    val aniList = Anilist(context, ANILIST)
-    val kitsu = Kitsu(context, KITSU)
+    val aniList = Anilist(context, 2L)
+    val kitsu = Kitsu(context, 3L)
     val shikimori = Shikimori(context, 4L)
     val bangumi = Bangumi(context, 5L)
     val komga = Komga(context, 6L)
     val mangaUpdates = MangaUpdates(context, 7L)
-    val kavita = Kavita(context, KAVITA)
+    val kavita = Kavita(context, 8L)
     val suwayomi = Suwayomi(context, 9L)
     val hikka = Hikka(context, 10L)
-    val mangaBaka = MangaBaka(context, MANGABAKA)
+    val mangaBaka = MangaBaka(context, 11L)
+    val comick = Comick(context, 12L)
 
     val trackers = listOf(
         // SY -->
         mdList,
         // SY <--
+        mangaBaka,
         myAnimeList,
         aniList,
         kitsu,
@@ -64,7 +62,7 @@ class TrackerManager(
         kavita,
         suwayomi,
         hikka,
-        mangaBaka,
+        comick,
     )
 
     fun loggedInTrackers() = trackers.filter { it.isLoggedIn }

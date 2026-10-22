@@ -9,13 +9,12 @@ import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import eu.kanade.tachiyomi.source.online.HttpSource
 import exh.pref.DelegateSourcePreferences
 import okhttp3.Response
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Suppress("OverridingDeprecatedMember", "DEPRECATION")
 class EnhancedHttpSource(
     val originalSource: HttpSource,
     val enhancedSource: HttpSource,
+    private val delegateSourcePreferences: DelegateSourcePreferences,
 ) : HttpSource() {
 
     /**
@@ -303,7 +302,7 @@ class EnhancedHttpSource(
     override fun getFilterList() = source().getFilterList()
 
     fun source(): HttpSource {
-        return if (Injekt.get<DelegateSourcePreferences>().delegateSources.get()) {
+        return if (delegateSourcePreferences.delegateSources.get()) {
             enhancedSource
         } else {
             originalSource

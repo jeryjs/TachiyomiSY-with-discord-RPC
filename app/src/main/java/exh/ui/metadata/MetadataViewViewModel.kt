@@ -12,10 +12,11 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.tachiyomi.source.online.MetadataSource
 import exh.metadata.metadata.RaisedSearchMetadata
 import exh.source.getMainSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import tachiyomi.core.common.util.lang.launchIO
+import kotlinx.coroutines.launch
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
@@ -44,15 +45,15 @@ class MetadataViewViewModel(
     val manga = _manga.asStateFlow()
 
     init {
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             _manga.value = getManga.await(mangaId)
         }
 
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             val metadataSource = sourceManager.get(sourceId)?.getMainSource<MetadataSource<*, *>>()
             if (metadataSource == null) {
                 state.value = MetadataViewState.SourceNotFound
-                return@launchIO
+                return@launch
             }
 
             state.value = when (val flatMetadata = getFlatMetadataById.await(mangaId)) {

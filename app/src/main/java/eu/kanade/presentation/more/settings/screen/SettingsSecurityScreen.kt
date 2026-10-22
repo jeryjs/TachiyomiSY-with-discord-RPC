@@ -71,8 +71,9 @@ object SettingsSecurityScreen : SearchableSettings {
         val context = LocalContext.current
         val securityPreferences = remember { context.appGraph.securityPreferences }
         val privacyPreferences = remember { context.appGraph.privacyPreferences }
+        val cbzCrypto = remember { context.appGraph.cbzCrypto }
         return listOf(
-            getSecurityGroup(securityPreferences),
+            getSecurityGroup(securityPreferences, cbzCrypto),
             getFirebaseGroup(privacyPreferences),
         )
     }
@@ -80,6 +81,7 @@ object SettingsSecurityScreen : SearchableSettings {
     @Composable
     private fun getSecurityGroup(
         securityPreferences: SecurityPreferences,
+        cbzCrypto: CbzCrypto,
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
         val authSupported = remember { context.isAuthenticationSupported() }
@@ -87,7 +89,7 @@ object SettingsSecurityScreen : SearchableSettings {
         val useAuth by useAuthPref.collectAsState()
 
         val scope = rememberCoroutineScope()
-        val isCbzPasswordSet by remember { CbzCrypto.isPasswordSetState(scope) }.collectAsState()
+        val isCbzPasswordSet by remember { cbzCrypto.isPasswordSetState(scope) }.collectAsState()
         val passwordProtectDownloads by securityPreferences.passwordProtectDownloads.collectAsState()
 
         return Preference.PreferenceGroup(
@@ -96,7 +98,7 @@ object SettingsSecurityScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = useAuthPref,
                     title = stringResource(MR.strings.lock_with_biometrics),
-                    enabled = authSupported,
+                    visible = authSupported,
                     onValueChanged = {
                         (context as FragmentActivity).authenticate(
                             title = context.stringResource(MR.strings.lock_with_biometrics),
@@ -114,7 +116,7 @@ object SettingsSecurityScreen : SearchableSettings {
                             }
                         },
                     title = stringResource(MR.strings.lock_when_idle),
-                    enabled = authSupported && useAuth,
+                    visible = authSupported && useAuth,
                     onValueChanged = {
                         (context as FragmentActivity).authenticate(
                             title = context.stringResource(MR.strings.lock_when_idle),
@@ -136,14 +138,14 @@ object SettingsSecurityScreen : SearchableSettings {
                     preference = securityPreferences.passwordProtectDownloads,
                     title = stringResource(SYMR.strings.password_protect_downloads),
                     subtitle = stringResource(SYMR.strings.password_protect_downloads_summary),
-                    enabled = isCbzPasswordSet,
+                    visible = isCbzPasswordSet,
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = securityPreferences.encryptionType,
                     title = stringResource(SYMR.strings.encryption_type),
                     entries = SecurityPreferences.EncryptionType.entries
                         .associateWith { stringResource(it.titleRes) },
-                    enabled = passwordProtectDownloads,
+                    visible = passwordProtectDownloads,
 
                 ),
                 kotlin.run {
@@ -154,8 +156,8 @@ object SettingsSecurityScreen : SearchableSettings {
                             onReturnPassword = { password ->
                                 dialogOpen = false
 
-                                CbzCrypto.deleteKeyCbz()
-                                securityPreferences.cbzPassword.set(CbzCrypto.encryptCbz(password.replace("\n", "")))
+                                cbzCrypto.deleteKeyCbz()
+                                securityPreferences.cbzPassword.set(cbzCrypto.encryptCbz(password.replace("\n", "")))
                             },
                         )
                     }
@@ -169,10 +171,10 @@ object SettingsSecurityScreen : SearchableSettings {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(SYMR.strings.delete_cbz_archive_password),
                     onClick = {
-                        CbzCrypto.deleteKeyCbz()
+                        cbzCrypto.deleteKeyCbz()
                         securityPreferences.cbzPassword.set("")
                     },
-                    enabled = isCbzPasswordSet,
+                    visible = isCbzPasswordSet,
                 ),
                 kotlin.run {
                     val navigator = LocalNavigator.currentOrThrow
@@ -187,7 +189,7 @@ object SettingsSecurityScreen : SearchableSettings {
                         onClick = {
                             navigator.push(BiometricTimesScreen())
                         },
-                        enabled = useAuth,
+                        visible = useAuth,
                     )
                 },
                 kotlin.run {
@@ -207,7 +209,7 @@ object SettingsSecurityScreen : SearchableSettings {
                         title = stringResource(SYMR.strings.biometric_lock_days),
                         subtitle = stringResource(SYMR.strings.biometric_lock_days_summary),
                         onClick = { dialogOpen = true },
-                        enabled = useAuth,
+                        visible = useAuth,
                     )
                 },
                 // SY <--

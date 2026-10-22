@@ -160,7 +160,6 @@ class BackupCreator(
         return preferenceBackupCreator.createApp(includePrivatePreferences = options.privateSettings)
     }
 
-
     suspend fun backupExtensionStores(options: BackupOptions): List<BackupExtensionStore> {
         if (!options.extensionStores) return emptyList()
 

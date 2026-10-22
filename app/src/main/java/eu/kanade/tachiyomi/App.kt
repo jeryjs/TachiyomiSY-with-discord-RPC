@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import coil3.ImageLoader
@@ -40,8 +40,13 @@ import eu.kanade.tachiyomi.core.security.PrivacyPreferences
 import eu.kanade.tachiyomi.crash.CrashActivity
 import eu.kanade.tachiyomi.crash.GlobalExceptionHandler
 import eu.kanade.tachiyomi.data.cache.CoverCache
+import eu.kanade.tachiyomi.data.cache.PagePreviewCache
 import eu.kanade.tachiyomi.data.coil.BufferedSourceFetcher
+import eu.kanade.tachiyomi.data.coil.CoverRequestInterceptor
+import eu.kanade.tachiyomi.data.coil.ExtensionIconFetcher
 import eu.kanade.tachiyomi.data.coil.ImageDecoder
+import eu.kanade.tachiyomi.data.coil.InstalledExtensionIconKeyer
+import eu.kanade.tachiyomi.data.coil.InstalledSourceIconKeyer
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher
 import eu.kanade.tachiyomi.data.coil.MangaCoverKeyer
 import eu.kanade.tachiyomi.data.coil.MangaKeyer
@@ -50,8 +55,7 @@ import eu.kanade.tachiyomi.data.coil.PagePreviewKeyer
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
-import eu.kanade.tachiyomi.di.InjektKoinBridge
-import eu.kanade.tachiyomi.di.importModule
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegate
@@ -62,20 +66,21 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.notify
 import exh.log.CrashlyticsPrinter
-import exh.log.DeferredPrinter
 import exh.log.EHLogLevel
 import exh.log.EnhancedFilePrinter
 import exh.log.XLogLogcatLogger
 import exh.log.xLogD
 import exh.syDebugVersion
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import logcat.LogPriority
 import logcat.LogcatLogger
 import mihon.app.di.AppGraph
-import mihon.app.di.injekt.MetroInteropModule
+import mihon.app.di.injekt.MetroInjektRegistrar
 import mihon.core.firebase.FirebaseConfig
+import mihon.core.metro.AppCoroutineScope
 import mihon.core.metro.GraphProvider
 import mihon.core.migration.Migration
 import mihon.core.migration.Migrator
@@ -89,9 +94,11 @@ import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.widget.WidgetManager
 import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.InjektScope
 import java.security.Security
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.concurrent.thread
 
 class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factory, GraphProvider<AppGraph> {
 
@@ -109,15 +116,20 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
     @Inject private lateinit var uiPreferences: UiPreferences
 
-    @Inject private lateinit var coverCache: CoverCache
+    // Lazy: only the image loader uses these, and process starts without UI (workers, receivers) never build it
+    @Inject private lateinit var coverCache: Lazy<CoverCache>
 
-    @Inject private lateinit var networkHelper: NetworkHelper
+    // SY -->
+    @Inject private lateinit var pagePreviewCache: Lazy<PagePreviewCache>
+    // SY <--
 
-    @Inject private lateinit var sourceManager: SourceManager
+    @Inject private lateinit var extensionManager: Lazy<ExtensionManager>
+
+    @Inject private lateinit var networkHelper: Lazy<NetworkHelper>
+
+    @Inject private lateinit var sourceManager: Lazy<SourceManager>
 
     @Inject private lateinit var widgetManager: WidgetManager
-
-    @Inject private lateinit var injektMetroInteropModule: MetroInteropModule
 
     @Inject private lateinit var migrations: Set<Migration>
 
@@ -125,8 +137,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     @Inject private lateinit var syncPreferences: SyncPreferences
 
     @Inject private lateinit var storageManager: StorageManager
-    private val deferredXLogPrinter = DeferredPrinter()
     // SY <--
+
+    @Inject @AppCoroutineScope
+    private lateinit var scope: CoroutineScope
 
     private val disableIncognitoReceiver = DisableIncognitoReceiver()
 
@@ -146,21 +160,14 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             if (packageName != process) WebView.setDataDirectorySuffix(process)
         }
 
-        // SY -->
-        // XLog.init() can only be called once, and fork logging (xLogD etc.) runs while the graph
-        // below is being built: AndroidSourceManager logs delegated sources the moment it is
-        // constructed, which graph.inject(this) does. Initialise here, and attach the printers
-        // that need dependencies (file, Crashlytics) in setupExhLogging() through
-        // deferredXLogPrinter.
-        EHLogLevel.init(this)
-        XLog.init(
-            ehLogConfiguration(),
-            AndroidPrinter(),
-            deferredXLogPrinter,
-        )
-        // SY <--
+        // The graph and the code after it read the default preferences straight away. Loading them takes a disk
+        // read, so start it on another thread while the graph is built; the first read then waits less or not at all
+        thread(name = "PreferencesPreload") { PreferenceManager.getDefaultSharedPreferences(this) }
+        // The first use of Dispatchers.Main finds its factory with a ServiceLoader, which reads the APK
+        thread(name = "MainDispatcherPreload") { Dispatchers.Main }
+
+        Injekt = InjektScope(MetroInjektRegistrar(application = this, graphProvider = this))
         graph.inject(this)
-        setupInjekt()
 
         GlobalExceptionHandler.initialize(applicationContext, CrashActivity::class.java)
 
@@ -176,8 +183,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         setupNotificationChannels()
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-
-        val scope = ProcessLifecycleOwner.get().lifecycleScope
 
         // Show notification to disable Incognito Mode when it's enabled
         basePreferences.incognitoMode.changes()
@@ -238,13 +243,6 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         initializeMigrator()
     }
 
-    private fun setupInjekt() {
-        Injekt.importModule(injektMetroInteropModule)
-        // SY -->
-        InjektKoinBridge.startKoin(this)
-        // SY <--
-    }
-
     private fun initializeMigrator() {
         // SY -->
         val preference = preferenceStore.getInt(Preference.appStateKey("eh_last_version_code"), 0)
@@ -265,7 +263,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
     override fun newImageLoader(context: Context): ImageLoader {
         return ImageLoader.Builder(this).apply {
-            val callFactoryLazy = lazy { networkHelper.client }
+            val callFactoryLazy = lazy { networkHelper.value.client }
+            val coverCache = coverCache.value
+            val sourceManager = sourceManager.value
+            val pagePreviewCache = pagePreviewCache.value
             components {
                 // NetworkFetcher.Factory
                 add(OkHttpNetworkFetcherFactory(callFactoryLazy::value))
@@ -275,15 +276,21 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
                 add(BufferedSourceFetcher.Factory())
                 add(MangaCoverFetcher.MangaCoverFactory(callFactoryLazy, coverCache, sourceManager))
                 add(MangaCoverFetcher.MangaFactory(callFactoryLazy, coverCache, sourceManager))
+                add(ExtensionIconFetcher.ExtensionFactory(context))
+                add(ExtensionIconFetcher.SourceFactory(context, extensionManager))
                 // SY -->
-                add(PagePreviewFetcher.Factory(callFactoryLazy))
+                add(PagePreviewFetcher.Factory(callFactoryLazy, pagePreviewCache, sourceManager))
                 // SY <--
                 // Keyer
                 add(MangaCoverKeyer(coverCache))
                 add(MangaKeyer())
+                add(InstalledExtensionIconKeyer())
+                add(InstalledSourceIconKeyer())
                 // SY -->
                 add(PagePreviewKeyer())
                 // SY <--
+                // Interceptor
+                add(CoverRequestInterceptor())
             }
 
             memoryCache(
@@ -343,25 +350,23 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
     }
 
-    private fun ehLogConfiguration(): LogConfiguration {
+    // EXH
+    private fun setupExhLogging() {
+        EHLogLevel.init(this)
+
         val logLevel = when {
             EHLogLevel.shouldLog(EHLogLevel.EXTREME) -> LogLevel.ALL
             EHLogLevel.shouldLog(EHLogLevel.EXTRA) || BuildConfig.DEBUG -> LogLevel.DEBUG
             else -> LogLevel.WARN
         }
 
-        return LogConfiguration.Builder()
+        val logConfig = LogConfiguration.Builder()
             .logLevel(logLevel)
             .disableStackTrace()
             .disableBorder()
             .build()
-    }
 
-    // EXH
-    private fun setupExhLogging() {
-        // The log level is applied by ehLogConfiguration() at XLog.init() time; only the printers
-        // that need dependency injection are created here.
-        val printers = mutableListOf<Printer>()
+        val printers = mutableListOf<Printer>(AndroidPrinter())
 
         val logFolder = storageManager.getLogsDirectory()
 
@@ -390,7 +395,10 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             printers += CrashlyticsPrinter(LogLevel.ERROR)
         }
 
-        deferredXLogPrinter.add(*printers.toTypedArray())
+        XLog.init(
+            logConfig,
+            *printers.toTypedArray(),
+        )
 
         xLogD("Application booting...")
         xLogD(

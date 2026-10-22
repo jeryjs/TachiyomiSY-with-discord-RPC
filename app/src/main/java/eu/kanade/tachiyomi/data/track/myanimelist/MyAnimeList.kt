@@ -145,9 +145,14 @@ class MyAnimeList(context: Context, id: Long) : BaseTracker(context, id, "MyAnim
             val username = api.getCurrentUser()
             saveDisplayUsername(username)
             saveCredentials(username, oauth.accessToken)
-        } catch (e: Throwable) {
+        } catch (_: Throwable) {
             logout()
         }
+    }
+
+    override suspend fun updateUserConfig() {
+        val username = api.getCurrentUser()
+        saveDisplayUsername(username)
     }
 
     override fun logout() {
@@ -181,7 +186,7 @@ class MyAnimeList(context: Context, id: Long) : BaseTracker(context, id, "MyAnim
     fun loadOAuth(): MALOAuth? {
         return try {
             json.decodeFromString<MALOAuth>(trackPreferences.trackToken(this).get())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

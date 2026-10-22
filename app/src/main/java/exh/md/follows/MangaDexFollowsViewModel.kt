@@ -20,8 +20,10 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel
 import exh.metadata.metadata.RaisedSearchMetadata
 import exh.source.ExhPreferences
 import exh.source.getMainSource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.data.source.BaseSourcePagingSource
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
@@ -60,6 +62,7 @@ class MangaDexFollowsViewModel(
     deleteSavedSearchById: DeleteSavedSearchById,
     insertSavedSearch: InsertSavedSearch,
     getExhSavedSearch: GetExhSavedSearch,
+    @AppCoroutineScope appScope: CoroutineScope,
 ) : BrowseSourceViewModel(
     sourceId = sourceId,
     listingQuery = null,
@@ -78,6 +81,7 @@ class MangaDexFollowsViewModel(
     getIncognitoState = getIncognitoState,
     exhPreferences = exhPreferences,
     uiPreferences = uiPreferences,
+    appScope = appScope,
     getFlatMetadataById = getFlatMetadataById,
     deleteSavedSearchById = deleteSavedSearchById,
     insertSavedSearch = insertSavedSearch,

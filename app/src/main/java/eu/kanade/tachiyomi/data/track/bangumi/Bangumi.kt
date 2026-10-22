@@ -126,6 +126,11 @@ class Bangumi(context: Context, id: Long) : BaseTracker(context, id, "Bangumi") 
         }
     }
 
+    override suspend fun updateUserConfig() {
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.nickname?.takeIf { it.isNotBlank() } ?: currentUser.username)
+    }
+
     fun saveToken(oauth: BGMOAuth?) {
         trackPreferences.trackToken(this).set(json.encodeToString(oauth))
     }

@@ -71,7 +71,6 @@ androidComponents {
                     "rounded/book",
                     "rounded/check",
                     "rounded/close",
-                    "rounded/drag_handle",
                     "rounded/eyeglasses_2",
                     "rounded/format_list_numbered",
                     "rounded/more_vert",

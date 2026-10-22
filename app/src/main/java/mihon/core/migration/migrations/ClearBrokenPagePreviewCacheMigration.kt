@@ -5,10 +5,11 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.cache.PagePreviewCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import java.io.File
 
@@ -20,7 +21,7 @@ class ClearBrokenPagePreviewCacheMigration(
 ) : Migration {
     override val version: Float = 58f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         pagePreviewCache.clear()
         File(context.cacheDir, PagePreviewCache.PARAMETER_CACHE_DIRECTORY).listFiles()?.forEach {
             if (it.name == "journal" || it.name.startsWith("journal.")) {
@@ -34,6 +35,6 @@ class ClearBrokenPagePreviewCacheMigration(
             }
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

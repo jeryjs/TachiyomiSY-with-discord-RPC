@@ -14,20 +14,14 @@ import okio.buffer
 import okio.gzip
 import okio.sink
 import okio.source
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.koin.core.context.startKoin
-import org.koin.dsl.module
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.manga.interactor.GetFavoriteEntries
 import tachiyomi.domain.manga.interactor.GetFavorites
-import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.FavoriteEntry
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.repository.CustomMangaRepository
 import java.io.File
 
 class Tester {
@@ -159,26 +153,5 @@ class Tester {
 
         remoteAdded.shouldForAll { it.gid == "gid5" && it.token == "token5" }
         remoteRemoved.shouldForAll { it.gid == "gid6" && it.token == "token6" }
-    }
-
-    companion object {
-        @JvmStatic
-        @BeforeAll
-        fun before() {
-            startKoin {
-                modules(
-                    module {
-                        single {
-                            GetCustomMangaInfo(
-                                object : CustomMangaRepository {
-                                    override fun get(mangaId: Long) = null
-                                    override fun set(mangaInfo: CustomMangaInfo) = Unit
-                                },
-                            )
-                        }
-                    },
-                )
-            }
-        }
     }
 }

@@ -22,4 +22,8 @@ object FirebaseConfig {
     fun setCrashlyticsEnabled(enabled: Boolean) {
         crashlytics?.isCrashlyticsCollectionEnabled = enabled
     }
+
+    fun recordException(throwable: Throwable) {
+        crashlytics?.recordException(throwable)
+    }
 }

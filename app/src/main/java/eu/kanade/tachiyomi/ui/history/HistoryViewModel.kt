@@ -14,6 +14,7 @@ import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.track.interactor.AddTracks
 import eu.kanade.presentation.history.HistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -32,14 +33,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
+import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.history.interactor.GetHistory
 import tachiyomi.domain.history.interactor.GetNextChapters
@@ -57,6 +59,7 @@ import kotlin.time.Duration.Companion.seconds
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class HistoryViewModel(
+    @AppCoroutineScope private val appScope: CoroutineScope,
     private val addTracks: AddTracks,
     private val getCategories: GetCategories,
     private val getDuplicateLibraryManga: GetDuplicateLibraryManga,
@@ -68,6 +71,7 @@ class HistoryViewModel(
     private val setMangaCategories: SetMangaCategories,
     private val updateManga: UpdateManga,
     private val sourceManager: SourceManager,
+    private val getChapter: GetChapter,
 ) : ViewModel() {
 
     val snackbarHostState: SnackbarHostState = SnackbarHostState()
@@ -88,7 +92,7 @@ class HistoryViewModel(
                     _events.send(Event.InternalError)
                 }
                 .map { it.toHistoryUiModels() }
-                .flowOn(Dispatchers.IO)
+                .flowOn(Dispatchers.Default)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
 
@@ -132,7 +136,7 @@ class HistoryViewModel(
     }
 
     suspend fun getNextChapter(): Chapter? {
-        return withIOContext { getNextChapters.await(onlyUnread = false).firstOrNull() }
+        return getNextChapters.await(onlyUnread = false).firstOrNull()
     }
 
     fun resumeManga(chapter: Chapter?) {
@@ -144,6 +148,12 @@ class HistoryViewModel(
             } else {
                 sendNextChapterEvent(nextChapters)
             }
+        }
+    }
+
+    fun getNextChapterForManga(mangaId: Long, chapterId: Long) {
+        viewModelScope.launch {
+            sendNextChapterEvent(getNextChapters.await(mangaId, chapterId, onlyUnread = false))
         }
     }
 
@@ -167,28 +177,28 @@ class HistoryViewModel(
             val previousHistoryList = getHistory.await(historyItem.mangaId)
                 .filter { (it.readAt?.time ?: 0) > 0 }
                 .sortedByDescending { it.readAt }
-                .map { HistoryWithRelations.from(it, historyItem) }
+                .map { HistoryWithRelations.from(it, historyItem, getChapter.await(it.chapterId)) }
 
             previousHistory.update { it + (historyItem.mangaId to previousHistoryList) }
         }
     }
 
     fun removeFromHistory(history: HistoryWithRelations) {
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             removeHistory.await(history)
         }
     }
 
     fun removeAllFromHistory(mangaId: Long) {
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             removeHistory.await(mangaId)
         }
     }
 
     fun removeAllHistory() {
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             val result = removeHistory.awaitAll()
-            if (!result) return@launchIO
+            if (!result) return@launch
             _events.send(Event.HistoryCleared)
         }
     }
@@ -216,7 +226,7 @@ class HistoryViewModel(
     }
 
     private fun moveMangaToCategory(mangaId: Long, categoryIds: List<Long>) {
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             setMangaCategories.await(mangaId, categoryIds)
         }
     }
@@ -225,7 +235,7 @@ class HistoryViewModel(
         moveMangaToCategory(manga.id, categories)
         if (manga.favorite) return
 
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             updateManga.awaitUpdateFavorite(manga.id, true)
         }
     }
@@ -236,13 +246,13 @@ class HistoryViewModel(
     }
 
     fun addFavorite(mangaId: Long) {
-        viewModelScope.launchIO {
-            val manga = getManga.await(mangaId) ?: return@launchIO
+        viewModelScope.launch {
+            val manga = getManga.await(mangaId) ?: return@launch
 
             val duplicates = getDuplicateLibraryManga(manga)
             if (duplicates.isNotEmpty()) {
                 dialog.update { Dialog.DuplicateManga(manga, duplicates) }
-                return@launchIO
+                return@launch
             }
 
             addFavorite(manga)
@@ -250,7 +260,7 @@ class HistoryViewModel(
     }
 
     fun addFavorite(manga: Manga) {
-        viewModelScope.launchIO {
+        viewModelScope.launch {
             // Move to default category if applicable
             val categories = getCategories()
             val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
@@ -260,14 +270,14 @@ class HistoryViewModel(
                 // Default category set
                 defaultCategory != null -> {
                     val result = updateManga.awaitUpdateFavorite(manga.id, true)
-                    if (!result) return@launchIO
+                    if (!result) return@launch
                     moveMangaToCategory(manga.id, defaultCategory)
                 }
 
                 // Automatic 'Default' or no categories
                 defaultCategoryId == 0L || categories.isEmpty() -> {
                     val result = updateManga.awaitUpdateFavorite(manga.id, true)
-                    if (!result) return@launchIO
+                    if (!result) return@launch
                     moveMangaToCategory(manga.id, null)
                 }
 
@@ -276,7 +286,7 @@ class HistoryViewModel(
             }
 
             // Sync with tracking services if applicable
-            addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source))
+            appScope.launch { addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source)) }
         }
     }
 

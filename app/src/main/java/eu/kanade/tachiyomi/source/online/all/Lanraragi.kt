@@ -2,6 +2,9 @@ package eu.kanade.tachiyomi.source.online.all
 
 import android.content.Context
 import android.net.Uri
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.newCachelessCallWithProgress
@@ -34,11 +37,23 @@ import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.milliseconds
 
-class Lanraragi(delegate: HttpSource, val context: Context) :
+@AssistedInject
+class Lanraragi(
+    @Assisted delegate: HttpSource,
+    val context: Context,
+    override val getMangaId: MetadataSource.GetMangaId,
+    override val insertFlatMetadata: MetadataSource.InsertFlatMetadata,
+    override val getFlatMetadataById: MetadataSource.GetFlatMetadataById,
+) :
     DelegatedHttpSource(delegate),
     MetadataSource<LanraragiSearchMetadata, Response>,
     NamespaceSource,
     PagePreviewSource {
+    @AssistedFactory
+    fun interface Factory {
+        fun create(delegate: HttpSource): Lanraragi
+    }
+
     override val metaClass = LanraragiSearchMetadata::class
     override fun newMetaInstance() = LanraragiSearchMetadata()
     override val lang = delegate.lang

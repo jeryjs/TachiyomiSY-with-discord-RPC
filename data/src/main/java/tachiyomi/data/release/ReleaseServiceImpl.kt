@@ -8,6 +8,8 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.parseAs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import tachiyomi.domain.release.model.Release
 import tachiyomi.domain.release.service.ReleaseService
@@ -21,12 +23,14 @@ class ReleaseServiceImpl(
 ) : ReleaseService {
 
     override suspend fun latest(repository: String): Release {
-        return with(json) {
-            networkService.client
-                .newCall(GET("https://api.github.com/repos/$repository/releases/latest"))
-                .awaitSuccess()
-                .parseAs<GithubRelease>()
-                .let(releaseMapper)
+        return withContext(Dispatchers.IO) {
+            with(json) {
+                networkService.client
+                    .newCall(GET("https://api.github.com/repos/$repository/releases/latest"))
+                    .awaitSuccess()
+                    .parseAs<GithubRelease>()
+                    .let(releaseMapper)
+            }
         }
     }
 }

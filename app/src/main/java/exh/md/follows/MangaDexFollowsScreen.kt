@@ -22,9 +22,10 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceViewModel
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mihon.feature.migration.dialog.MigrateMangaDialog
 import mihon.presentation.core.util.collectAsLazyPagingItems
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
@@ -34,8 +35,6 @@ class MangaDexFollowsScreen(private val sourceId: Long) : Screen() {
 
     @Composable
     override fun Content() {
-
-
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val haptic = LocalHapticFeedback.current
@@ -80,7 +79,7 @@ class MangaDexFollowsScreen(private val sourceId: Long) : Screen() {
                 onLocalSourceHelpClick = null,
                 onMangaClick = { navigator.push(MangaScreen(it.id, true)) },
                 onMangaLongClick = { manga ->
-                    scope.launchIO {
+                    scope.launch(Dispatchers.IO) {
                         val duplicateManga = viewModel.getDuplicateLibraryManga(manga)
                         when {
                             manga.favorite -> viewModel.setDialog(BrowseSourceViewModel.Dialog.RemoveManga(manga))

@@ -142,9 +142,14 @@ class Shikimori(context: Context, id: Long) : BaseTracker(context, id, "Shikimor
             val user = api.getCurrentUser()
             saveDisplayUsername(user.nickname)
             saveCredentials(user.id, oauth.accessToken)
-        } catch (e: Throwable) {
+        } catch (_: Throwable) {
             logout()
         }
+    }
+
+    override suspend fun updateUserConfig() {
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.nickname)
     }
 
     fun saveToken(oauth: SMOAuth?) {
@@ -154,7 +159,7 @@ class Shikimori(context: Context, id: Long) : BaseTracker(context, id, "Shikimor
     fun restoreToken(): SMOAuth? {
         return try {
             json.decodeFromString<SMOAuth>(trackPreferences.trackToken(this).get())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

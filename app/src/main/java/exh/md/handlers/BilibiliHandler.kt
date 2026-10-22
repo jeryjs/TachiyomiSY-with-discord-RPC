@@ -37,7 +37,7 @@ class BilibiliHandler(currentClient: OkHttpClient) {
         .rateLimit(1, 1.seconds)
         .build()
 
-    val json by injectLazy<Json>()
+    val json: Json by injectLazy()
 
     suspend fun fetchPageList(externalUrl: String, chapterNumber: String): List<Page> {
         // Sometimes the urls direct it to the manga page instead, so we try to find the correct chapter

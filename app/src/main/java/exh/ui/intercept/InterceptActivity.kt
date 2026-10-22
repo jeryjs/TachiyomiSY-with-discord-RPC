@@ -29,16 +29,17 @@ import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import exh.GalleryAddEvent
 import exh.GalleryAdder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mihon.app.di.AppGraph
 import mihon.core.metro.metroGraph
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
@@ -119,7 +120,7 @@ class InterceptActivity : BaseActivity() {
 
     private fun processLink() {
         if (Intent.ACTION_VIEW == intent.action) {
-            lifecycleScope.launchIO {
+            lifecycleScope.launch(Dispatchers.IO) {
                 // wait for sources to load
                 loadGallery(intent.dataString!!)
             }
@@ -185,12 +186,12 @@ class InterceptActivity : BaseActivity() {
             status.value = InterceptResult.Loading
             val sources = galleryAdder.pickSource(gallery)
             if (sources.size > 1) {
-                withUIContext {
+                withContext(Dispatchers.Main) {
                     MaterialAlertDialogBuilder(this@InterceptActivity)
                         .setTitle(MR.strings.label_sources.getString(this@InterceptActivity))
                         .setSingleChoiceItems(sources.map { it.toString() }.toTypedArray(), 0) { dialog, index ->
                             dialog.dismiss()
-                            lifecycleScope.launchIO {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 loadGalleryEnd(gallery, sources[index])
                             }
                         }

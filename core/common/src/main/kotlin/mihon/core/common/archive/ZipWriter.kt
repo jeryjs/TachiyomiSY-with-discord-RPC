@@ -4,7 +4,6 @@ import android.content.Context
 import android.system.Os
 import android.system.StructStat
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import me.zhanghai.android.libarchive.Archive
 import me.zhanghai.android.libarchive.ArchiveEntry
 import me.zhanghai.android.libarchive.ArchiveEntry.AE_IFREG
@@ -17,9 +16,14 @@ class ZipWriter(
     val context: Context,
     file: UniFile,
     // SY -->
-    encrypt: Boolean = false,
+    encryptInfo: (() -> EncryptInfo)? = null,
     // SY <--
 ) : Closeable {
+    class EncryptInfo(
+        val encryptAlgo: ByteArray,
+        val decryptedPassword: ByteArray,
+    )
+
     private val pfd = file.openFileDescriptor(context, "wt")
     private val archive = Archive.writeNew()
     private val entry = ArchiveEntry.new2(archive)
@@ -35,9 +39,10 @@ class ZipWriter(
             Archive.writeSetFormatZip(archive)
             Archive.writeZipSetCompressionStore(archive)
             // SY -->
-            if (encrypt) {
-                Archive.writeSetOptions(archive, CbzCrypto.getPreferredEncryptionAlgo())
-                Archive.writeSetPassphrase(archive, CbzCrypto.getDecryptedPasswordCbz())
+            val encryptInfo = encryptInfo?.invoke()
+            if (encryptInfo != null) {
+                Archive.writeSetOptions(archive, encryptInfo.encryptAlgo)
+                Archive.writeSetPassphrase(archive, encryptInfo.decryptedPassword)
             }
             // SY <--
             Archive.writeOpenFd(archive, pfd.fd)

@@ -22,17 +22,18 @@ import tachiyomi.domain.history.repository.HistoryRepository
 @ContributesBinding(AppScope::class)
 class HistoryRepositoryImpl(
     private val database: Database,
+    private val historyMapper: HistoryMapper,
 ) : HistoryRepository {
 
     override fun getHistory(query: String): Flow<List<HistoryWithRelations>> {
         return database.historyViewQueries
-            .history(query, HistoryMapper::mapHistoryWithRelations)
+            .history(query, historyMapper::mapHistoryWithRelations)
             .subscribeToList()
     }
 
     override suspend fun getLastHistory(): HistoryWithRelations? {
         return database.historyViewQueries
-            .getLatestHistory(HistoryMapper::mapHistoryWithRelations)
+            .getLatestHistory(historyMapper::mapHistoryWithRelations)
             .awaitAsOneOrNull()
     }
 
@@ -44,7 +45,7 @@ class HistoryRepositoryImpl(
 
     override suspend fun getHistoryByMangaId(mangaId: Long): List<History> {
         return database.historyQueries
-            .getHistoryByMangaId(mangaId, HistoryMapper::mapHistory)
+            .getHistoryByMangaId(mangaId, historyMapper::mapHistory)
             .awaitAsList()
     }
 

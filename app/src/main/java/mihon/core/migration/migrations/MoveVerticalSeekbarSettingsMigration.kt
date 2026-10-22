@@ -7,9 +7,10 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 
 @Inject
 @ContributesIntoSet(AppScope::class)
@@ -19,7 +20,7 @@ class MoveVerticalSeekbarSettingsMigration(
 ) : Migration {
     override val version: Float = 77f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.edit {
             val forceHorzSeekbar = prefs.getBoolean("pref_force_horz_seekbar", false)
@@ -40,6 +41,6 @@ class MoveVerticalSeekbarSettingsMigration(
             remove("pref_left_handed_vertical_seekbar")
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

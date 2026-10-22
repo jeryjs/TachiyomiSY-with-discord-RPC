@@ -1,6 +1,8 @@
 package eu.kanade.presentation.updates
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
@@ -58,9 +60,8 @@ fun UpdateScreen(
     onSelectAll: (Boolean) -> Unit,
     onInvertSelection: () -> Unit,
     onCalendarClicked: () -> Unit,
-    onUpdateLibrary: () -> Boolean,
-    onExpandGroupClicked: (UpdatesItem) -> Unit,
-    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
+    onUpdateLibrary: suspend () -> Boolean,
+    onExpandGroupClicked: (UpdatesItem) -> Unit,    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
     onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
     onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
     onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
@@ -74,11 +75,13 @@ fun UpdateScreen(
         onSelectAll(false)
     }
 
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = { scrollBehavior ->
             UpdatesAppBar(
                 onCalendarClicked = { onCalendarClicked() },
-                onUpdateLibrary = { onUpdateLibrary() },
+                onUpdateLibrary = { scope.launch { onUpdateLibrary() } },
                 onFilterClicked = { onFilterClicked() },
                 hasFilters = hasActiveFilters,
                 actionModeCounter = state.selected.size,
@@ -101,20 +104,14 @@ fun UpdateScreen(
     ) { contentPadding ->
         when {
             state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
-            state.items.isEmpty() -> EmptyScreen(
-                stringRes = MR.strings.information_no_recent,
-                modifier = Modifier.padding(contentPadding),
-            )
             else -> {
-                val scope = rememberCoroutineScope()
                 var isRefreshing by remember { mutableStateOf(false) }
 
                 PullRefresh(
                     refreshing = isRefreshing,
                     onRefresh = {
-                        val started = onUpdateLibrary()
-                        if (!started) return@PullRefresh
                         scope.launch {
+                            if (!onUpdateLibrary()) return@launch
                             // Fake refresh status but hide it after a second as it's a long running task
                             isRefreshing = true
                             delay(1.seconds)
@@ -124,28 +121,46 @@ fun UpdateScreen(
                     enabled = !state.selectionMode,
                     indicatorPadding = contentPadding,
                 ) {
-                    FastScrollLazyColumn(
-                        contentPadding = contentPadding,
-                    ) {
-                        updatesLastUpdatedItem(lastUpdated)
+                    if (state.items.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .padding(contentPadding)
+                                .fillMaxSize(),
+                        ) {
+                            UpdatesLastUpdatedHeader(lastUpdated = lastUpdated)
+                            EmptyScreen(
+                                stringRes = if (hasActiveFilters) {
+                                    MR.strings.error_no_match
+                                } else {
+                                    MR.strings.information_no_recent
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    } else {
+                        FastScrollLazyColumn(
+                            contentPadding = contentPadding,
+                        ) {
+                            updatesLastUpdatedItem(lastUpdated)
 
-                        updatesUiItems(
-                            uiModels = state.uiModels,
-                            expandedStates = state.expandedStates,
-                            selectionMode = state.selectionMode,
-                            // SY -->
-                            preserveReadingPosition = preserveReadingPosition,
-                            // SY <--
-                            updateSwipeToStart = updateSwipeStartAction,
-                            updateSwipeToEnd = updateSwipeEndAction,
-                            onUpdateSelected = onUpdateSelected,
-                            onClickCover = onClickCover,
-                            onClickUpdate = onOpenChapter,
-                            onExpandClicked = onExpandGroupClicked,
-                            onDownloadChapter = onDownloadChapter,
-                            onUpdateSwipe = onUpdateSwipe,
-                        )
-                    }
+                            updatesUiItems(
+                                uiModels = state.uiModels,
+                                expandedStates = state.expandedStates,
+                                selectionMode = state.selectionMode,
+                                // SY -->
+                                preserveReadingPosition = preserveReadingPosition,
+                                // SY <--
+                                updateSwipeToStart = updateSwipeStartAction,
+                                updateSwipeToEnd = updateSwipeEndAction,
+                                onUpdateSelected = onUpdateSelected,
+                                onClickCover = onClickCover,
+                                onClickUpdate = onOpenChapter,
+                                onExpandClicked = onExpandGroupClicked,
+                                onDownloadChapter = onDownloadChapter,
+                                onUpdateSwipe = onUpdateSwipe,
+                            )
+                        }
+                        }
                 }
             }
         }

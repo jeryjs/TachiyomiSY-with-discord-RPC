@@ -15,13 +15,14 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import eu.kanade.domain.manga.interactor.GetPagePreviews
 import eu.kanade.domain.manga.model.PagePreview
 import eu.kanade.tachiyomi.source.Source
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import tachiyomi.core.common.util.lang.launchIO
+import kotlinx.coroutines.launch
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.GetManga
@@ -52,14 +53,14 @@ class PagePreviewViewModel(
     var pageDialogOpen by mutableStateOf(false)
 
     init {
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             val manga = getManga.await(mangaId)!!
             val chapter = getChaptersByMangaId.await(mangaId).minByOrNull { it.sourceOrder }
             if (chapter == null) {
                 state.update {
                     PagePreviewState.Error(Exception("No chapters found"))
                 }
-                return@launchIO
+                return@launch
             }
             val source = sourceManager.getOrStub(manga.source)
             page

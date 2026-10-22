@@ -17,7 +17,7 @@ abstract class EHentaiPagingSource(
     override suspend fun getPageLoadResult(
         source: Source?,
         params: LoadParams<Long>,
-        mangasPage: MangasPage
+        mangasPage: MangasPage,
     ): LoadResult.Page<Long, Pair<Manga, RaisedSearchMetadata?>> {
         source!!
         mangasPage as MetadataMangasPage

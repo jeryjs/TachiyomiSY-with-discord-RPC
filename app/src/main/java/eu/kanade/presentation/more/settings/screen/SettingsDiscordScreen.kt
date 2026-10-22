@@ -128,7 +128,6 @@ object SettingsDiscordScreen : SearchableSettings {
                     ),
                     Preference.PreferenceItem.SwitchPreference(
                         preference = useChapterTitlesPref,
-                        enabled = enableDRPC,
                         title = stringResource(MR.strings.show_chapters_titles_title),
                         subtitle = stringResource(MR.strings.show_chapters_titles_subtitle),
                     ),
@@ -140,13 +139,11 @@ object SettingsDiscordScreen : SearchableSettings {
                             0 to stringResource(MR.strings.pref_discord_idle),
                             1 to stringResource(MR.strings.pref_discord_online),
                         ),
-                        enabled = enableDRPC,
                     ),
                 ),
             ),
             getRPCIncognitoGroup(
                 connectionsPreferences = connectionsPreferences,
-                enabled = enableDRPC,
             ),
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.logout),
@@ -158,7 +155,6 @@ object SettingsDiscordScreen : SearchableSettings {
     @Composable
     private fun getRPCIncognitoGroup(
         connectionsPreferences: ConnectionsPreferences,
-        enabled: Boolean,
     ): Preference.PreferenceGroup {
         val getCategories = remember { Injekt.get<GetCategories>() }
         val allCategories by getCategories.subscribe().collectAsState(initial = runBlocking { getCategories.await() })
@@ -206,7 +202,6 @@ object SettingsDiscordScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.pref_discord_incognito_categories_details)),
             ),
-            enabled = enabled,
         )
     }
 

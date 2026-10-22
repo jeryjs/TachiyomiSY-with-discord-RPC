@@ -1,10 +1,10 @@
 package eu.kanade.tachiyomi.data.connections.discord
 
 import androidx.annotation.StringRes
-import eu.kanade.tachiyomi.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import tachiyomi.i18n.MR
 
 // Constant for logging tag
 const val RICH_PRESENCE_TAG = "discord_rpc"
@@ -167,14 +167,14 @@ enum class DiscordScreen(
     @StringRes val state: Int,
     val imageUrl: String,
 ) {
-    APP(R.string.app_name, R.string.browsing, R.string.label_library, tachiyomiImageUrl),
-    LIBRARY(R.string.app_name, R.string.browsing, R.string.label_library, libraryImageUrl),
-    UPDATES(R.string.app_name, R.string.scrolling, R.string.label_recent_updates, updatesImageUrl),
-    HISTORY(R.string.app_name, R.string.scrolling, R.string.label_recent_manga, historyImageUrl),
-    BROWSE(R.string.app_name, R.string.browsing, R.string.label_sources, browseImageUrl),
-    MORE(R.string.app_name, R.string.messing, R.string.label_settings, moreImageUrl),
-    WEBVIEW(R.string.app_name, R.string.browsing, R.string.action_web_view, webviewImageUrl),
-    MANGA(R.string.app_name, R.string.comic, R.string.reading, mangaImageUrl),
+    APP(MR.strings.app_name.resourceId, MR.strings.browsing.resourceId, MR.strings.label_library.resourceId, tachiyomiImageUrl),
+    LIBRARY(MR.strings.app_name.resourceId, MR.strings.browsing.resourceId, MR.strings.label_library.resourceId, libraryImageUrl),
+    UPDATES(MR.strings.app_name.resourceId, MR.strings.scrolling.resourceId, MR.strings.label_recent_updates.resourceId, updatesImageUrl),
+    HISTORY(MR.strings.app_name.resourceId, MR.strings.scrolling.resourceId, MR.strings.label_recent_manga.resourceId, historyImageUrl),
+    BROWSE(MR.strings.app_name.resourceId, MR.strings.browsing.resourceId, MR.strings.label_sources.resourceId, browseImageUrl),
+    MORE(MR.strings.app_name.resourceId, MR.strings.messing.resourceId, MR.strings.label_settings.resourceId, moreImageUrl),
+    WEBVIEW(MR.strings.app_name.resourceId, MR.strings.browsing.resourceId, MR.strings.action_web_view.resourceId, webviewImageUrl),
+    MANGA(MR.strings.app_name.resourceId, MR.strings.comic.resourceId, MR.strings.reading.resourceId, mangaImageUrl),
 }
 
 // Constants for standard Rich Presence image urls

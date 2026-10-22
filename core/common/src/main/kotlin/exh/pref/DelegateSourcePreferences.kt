@@ -10,6 +10,4 @@ class DelegateSourcePreferences(
 ) {
 
     val delegateSources: Preference<Boolean> = preferenceStore.getBoolean("eh_delegate_sources", true)
-
-    val useJapaneseTitle: Preference<Boolean> = preferenceStore.getBoolean("use_jp_title", false)
 }

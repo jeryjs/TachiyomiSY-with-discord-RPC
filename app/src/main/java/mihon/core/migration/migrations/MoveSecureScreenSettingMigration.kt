@@ -6,9 +6,10 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 
 @Inject
 @ContributesIntoSet(AppScope::class)
@@ -18,13 +19,13 @@ class MoveSecureScreenSettingMigration(
 ) : Migration {
     override val version: Float = 27f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val oldSecureScreen = prefs.getBoolean("secure_screen", false)
         if (oldSecureScreen) {
             securityPreferences.secureScreen.set(SecurityPreferences.SecureScreenMode.ALWAYS)
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

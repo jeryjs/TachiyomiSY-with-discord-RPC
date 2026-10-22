@@ -12,10 +12,10 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
-import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.chapter.ChapterMapper.mapChapter
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.chapter.model.ChapterRemoteUpdate
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
 
@@ -63,28 +63,32 @@ class ChapterRepositoryImpl(
         partialUpdate(*chapterUpdates.toTypedArray())
     }
 
+    override suspend fun updateAllRemote(chapterUpdates: List<ChapterRemoteUpdate>) {
+        database.transaction {
+            chapterUpdates.forEach { chapterUpdate ->
+                database.chaptersQueries.updateRemote(
+                    name = chapterUpdate.name,
+                    scanlator = chapterUpdate.scanlator,
+                    chapterNumber = chapterUpdate.chapterNumber,
+                    sourceOrder = chapterUpdate.sourceOrder,
+                    dateUpload = chapterUpdate.dateUpload,
+                    chapterId = chapterUpdate.id,
+                    memo = chapterUpdate.memo,
+                )
+            }
+        }
+    }
+
     private suspend fun partialUpdate(vararg chapterUpdates: ChapterUpdate) {
         database.transaction {
             chapterUpdates.forEach { chapterUpdate ->
                 database.chaptersQueries.update(
                     mangaId = chapterUpdate.mangaId,
-                    url = chapterUpdate.url,
-                    name = chapterUpdate.name,
-                    scanlator = chapterUpdate.scanlator,
                     read = chapterUpdate.read,
                     bookmark = chapterUpdate.bookmark,
                     lastPageRead = chapterUpdate.lastPageRead,
-                    chapterNumber = chapterUpdate.chapterNumber,
-                    sourceOrder = chapterUpdate.sourceOrder,
                     dateFetch = chapterUpdate.dateFetch,
-                    dateUpload = chapterUpdate.dateUpload,
                     chapterId = chapterUpdate.id,
-                    version = chapterUpdate.version,
-                    // SY -->
-                    lastModifiedAt = null,
-                    isSyncing = null,
-                    // SY <--
-                    memo = chapterUpdate.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }

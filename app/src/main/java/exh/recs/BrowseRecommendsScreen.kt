@@ -40,7 +40,6 @@ class BrowseRecommendsScreen(
 
     @Composable
     override fun Content() {
-
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 

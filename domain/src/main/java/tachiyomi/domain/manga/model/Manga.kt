@@ -10,8 +10,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import mihon.core.common.extensions.EMPTY
 import tachiyomi.core.common.preference.TriState
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
-import uy.kohesive.injekt.injectLazy
 import java.io.ObjectStreamException
 import kotlin.time.Instant
 import java.io.Serializable as JavaSerializable
@@ -47,15 +45,11 @@ data class Manga(
     val version: Long,
     val notes: String,
     val memo: JsonObject,
-) : JavaSerializable {
-
     // SY -->
     @Contextual
-    private val customMangaInfo = if (favorite) {
-        getCustomMangaInfo.get(id)
-    } else {
-        null
-    }
+    val customMangaInfo: CustomMangaInfo? = null,
+    // SY <--
+) : JavaSerializable {
 
     val title: String
         get() = customMangaInfo?.title ?: ogTitle
@@ -180,10 +174,6 @@ data class Manga(
             notes = "",
             memo = JsonObject.EMPTY,
         )
-
-        // SY -->
-        private val getCustomMangaInfo: GetCustomMangaInfo by injectLazy()
-        // SY <--
     }
 
     @Throws(ObjectStreamException::class)

@@ -6,8 +6,6 @@ import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.view.UpdatesView
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 private val mapper = { cursor: SqlCursor ->
     UpdatesView(
@@ -31,6 +29,7 @@ private val mapper = { cursor: SqlCursor ->
 }
 
 fun getUpdatesQuery(
+    driver: SqlDriver,
     after: Long,
     limit: Long,
     read: Boolean?,
@@ -43,7 +42,7 @@ fun getUpdatesQuery(
     excludedCategories: Collection<Long>,
 ): UpdatesQuery {
     return UpdatesQuery(
-        driver = Injekt.get<SqlDriver>(),
+        driver = driver,
         after = after,
         limit = limit,
         read = read,

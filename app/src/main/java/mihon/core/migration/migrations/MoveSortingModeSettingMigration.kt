@@ -6,9 +6,10 @@ import androidx.preference.PreferenceManager
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.library.service.LibraryPreferences
 
 @Inject
@@ -19,7 +20,7 @@ class MoveSortingModeSettingMigration(
 ) : Migration {
     override val version: Float = 39f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.edit {
             val sort = prefs.getString(libraryPreferences.sortingMode.key(), null) ?: return@edit
@@ -28,6 +29,6 @@ class MoveSortingModeSettingMigration(
             remove("library_sorting_ascending")
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

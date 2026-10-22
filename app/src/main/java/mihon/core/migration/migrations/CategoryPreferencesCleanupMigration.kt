@@ -3,9 +3,10 @@ package mihon.core.migration.migrations
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -21,7 +22,7 @@ class CategoryPreferencesCleanupMigration(
     override val version: Float = 72f
     // SY <--
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val allCategories = getCategories.await().map { it.id.toString() }.toSet()
 
         val defaultCategory = libraryPreferences.defaultCategory.get()
@@ -42,6 +43,6 @@ class CategoryPreferencesCleanupMigration(
             if (garbageIds.isEmpty()) return@forEach
             preference.set(ids.minus(garbageIds))
         }
-        return@withIOContext true
+        return@withContext true
     }
 }

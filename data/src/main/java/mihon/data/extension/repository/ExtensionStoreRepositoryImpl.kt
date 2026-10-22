@@ -1,14 +1,23 @@
 package mihon.data.extension.repository
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.extension.model.Extension
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
 import mihon.data.extension.service.ExtensionStoreService
@@ -18,6 +27,8 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.data.subscribeToOne
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @Inject
 @SingleIn(AppScope::class)
@@ -26,6 +37,26 @@ class ExtensionStoreRepositoryImpl(
     private val service: ExtensionStoreService,
     private val database: Database,
 ) : ExtensionStoreRepository {
+
+    // SY -->
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // SY <--
+
+    private val stores = database.extension_storeQueries.getAll(::extensionStoreMapper)
+        .subscribeToList()
+        .catch {
+            logcat(LogPriority.ERROR, it) { "Failed to query extension stores" }
+            emit(emptyList())
+        }
+        .shareIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(
+                stopTimeout = 5.seconds,
+                replayExpiration = Duration.ZERO,
+            ),
+            replay = 1,
+        )
+
     override suspend fun insert(indexUrl: String): Result<Unit> {
         return service.fetch(indexUrl).mapCatching { upsert(it) }
     }
@@ -45,21 +76,26 @@ class ExtensionStoreRepositoryImpl(
 
     override suspend fun refreshAll() {
         try {
-            database.extension_storeQueries.getAll().awaitAsList().forEach { store ->
-                service.fetch(store.index_url)
-                    .mapCatching {
-                        database.transaction {
-                            upsert(it)
-                            if (store.index_url != it.indexUrl) {
-                                database.extension_storeQueries.delete(store.index_url)
-                            }
-                        }
-                    }
+            val refreshed = stores.first().mapNotNull { store ->
+                service.fetch(store.indexUrl)
                     .onFailure {
                         logcat(LogPriority.ERROR, it) {
-                            "Failed to refresh extension store '${store.name} (${store.index_url})'"
+                            "Failed to refresh extension store '${store.name} (${store.indexUrl})'"
                         }
                     }
+                    .getOrNull()
+                    ?.let { store.indexUrl to it }
+            }
+            database.transaction {
+                refreshed.forEach { (indexUrl, store) ->
+                    if (!database.extension_storeQueries.contains(indexUrl).awaitAsOne()) {
+                        return@forEach
+                    }
+                    upsert(store)
+                    if (indexUrl != store.indexUrl) {
+                        database.extension_storeQueries.delete(indexUrl)
+                    }
+                }
             }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
@@ -105,7 +141,7 @@ class ExtensionStoreRepositoryImpl(
     }
 
     override fun getAllAsFlow(): Flow<List<ExtensionStore>> {
-        return database.extension_storeQueries.getAll(::extensionStoreMapper).subscribeToList()
+        return stores
     }
 
     override fun getCountAsFlow(): Flow<Long> {

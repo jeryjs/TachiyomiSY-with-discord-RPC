@@ -1,8 +1,5 @@
 package tachiyomi.domain.manga.model
 
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
-import uy.kohesive.injekt.injectLazy
-
 /**
  * Contains the required data for MangaCoverFetcher
  */
@@ -12,20 +9,12 @@ data class MangaCover(
     val isMangaFavorite: Boolean,
     // SY -->
     val ogUrl: String?,
+    val customThumbnailUrl: String? = null,
     // SY <--
     val lastModified: Long,
 ) {
     // SY -->
-    private val customThumbnailUrl = if (isMangaFavorite) {
-        getCustomMangaInfo.get(mangaId)?.thumbnailUrl
-    } else {
-        null
-    }
     val url: String? = customThumbnailUrl ?: ogUrl
-
-    companion object {
-        private val getCustomMangaInfo: GetCustomMangaInfo by injectLazy()
-    }
     // SY <--
 }
 

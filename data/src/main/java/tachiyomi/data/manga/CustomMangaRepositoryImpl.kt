@@ -6,11 +6,17 @@ import kotlinx.serialization.json.Json
 import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.repository.CustomMangaRepository
 import java.io.File
+import kotlin.concurrent.thread
 
 class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
-    private val editJson = File(context.getExternalFilesDir(null), "edits.json")
+    private val editJson by lazy { File(context.getExternalFilesDir(null), "edits.json") }
 
-    private val customMangaMap = fetchCustomData()
+    // Read off the main thread as soon as the repository is created, since titles shown on screen need it
+    private val customMangaMap by lazy { fetchCustomData() }
+
+    init {
+        thread(name = "CustomMangaInfoPreload") { customMangaMap }
+    }
 
     override fun get(mangaId: Long) = customMangaMap[mangaId]
 

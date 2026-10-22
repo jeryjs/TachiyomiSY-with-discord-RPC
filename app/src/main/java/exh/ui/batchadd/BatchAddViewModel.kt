@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.sy.SYMR
 
 @Inject
@@ -80,7 +80,7 @@ class BatchAddViewModel(
 
             splitGalleries.forEachIndexed { i, s ->
                 ensureActive()
-                val result = withIOContext {
+                val result = withContext(Dispatchers.IO) {
                     galleryAdder.addGallery(
                         context = context,
                         url = s,

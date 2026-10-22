@@ -25,12 +25,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import okhttp3.FormBody
 import okhttp3.Request
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.category.interactor.CreateCategoryWithName
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.RenameCategory
@@ -59,6 +58,7 @@ class FavoritesSyncHelper(
     private val renameCategory: RenameCategory,
     private val exhPreferences: ExhPreferences,
     private val sourceManager: SourceManager,
+    private val ehentaiFactory: EHentai.Factory,
     private val galleryAdder: GalleryAdder,
     private val storage: LocalFavoritesStorage,
 ) {
@@ -85,7 +85,7 @@ class FavoritesSyncHelper(
 
     private suspend fun beginSync() {
         val exh = sourceManager.get(EXH_SOURCE_ID) as? EHentai
-            ?: EHentai(0, true, context)
+            ?: ehentaiFactory.create(0, true)
 
         // Check if logged in
         if (!exhPreferences.enableExhentai.get()) {
@@ -156,7 +156,7 @@ class FavoritesSyncHelper(
             status.value = FavoritesSyncStatus.Processing.CleaningUp
             storage.snapshotEntries()
 
-            withUIContext {
+            withContext(Dispatchers.Main) {
                 context.toast(SYMR.strings.favorites_sync_complete)
             }
         } catch (e: IgnoredException) {
@@ -250,7 +250,7 @@ class FavoritesSyncHelper(
 
         for (i in 1..retryCount) {
             try {
-                val resp = withIOContext { exh.client.newCall(request).await() }
+                val resp = withContext(Dispatchers.IO) { exh.client.newCall(request).await() }
 
                 if (resp.isSuccessful) {
                     success = true

@@ -1,0 +1,23 @@
+mutation AniListAddManga(
+  $manga_id: Int!,
+  $progress: Int!,
+  # SY -->
+  $progressVolumes: Int!,
+  $repeat: Int!,
+  # SY <--
+  $status: MediaListStatus!,
+  $private: Boolean!,
+) {
+  SaveMediaListEntry (
+    mediaId: $manga_id,
+    progress: $progress,
+    # SY -->
+    progressVolumes: $progressVolumes,
+    repeat: $repeat,
+    # SY <--
+    status: $status,
+    private: $private,
+  ) {
+    id
+  }
+}

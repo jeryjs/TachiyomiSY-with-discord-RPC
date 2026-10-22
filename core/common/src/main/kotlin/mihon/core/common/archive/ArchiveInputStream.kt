@@ -1,6 +1,5 @@
 package mihon.core.common.archive
 
-import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import me.zhanghai.android.libarchive.Archive
 import me.zhanghai.android.libarchive.ArchiveEntry
 import me.zhanghai.android.libarchive.ArchiveException
@@ -13,7 +12,7 @@ class ArchiveInputStream(
     buffer: Long,
     size: Long,
     // SY -->
-    encrypted: Boolean,
+    getDecryptedPassword: (() -> ByteArray)?,
     // SY <--
 ) : InputStream() {
     private val lock = Any()
@@ -26,8 +25,8 @@ class ArchiveInputStream(
     init {
         try {
             // SY -->
-            if (encrypted) {
-                Archive.readAddPassphrase(archive, CbzCrypto.getDecryptedPasswordCbz())
+            if (getDecryptedPassword != null) {
+                Archive.readAddPassphrase(archive, getDecryptedPassword())
             }
             // SY <--
             Archive.setCharset(archive, Charsets.UTF_8.name().toByteArray())

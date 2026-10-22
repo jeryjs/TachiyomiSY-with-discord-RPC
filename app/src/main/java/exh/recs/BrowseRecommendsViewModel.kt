@@ -24,15 +24,18 @@ import exh.pref.DelegateSourcePreferences
 import exh.recs.sources.RecommendationPagingSource
 import exh.recs.sources.StaticResultPagingSource
 import exh.source.ExhPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import tachiyomi.core.common.util.lang.launchIO
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
@@ -76,6 +79,7 @@ class BrowseRecommendsViewModel(
     deleteSavedSearchById: DeleteSavedSearchById,
     insertSavedSearch: InsertSavedSearch,
     getExhSavedSearch: GetExhSavedSearch,
+    @AppCoroutineScope appScope: CoroutineScope,
 ) : BrowseSourceViewModel(
     sourceId = when (args) {
         is BrowseRecommendsScreen.Args.SingleSourceManga -> args.sourceId
@@ -97,6 +101,7 @@ class BrowseRecommendsViewModel(
     getIncognitoState = getIncognitoState,
     exhPreferences = exhPreferences,
     uiPreferences = uiPreferences,
+    appScope = appScope,
     getFlatMetadataById = getFlatMetadataById,
     deleteSavedSearchById = deleteSavedSearchById,
     insertSavedSearch = insertSavedSearch,
@@ -125,7 +130,7 @@ class BrowseRecommendsViewModel(
     init {
         update { it.copy(filterable = false) }
 
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             recommendationState.value = when (args) {
                 is BrowseRecommendsScreen.Args.MergedSourceMangas -> StaticResultPagingSource(args.results, networkToLocalManga)
                 is BrowseRecommendsScreen.Args.SingleSourceManga -> RecommendationPagingSource.createSources(

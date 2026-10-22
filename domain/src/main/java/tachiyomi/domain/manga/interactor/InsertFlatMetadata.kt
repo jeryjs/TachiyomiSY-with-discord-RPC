@@ -13,7 +13,7 @@ class InsertFlatMetadata(
     private val mangaMetadataRepository: MangaMetadataRepository,
 ) : MetadataSource.InsertFlatMetadata {
 
-    suspend fun await(flatMetadata: FlatMetadata) {
+    override suspend fun await(flatMetadata: FlatMetadata) {
         try {
             mangaMetadataRepository.insertFlatMetadata(flatMetadata)
         } catch (e: Exception) {

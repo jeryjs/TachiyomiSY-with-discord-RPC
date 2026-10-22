@@ -6,8 +6,6 @@ import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
 import exh.source.MERGED_SOURCE_ID
 import tachiyomi.view.LibraryView
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 private val mapper = { cursor: SqlCursor ->
     LibraryView(
@@ -48,9 +46,9 @@ private val mapper = { cursor: SqlCursor ->
     )
 }
 
-fun getLibraryQuery(condition: String = "M.favorite = 1"): LibraryQuery {
+fun getLibraryQuery(driver: SqlDriver, condition: String = "M.favorite = 1"): LibraryQuery {
     return LibraryQuery(
-        Injekt.get<SqlDriver>(),
+        driver,
         condition,
     )
 }

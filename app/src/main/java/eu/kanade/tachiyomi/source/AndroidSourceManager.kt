@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.source
 
-import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -19,6 +18,7 @@ import eu.kanade.tachiyomi.source.online.english.HBrowse
 import eu.kanade.tachiyomi.source.online.english.Pururin
 import eu.kanade.tachiyomi.source.online.english.Tsumino
 import exh.log.xLogD
+import exh.pref.DelegateSourcePreferences
 import exh.source.BlacklistedSources
 import exh.source.DelegatedHttpSource
 import exh.source.EH_SOURCE_ID
@@ -32,8 +32,6 @@ import exh.source.PURURIN_SOURCE_ID
 import exh.source.TSUMINO_SOURCE_ID
 import exh.source.handleSourceLibrary
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -42,6 +40,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.repository.StubSourceRepository
 import tachiyomi.domain.source.service.SourceManager
@@ -53,18 +52,26 @@ import kotlin.reflect.KClass
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class AndroidSourceManager(
+    @AppCoroutineScope private val scope: CoroutineScope,
     private val extensionManager: ExtensionManager,
     private val sourceRepository: StubSourceRepository,
     private val localSource: LocalSource,
     private val downloadManager: Lazy<DownloadManager>,
     // SY -->
-    private val context: Context,
+    private val mergedSourceFactory: MergedSource.Factory,
+    private val ehentaiFactory: EHentai.Factory,
+    private val delegateSourcePreferences: DelegateSourcePreferences,
+    private val pururinFactory: Pururin.Factory,
+    private val tsuminoFactory: Tsumino.Factory,
+    private val mangaDexFactory: MangaDex.Factory,
+    private val hBrowseFactory: HBrowse.Factory,
+    private val eightMusesFactory: EightMuses.Factory,
+    private val nHentaiFactory: NHentai.Factory,
+    private val lanraragiFactory: Lanraragi.Factory,
     private val exhPreferences: ExhPreferences,
     private val sourcePreferences: SourcePreferences,
     // SY <--
 ) : SourceManager {
-
-    private val scope = CoroutineScope(Job() + Dispatchers.IO)
 
     /**
      * Null until the extensions have loaded, so that nothing observes the empty seed value.
@@ -79,7 +86,7 @@ class AndroidSourceManager(
 
     init {
         scope.launch {
-            extensionManager.installedExtensionsFlow
+            extensionManager.loadedExtensionsFlow
                 // SY -->
                 .combine(exhPreferences.enableExhentai.changes()) { extensions, enableExhentai ->
                     extensions to enableExhentai
@@ -92,11 +99,11 @@ class AndroidSourceManager(
 
                     mutableMap.apply {
                         // SY -->
-                        put(EH_SOURCE_ID, EHentai(EH_SOURCE_ID, false, context))
+                        put(EH_SOURCE_ID, ehentaiFactory.create(EH_SOURCE_ID, false))
                         if (enableExhentai) {
-                            put(EXH_SOURCE_ID, EHentai(EXH_SOURCE_ID, true, context))
+                            put(EXH_SOURCE_ID, ehentaiFactory.create(EXH_SOURCE_ID, true))
                         }
-                        put(MERGED_SOURCE_ID, MergedSource())
+                        put(MERGED_SOURCE_ID, mergedSourceFactory.create(this@AndroidSourceManager))
                         // SY <--
                     }
 
@@ -113,9 +120,8 @@ class AndroidSourceManager(
         scope.launch {
             sourceRepository.subscribeAll()
                 .collectLatest { sources ->
-                    val mutableMap = stubSourcesMap.toMutableMap()
                     sources.forEach {
-                        mutableMap[it.id] = it
+                        stubSourcesMap[it.id] = it
                     }
                 }
         }
@@ -141,7 +147,8 @@ class AndroidSourceManager(
             xLogD("Delegating source: %s -> %s!", sourceQName, delegate.newSourceClass.qualifiedName)
             val enhancedSource = EnhancedHttpSource(
                 this,
-                delegate.newSourceClass.constructors.find { it.parameters.size == 2 }!!.call(this, context),
+                createDelegatedSource(delegate.newSourceClass, this),
+                delegateSourcePreferences,
             )
 
             currentDelegatedSources[enhancedSource.originalSource.id] = DelegatedSource(
@@ -168,6 +175,17 @@ class AndroidSourceManager(
             newSource
         }
         // EXH <--
+    }
+
+    private fun createDelegatedSource(kClass: KClass<*>, delegate: HttpSource): DelegatedHttpSource = when (kClass) {
+        Pururin::class -> pururinFactory.create(delegate)
+        Tsumino::class -> tsuminoFactory.create(delegate)
+        MangaDex::class -> mangaDexFactory.create(delegate)
+        HBrowse::class -> hBrowseFactory.create(delegate)
+        EightMuses::class -> eightMusesFactory.create(delegate)
+        NHentai::class -> nHentaiFactory.create(delegate)
+        Lanraragi::class -> lanraragiFactory.create(delegate)
+        else -> error("No delegated source factory for $kClass")
     }
 
     /**

@@ -7,12 +7,13 @@ import dev.zacsweers.metro.Inject
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.source.Source
 import exh.source.MERGED_SOURCE_ID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.data.Database
 import tachiyomi.data.chapter.ChapterMapper
 import tachiyomi.domain.chapter.interactor.DeleteChapters
@@ -40,7 +41,7 @@ class MergedMangaRewriteMigration(
 ) : Migration {
     override val version: Float = 7f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val mergedMangas = getMangaBySource.await(MERGED_SOURCE_ID)
 
         if (mergedMangas.isNotEmpty()) {
@@ -138,7 +139,7 @@ class MergedMangaRewriteMigration(
                 updateChapter.awaitAll(chaptersToUpdate)
             }
         }
-        return@withIOContext true
+        return@withContext true
     }
 
     @Serializable

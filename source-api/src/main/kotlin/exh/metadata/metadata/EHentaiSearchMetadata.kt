@@ -5,13 +5,10 @@ import androidx.core.net.toUri
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.copy
 import exh.metadata.MetadataUtil
-import exh.pref.DelegateSourcePreferences
 import kotlinx.serialization.Serializable
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -30,6 +27,8 @@ class EHentaiSearchMetadata : RaisedSearchMetadata() {
 
     var title by titleDelegate(TITLE_TYPE_TITLE)
     var altTitle by titleDelegate(TITLE_TYPE_ALT_TITLE)
+
+    var useJapaneseTitle: Boolean? = null
 
     var genre: String? = null
 
@@ -58,7 +57,7 @@ class EHentaiSearchMetadata : RaisedSearchMetadata() {
 
         // No title bug?
         val title = altTitle
-            ?.takeIf { Injekt.get<DelegateSourcePreferences>().useJapaneseTitle.get() } // todo
+            ?.takeIf { useJapaneseTitle == true }
             ?: title
 
         // Set artist (if we can find one)

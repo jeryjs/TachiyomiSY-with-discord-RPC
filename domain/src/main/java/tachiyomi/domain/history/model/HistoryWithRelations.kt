@@ -1,11 +1,8 @@
 package tachiyomi.domain.history.model
 
-import kotlinx.coroutines.runBlocking
-import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
-import uy.kohesive.injekt.injectLazy
 import java.util.Date
 
 data class HistoryWithRelations(
@@ -14,6 +11,8 @@ data class HistoryWithRelations(
     val mangaId: Long,
     // SY -->
     val ogTitle: String,
+    val customMangaInfo: CustomMangaInfo? = null,
+    val chapter: Chapter? = null,
     // SY <--
     val chapterNumber: Double,
     val readAt: Date?,
@@ -21,24 +20,21 @@ data class HistoryWithRelations(
     val coverData: MangaCover,
 ) {
     // SY -->
-    val title: String = customMangaManager.get(mangaId)?.title ?: ogTitle
-    val chapter: Chapter? by lazy { runBlocking { getChapter.await(chapterId) } }
+    val title: String = customMangaInfo?.title ?: ogTitle
 
     companion object {
-        private val customMangaManager: GetCustomMangaInfo by injectLazy()
-        private val getChapter: GetChapter by injectLazy()
-
-        suspend fun from(history: History, related: HistoryWithRelations): HistoryWithRelations {
-            val chapter = getChapter.await(history.chapterId)
+        fun from(history: History, related: HistoryWithRelations, chapter: Chapter?): HistoryWithRelations {
             return HistoryWithRelations(
                 id = history.id,
                 chapterId = history.chapterId,
                 mangaId = related.mangaId,
                 ogTitle = related.ogTitle,
+                customMangaInfo = related.customMangaInfo,
+                chapter = chapter,
                 chapterNumber = chapter?.chapterNumber ?: -1.0,
                 readAt = history.readAt,
                 readDuration = history.readDuration,
-                coverData = related.coverData
+                coverData = related.coverData,
             )
         }
     }

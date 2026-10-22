@@ -10,9 +10,12 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.util.storage.CbzCrypto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.common.archive.archiveReader
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MergedMangaReference
@@ -30,6 +33,7 @@ class ChapterLoader(
     private val downloadManager: DownloadManager,
     private val downloadProvider: DownloadProvider,
     private val chapterCache: ChapterCache,
+    private val appScope: CoroutineScope,
     private val manga: Manga,
     private val source: Source,
     // SY -->
@@ -38,6 +42,7 @@ class ChapterLoader(
     private val mergedReferences: List<MergedMangaReference>,
     private val mergedManga: Map<Long, Manga>,
     private val sourcePreferences: SourcePreferences,
+    private val cbzCrypto: CbzCrypto,
     // SY <--
 ) {
 
@@ -51,7 +56,7 @@ class ChapterLoader(
         }
 
         chapter.state = ReaderChapter.State.Loading
-        withIOContext {
+        withContext(Dispatchers.IO) {
             logcat { "Loading pages for ${chapter.chapter.name}" }
             try {
                 val loader = getPageLoader(chapter)
@@ -127,13 +132,14 @@ class ChapterLoader(
                         downloadProvider = downloadProvider,
                         context = context,
                         readerPreferences = readerPrefs,
+                        cbzCrypto = cbzCrypto,
                     )
-                    source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, readerPrefs, sourcePreferences)
+                    source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, appScope, readerPrefs, sourcePreferences)
                     source is LocalSource -> source.getFormat(chapter.chapter).let { format ->
                         when (format) {
                             is Format.Directory -> DirectoryPageLoader(format.file)
-                            is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context), context, readerPrefs)
-                            is Format.Epub -> EpubPageLoader(format.file.archiveReader(context))
+                            is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz), context, readerPrefs)
+                            is Format.Epub -> EpubPageLoader(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz))
                         }
                     }
                     else -> error(context.stringResource(MR.strings.loader_not_implemented_error))
@@ -148,15 +154,18 @@ class ChapterLoader(
                 downloadProvider,
                 context,
                 readerPrefs,
+                // SY -->
+                cbzCrypto,
+                // SY <--
             )
             source is LocalSource -> source.getFormat(chapter.chapter).let { format ->
                 when (format) {
                     is Format.Directory -> DirectoryPageLoader(format.file)
-                    is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context), context, readerPrefs)
-                    is Format.Epub -> EpubPageLoader(format.file.archiveReader(context))
+                    is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz), context, readerPrefs)
+                    is Format.Epub -> EpubPageLoader(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz))
                 }
             }
-            source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, readerPrefs, sourcePreferences)
+            source is HttpSource -> HttpPageLoader(chapter, source, chapterCache, appScope, readerPrefs, sourcePreferences)
             source is StubSource -> error(context.stringResource(MR.strings.source_not_installed, source.toString()))
             else -> error(context.stringResource(MR.strings.loader_not_implemented_error))
         }

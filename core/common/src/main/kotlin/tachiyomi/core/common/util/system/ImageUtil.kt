@@ -2,10 +2,8 @@ package tachiyomi.core.common.util.system
 
 import android.content.Context
 import android.content.res.Configuration
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
@@ -23,16 +21,13 @@ import androidx.core.graphics.get
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import ca.mpreg.imagedecoder.ImageDecoder
-import com.hippo.unifile.UniFile
 import logcat.LogPriority
 import okio.Buffer
 import okio.BufferedSource
 import java.io.File
 import java.io.InputStream
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.min
 
 object ImageUtil {
 
@@ -52,15 +47,16 @@ object ImageUtil {
 
     fun findImageType(stream: InputStream): ImageType? {
         return try {
-            val decoder = ImageDecoder.new(stream)
-            when (decoder.format) {
-                "jpeg" -> ImageType.JPEG
-                "png" -> ImageType.PNG
-                "webp" -> ImageType.WEBP
-                "gif" -> ImageType.GIF
-                "heif" -> ImageType.HEIF
-                "jxl" -> ImageType.JXL
-                "jp2" -> ImageType.JP2
+            val format = ImageDecoder.open(stream).use { dec -> dec.format }
+            when (format) {
+                ImageDecoder.Format.JPEG -> ImageType.JPEG
+                ImageDecoder.Format.PNG -> ImageType.PNG
+                ImageDecoder.Format.WEBP -> ImageType.WEBP
+                ImageDecoder.Format.GIF -> ImageType.GIF
+                ImageDecoder.Format.AVIF -> ImageType.AVIF
+                ImageDecoder.Format.HEIF -> ImageType.HEIF
+                ImageDecoder.Format.JXL -> ImageType.JXL
+                ImageDecoder.Format.JP2 -> ImageType.JP2
                 else -> null
             }
         } catch (e: Exception) {
@@ -81,8 +77,7 @@ object ImageUtil {
                 ImageType.GIF -> true
                 ImageType.WEBP, ImageType.HEIF -> {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
-                    val decoder = ImageDecoder.new(source.peek().inputStream())
-                    decoder.pages > 1
+                    ImageDecoder.open(source.peek().inputStream()).use { dec -> dec.pages > 1 }
                 }
 
                 else -> false
@@ -203,12 +198,11 @@ object ImageUtil {
         backgroundContext: Context,
     ): BufferedSource {
         val imageBitmap = try {
-            ImageDecoder.new(imageSource)
+            ImageDecoder.open(imageSource).use { it.decodeNext() }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "addHorizontalCenterMargin" }
             throw e
-        }.decode()
-            .toBitmap()
+        }.use { it.toBitmap() }
         val height = imageBitmap.height
         val width = imageBitmap.width
 
@@ -236,139 +230,22 @@ object ImageUtil {
     // SY <--
 
     /**
-     * Check whether the image is considered a tall image.
-     *
-     * @return true if the height:width ratio is greater than 3.
-     */
-    private fun isTallImage(imageSource: BufferedSource): Boolean {
-        val options = extractImageOptions(imageSource)
-        return TallImageSplitCalculator.shouldSplit(
-            imageWidth = options.outWidth,
-            imageHeight = options.outHeight,
-            optimalImageHeight = optimalImageHeight,
-        )
-    }
-
-    /**
-     * Splits tall images to improve performance of reader
-     */
-    fun splitTallImage(
-        tmpDir: UniFile,
-        imageFile: UniFile,
-        filenamePrefix: String,
-    ): Boolean {
-        val imageSource = imageFile.openInputStream().use { Buffer().readFrom(it) }
-        if (isAnimatedAndSupported(imageSource) || !isTallImage(imageSource)) {
-            return true
-        }
-
-        val bitmapRegionDecoder = getBitmapRegionDecoder(imageSource.peek().inputStream())
-        if (bitmapRegionDecoder == null) {
-            logcat { "Failed to create new instance of BitmapRegionDecoder" }
-            return false
-        }
-
-        val options = extractImageOptions(imageSource).apply {
-            inJustDecodeBounds = false
-        }
-        val splitDataList = options.splitData
-
-        return try {
-            splitDataList.forEach { splitData ->
-                val splitImageName = splitImageName(filenamePrefix, splitData.index)
-                // Remove pre-existing split if exists (this split shouldn't exist under normal circumstances)
-                tmpDir.findFile(splitImageName)?.delete()
-
-                val splitFile = tmpDir.createFile(splitImageName)!!
-
-                val region = Rect(0, splitData.topOffset, splitData.splitWidth, splitData.bottomOffset)
-
-                splitFile.openOutputStream().use { outputStream ->
-                    val splitBitmap = bitmapRegionDecoder.decodeRegion(region, options)
-                    splitBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    splitBitmap.recycle()
-                }
-                logcat {
-                    "Success: Split #${splitData.index + 1} with topOffset=${splitData.topOffset} " +
-                        "height=${splitData.splitHeight} bottomOffset=${splitData.bottomOffset}"
-                }
-            }
-            imageFile.delete()
-            true
-        } catch (e: Exception) {
-            // Image splits were not successfully saved so delete them and keep the original image
-            splitDataList
-                .map { splitImageName(filenamePrefix, it.index) }
-                .forEach { tmpDir.findFile(it)?.delete() }
-            logcat(LogPriority.ERROR, e)
-            false
-        } finally {
-            bitmapRegionDecoder.recycle()
-        }
-    }
-
-    private fun splitImageName(filenamePrefix: String, index: Int) = "${filenamePrefix}__${"%03d".format(
-        Locale.ENGLISH,
-        index + 1,
-    )}.jpg"
-
-    private val BitmapFactory.Options.splitData
-        get(): List<SplitData> {
-            val imageHeight = outHeight
-            val imageWidth = outWidth
-
-            val partCount = TallImageSplitCalculator.calculatePartCount(imageHeight, optimalImageHeight)
-            val optimalSplitHeight = imageHeight / partCount
-
-            logcat {
-                "Generating SplitData for image (height: $imageHeight): " +
-                    "$partCount parts @ ${optimalSplitHeight}px height per part"
-            }
-
-            return buildList {
-                val range = 0..<partCount
-                for (index in range) {
-                    // Only continue if the list is empty or there is image remaining
-                    if (isNotEmpty() && imageHeight <= last().bottomOffset) break
-
-                    val topOffset = index * optimalSplitHeight
-                    var splitHeight = min(optimalSplitHeight, imageHeight - topOffset)
-
-                    if (index == range.last) {
-                        val remainingHeight = imageHeight - (topOffset + splitHeight)
-                        splitHeight += remainingHeight
-                    }
-
-                    add(SplitData(index, topOffset, splitHeight, imageWidth))
-                }
-            }
-        }
-
-    data class SplitData(
-        val index: Int,
-        val topOffset: Int,
-        val splitHeight: Int,
-        val splitWidth: Int,
-    ) {
-        val bottomOffset = topOffset + splitHeight
-    }
-
-    /**
      * Algorithm for determining what background to accompany a comic/manga page
      */
     fun chooseBackground(context: Context, imageStream: InputStream): Drawable {
-        val decoder = try {
-            ImageDecoder.new(imageStream)
+        val image = try {
+            ImageDecoder.open(imageStream).use { it.decodeNext() to it.isHdr }.let { (res, hdr) ->
+                res.use {
+                    val config = if (hdr) Bitmap.Config.RGBA_F16 else Bitmap.Config.ARGB_8888
+                    createBitmap(res.width, res.height, config).also { bitmap ->
+                        res.image.rewind()
+                        bitmap.copyPixelsFromBuffer(res.image)
+                    }
+                }
+            }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR) { "chooseBackground: ${e.message}" }
             null
-        }
-        val result = decoder?.decode()
-        val image = result?.let {
-            createBitmap(it.width, it.height).also { bitmap ->
-                it.image.rewind()
-                bitmap.copyPixelsFromBuffer(it.image)
-            }
         }
 
         val whiteColor = Color.WHITE
@@ -599,19 +476,8 @@ object ImageUtil {
         return options
     }
 
-    private fun getBitmapRegionDecoder(imageStream: InputStream): BitmapRegionDecoder? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            BitmapRegionDecoder.newInstance(imageStream)
-        } else {
-            @Suppress("DEPRECATION")
-            BitmapRegionDecoder.newInstance(imageStream, false)
-        }
-    }
-
-    private val optimalImageHeight = getDisplayMaxHeightInPx * 2
-
     // SY -->
-    fun ImageDecoder.DecodeResult.toBitmap(): Bitmap {
+    fun ImageDecoder.Frame.toBitmap(): Bitmap {
         return createBitmap(width, height).also { bitmap ->
             image.rewind()
             bitmap.copyPixelsFromBuffer(image)
@@ -619,8 +485,8 @@ object ImageUtil {
     }
 
     fun mergeBitmaps(
-        imageDecodeResult: ImageDecoder.DecodeResult,
-        imageDecodeResult2: ImageDecoder.DecodeResult,
+        imageDecodeResult: ImageDecoder.Frame,
+        imageDecodeResult2: ImageDecoder.Frame,
         isLTR: Boolean,
         centerMargin: Int,
         @ColorInt background: Int = Color.WHITE,
@@ -667,6 +533,3 @@ object ImageUtil {
         get() = Rect(0, 0, width, height)
     // SY <--
 }
-
-val getDisplayMaxHeightInPx: Int
-    get() = Resources.getSystem().displayMetrics.let { max(it.heightPixels, it.widthPixels) }

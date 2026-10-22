@@ -3,6 +3,9 @@ package eu.kanade.tachiyomi.source.online.english
 import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -12,6 +15,7 @@ import eu.kanade.tachiyomi.source.online.MetadataSource
 import eu.kanade.tachiyomi.source.online.NamespaceSource
 import eu.kanade.tachiyomi.source.online.UrlImportableSource
 import eu.kanade.tachiyomi.util.asJsoup
+import exh.GalleryAdder
 import exh.metadata.metadata.EightMusesSearchMetadata
 import exh.metadata.metadata.base.RaisedTag
 import exh.source.DelegatedHttpSource
@@ -22,11 +26,24 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 
-class EightMuses(delegate: HttpSource, val context: Context) :
+@AssistedInject
+class EightMuses(
+    @Assisted delegate: HttpSource,
+    val context: Context,
+    override val getMangaId: MetadataSource.GetMangaId,
+    override val insertFlatMetadata: MetadataSource.InsertFlatMetadata,
+    override val getFlatMetadataById: MetadataSource.GetFlatMetadataById,
+    private val galleryAdder: GalleryAdder,
+) :
     DelegatedHttpSource(delegate),
     MetadataSource<EightMusesSearchMetadata, Document>,
     UrlImportableSource,
     NamespaceSource {
+    @AssistedFactory
+    fun interface Factory {
+        fun create(delegate: HttpSource): EightMuses
+    }
+
     override val metaClass = EightMusesSearchMetadata::class
     override fun newMetaInstance() = EightMusesSearchMetadata()
     override val lang = "en"
@@ -34,13 +51,13 @@ class EightMuses(delegate: HttpSource, val context: Context) :
     // Support direct URL importing
     @Deprecated("Use the non-RxJava API instead", replaceWith = ReplaceWith("getSearchManga"))
     override fun fetchSearchManga(page: Int, query: String, filters: FilterList) =
-        urlImportFetchSearchManga(context, query) {
+        urlImportFetchSearchManga(context, galleryAdder, query) {
             @Suppress("DEPRECATION")
             super<DelegatedHttpSource>.fetchSearchManga(page, query, filters)
         }
 
     override suspend fun getSearchManga(page: Int, query: String, filters: FilterList): MangasPage {
-        return urlImportFetchSearchMangaSuspend(context, query) {
+        return urlImportFetchSearchMangaSuspend(context, galleryAdder, query) {
             super<DelegatedHttpSource>.getSearchManga(page, query, filters)
         }
     }

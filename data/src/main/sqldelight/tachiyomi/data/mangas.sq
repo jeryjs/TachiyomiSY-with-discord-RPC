@@ -135,6 +135,7 @@ track_dupes AS (
     INNER JOIN manga_sync S2
     ON S1.sync_id = S2.sync_id
     AND S1.remote_id = S2.remote_id
+    AND S1.remote_id != 0
     AND S1.manga_id != S2.manga_id
     WHERE S1.manga_id = :id
 ),
@@ -145,7 +146,11 @@ duplicates AS (
     ON D.manga_id = _id
     WHERE favorite = 1
     AND _id != :id
-    AND (lower(title) LIKE '%' || lower(:title) || '%' OR D.manga_id IS NOT NULL)
+    -- A blank title would match every title
+    AND (
+        (trim(:title) != '' AND lower(title) LIKE '%' || lower(:title) || '%')
+        OR D.manga_id IS NOT NULL
+    )
 ),
 chapter_counts AS (
     SELECT
@@ -241,8 +246,22 @@ RETURNING _id;
 
 update:
 UPDATE mangas SET
-    source = coalesce(:source, source),
-    url = coalesce(:url, url),
+    favorite = coalesce(:favorite, favorite),
+    last_update = coalesce(:lastUpdate, last_update),
+    next_update = coalesce(:nextUpdate, next_update),
+    viewer = coalesce(:viewer, viewer),
+    chapter_flags = coalesce(:chapterFlags, chapter_flags),
+    cover_last_modified = coalesce(:coverLastModified, cover_last_modified),
+    date_added = coalesce(:dateAdded, date_added),
+    calculate_interval = coalesce(:calculateInterval, calculate_interval),
+    notes = coalesce(:notes, notes),
+    -- SY -->
+    url = coalesce(:url, url)
+    -- SY <--
+WHERE _id = :mangaId;
+
+updateFromBackup:
+UPDATE mangas SET
     artist = coalesce(:artist, artist),
     author = coalesce(:author, author),
     description = coalesce(:description, description),
@@ -252,19 +271,34 @@ UPDATE mangas SET
     thumbnail_url = coalesce(:thumbnailUrl, thumbnail_url),
     favorite = coalesce(:favorite, favorite),
     last_update = coalesce(:lastUpdate, last_update),
-    next_update = coalesce(:nextUpdate, next_update),
     initialized = coalesce(:initialized, initialized),
     viewer = coalesce(:viewer, viewer),
     chapter_flags = coalesce(:chapterFlags, chapter_flags),
     cover_last_modified = coalesce(:coverLastModified, cover_last_modified),
     date_added = coalesce(:dateAdded, date_added),
     update_strategy = coalesce(:updateStrategy, update_strategy),
-    calculate_interval = coalesce(:calculateInterval, calculate_interval),
+    -- SY -->
     version = coalesce(:version, version),
     last_modified_at = coalesce(:lastModifiedAt, last_modified_at),
     is_syncing = coalesce(:isSyncing, is_syncing),
+    -- SY <--
     notes = coalesce(:notes, notes),
     memo = coalesce(:memo, memo)
+WHERE _id = :mangaId;
+
+updateRemote:
+UPDATE mangas SET
+    artist = coalesce(:artist, artist),
+    author = coalesce(:author, author),
+    description = coalesce(:description, description),
+    genre = coalesce(:genre, genre),
+    title = coalesce(:title, title),
+    status = :status,
+    thumbnail_url = coalesce(:thumbnailUrl, thumbnail_url),
+    initialized = :initialized,
+    cover_last_modified = coalesce(:coverLastModified, cover_last_modified),
+    update_strategy = :updateStrategy,
+    memo = :memo
 WHERE _id = :mangaId;
 
 insertNetworkManga {

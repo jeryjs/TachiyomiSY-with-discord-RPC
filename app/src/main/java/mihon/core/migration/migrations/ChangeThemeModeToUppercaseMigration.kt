@@ -7,9 +7,10 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.ui.UiPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 
 @Inject
 @ContributesIntoSet(AppScope::class)
@@ -19,7 +20,7 @@ class ChangeThemeModeToUppercaseMigration(
 ) : Migration {
     override val version: Float = 42f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         if (uiPreferences.themeMode.isSet()) {
             prefs.edit {
@@ -28,6 +29,6 @@ class ChangeThemeModeToUppercaseMigration(
             }
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

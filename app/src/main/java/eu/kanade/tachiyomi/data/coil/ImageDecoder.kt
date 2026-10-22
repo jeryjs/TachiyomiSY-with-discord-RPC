@@ -1,8 +1,9 @@
 package eu.kanade.tachiyomi.data.coil
 
-import android.app.Application
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
 import ca.mpreg.imagedecoder.ImageDecoder
 import coil3.Canvas
 import coil3.Image
@@ -15,111 +16,175 @@ import coil3.decode.ImageSource
 import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.util.storage.CbzCrypto
-import eu.kanade.tachiyomi.util.storage.CbzCrypto.getCoverStream
-import logcat.LogPriority
+import eu.kanade.tachiyomi.util.storage.CbzCrypto.Companion.getCoverStream
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import mihon.app.di.appGraph
 import mihon.core.common.archive.archiveReader
 import okio.BufferedSource
 import tachiyomi.core.common.util.system.ImageUtil
-import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.BufferedInputStream
+import kotlin.math.min
+import kotlin.math.sqrt
 
 /**
- * A [Decoder] that uses [ImageDecoder] (libvips-based) to decode image formats not supported
+ * A [Decoder] that uses [ImageDecoder] to decode image formats not supported
  * by the Android system decoder (AVIF, JXL, HEIF, etc.).
  */
 class ImageDecoder(private val resources: ImageSource, private val options: Options) : Decoder {
 
     /**
-     * Wraps a raw [ImageDecoder.DecodeResult] as a Coil [Image] for callers that want
+     * Wraps a raw [ImageDecoder.Frame] as a Coil [Image] for callers that want
      * direct access to the RGBA [java.nio.ByteBuffer] (e.g. the new-decoder path).
      */
-    class DecodeResultImage(val res: ImageDecoder.DecodeResult) : Image {
-        override val size: Long get() = res.image.capacity().toLong()
-        override val width: Int get() = res.width
-        override val height: Int get() = res.height
+    class DecodeResultImage(
+        val frame: ImageDecoder.Frame,
+        val isHdr: Boolean,
+        val hdrHeadroom: Float,
+        val gainmap: ImageDecoder.Gainmap?,
+    ) : Image {
+        val image: java.nio.ByteBuffer get() = frame.image
+
+        // Taken now: a caller may close the frame once it has the pixels.
+        override val size: Long = frame.image.capacity().toLong()
+        override val width: Int get() = frame.width
+        override val height: Int get() = frame.height
         override val shareable: Boolean get() = true
         override fun draw(canvas: Canvas) {}
     }
 
+    /**
+     * A page cut into immutable strips of about [STRIP_BYTES] each. The renderer uploads an
+     * immutable bitmap only when it is drawn, so only the strips on screen reach the GPU instead of
+     * the whole page as one texture.
+     */
+    class StripsImage(val strips: List<Bitmap>) : Image {
+        override val size: Long = strips.sumOf { it.allocationByteCount.toLong() }
+        override val width: Int = strips.firstOrNull()?.width ?: 0
+        override val height: Int = strips.sumOf { it.height }
+        override val shareable: Boolean get() = false
+        override fun draw(canvas: Canvas) {}
+    }
+
     override suspend fun decode(): DecodeResult {
+        if (options.webtoonStrips) return decodeStrips()
+
         // SY -->
+        val cbzCrypto = Injekt.get<Context>().appGraph.cbzCrypto
         var coverStream: BufferedInputStream? = null
-        if (resources.source().peek().use { CbzCrypto.detectCoverImageArchive(it.inputStream()) }) {
+        if (resources.source().peek().use { cbzCrypto.detectCoverImageArchive(it.inputStream()) }) {
             if (resources.source().peek().use { ImageUtil.findImageType(it.inputStream()) == null }) {
                 coverStream = UniFile.fromFile(resources.file().toFile())
-                    ?.archiveReader(context = Injekt.get<Application>())
+                    ?.archiveReader(context = Injekt.get<Context>(), cbzCrypto::getDecryptedPasswordCbz)
                     ?.getCoverStream()
-            }
-        }
-        val decoder = resources.source().use {
-            try {
-                coverStream.use { coverStream ->
-                    ImageDecoder.new(coverStream ?: it.inputStream())
-                }
-            } catch (e: ImageDecoder.DecodeException) {
-                logcat(LogPriority.ERROR, e) { "ImageDecoder.new failed: ${e.message}" }
-                null
             }
         }
         // SY <--
 
-        check(decoder != null && decoder.pages > 0) { "Failed to initialize decoder" }
+        return resources.source().use {
+            /* SY --> */ coverStream.use { coverStream ->
+                /* SY <-- */
+                ImageDecoder.open(/* SY --> */ coverStream ?: /* SY <-- */ it.inputStream()).use { dec ->
+                    // Raw frame for custom rendering; sampling is the caller's.
+                    if (options.newDecoder) {
+                        return@use DecodeResult(
+                            image = DecodeResultImage(
+                                dec.decodeNext(),
+                                dec.isHdr,
+                                dec.hdrHeadroom,
+                                if (dec.hdrKind == ImageDecoder.HdrKind.GAINMAP) dec.getGainmap() else null,
+                            ),
+                            isSampled = false,
+                        )
+                    }
 
-        val res = decoder.decode()
-
-        val srcWidth = res.width
-        val srcHeight = res.height
-
-        // newDecoder path: caller wants the raw DecodeResult (e.g. for custom rendering).
-        // Hand it back as-is; sampling is the caller's responsibility.
-        if (options.newDecoder) {
-            return DecodeResult(
-                image = DecodeResultImage(res),
-                isSampled = false,
-            )
+                    // Shrunk while decoding. Sizes round up, so may be a pixel over BitmapFactory's.
+                    val sampleSize = DecodeUtils.calculateInSampleSize(
+                        srcWidth = dec.width,
+                        srcHeight = dec.height,
+                        dstWidth = options.size.widthPx(options.scale) { dec.width },
+                        dstHeight = options.size.heightPx(options.scale) { dec.height },
+                        scale = options.scale,
+                    )
+                    DecodeResult(
+                        image = dec.decodeToBitmap(null, sampleSize).asImage(),
+                        isSampled = sampleSize > 1,
+                    )
+                }
+            }
         }
+    }
 
-        // Normal path: produce a Bitmap scaled to the requested output size.
-        val dstWidth = options.size.widthPx(options.scale) { srcWidth }
-        val dstHeight = options.size.heightPx(options.scale) { srcHeight }
-        val sampleSize = DecodeUtils.calculateInSampleSize(
-            srcWidth = srcWidth,
-            srcHeight = srcHeight,
-            dstWidth = dstWidth,
-            dstHeight = dstHeight,
-            scale = options.scale,
-        )
-
-        // Copy RGBA pixels from the native buffer into a full-resolution bitmap.
-        // We must do this while `res` (and its native memory) is still alive.
-        val fullBitmap = createBitmap(srcWidth, srcHeight)
-        res.image.rewind()
-        fullBitmap.copyPixelsFromBuffer(res.image)
-
-        // Downsample if needed. sampleSize is a power-of-two factor; the target
-        // dimensions are src / sampleSize, matching BitmapFactory inSampleSize behaviour.
-        val bitmap = if (sampleSize > 1) {
-            val scaledWidth = (srcWidth / sampleSize).coerceAtLeast(1)
-            val scaledHeight = (srcHeight / sampleSize).coerceAtLeast(1)
-            val scaled = fullBitmap.scale(scaledWidth, scaledHeight)
-            fullBitmap.recycle()
-            scaled
-        } else {
-            fullBitmap
+    /**
+     * Copies bands of rows straight from the native frame into strips, so the page never exists as
+     * one Java bitmap on top of the frame. The frame is decoded once, at the largest whole fraction
+     * still at least the strip width: per-strip regions would re-decode the rows above each.
+     *
+     * Strips keep the resolution a power-of-two sample size leaves, like the other paths, so zooming
+     * in still shows the page's detail, unless that would make the page take more than
+     * [MAX_PAGE_BYTES]. They are never narrower than the view, so the page stays sharp unzoomed.
+     */
+    private suspend fun decodeStrips(): DecodeResult = stripDecodes.withPermit {
+        val (frame, isHdr, widths) = resources.source().use {
+            ImageDecoder.open(it.inputStream()).use { dec ->
+                val bytesPerPixel = if (dec.isHdr) 8 else 4
+                val viewWidth = options.size.widthPx(options.scale) { dec.width }
+                val sampleSize = DecodeUtils.calculateInSampleSize(
+                    srcWidth = dec.width,
+                    srcHeight = dec.height,
+                    dstWidth = viewWidth,
+                    dstHeight = options.size.heightPx(options.scale) { dec.height },
+                    scale = options.scale,
+                )
+                val budgetWidth = sqrt(MAX_PAGE_BYTES.toDouble() / bytesPerPixel * dec.width / dec.height).toInt()
+                val stripWidth = maxOf(viewWidth, min(dec.width / sampleSize, budgetWidth))
+                    // Older GPUs can't draw a texture wider than this
+                    .coerceAtMost(MAX_STRIP_WIDTH)
+                    .coerceIn(1, dec.width)
+                // ceil(width / decodeSample) >= stripWidth: strips only scale down
+                val decodeSample = (dec.width / stripWidth).coerceAtLeast(1)
+                Triple(dec.decode(null, decodeSample), dec.isHdr, stripWidth to dec.width)
+            }
         }
+        val (stripWidth, pageWidth) = widths
+        frame.use {
+            val config = if (isHdr) Bitmap.Config.RGBA_F16 else Bitmap.Config.ARGB_8888
+            val bytesPerPixel = if (isHdr) 8 else 4
+            val rowBytes = frame.width * bytesPerPixel
+            val scale = stripWidth.toFloat() / frame.width
 
-        return DecodeResult(
-            image = bitmap.asImage(),
-            isSampled = sampleSize > 1,
-        )
+            // Strips of about the same size in bytes, so each takes about as long to upload
+            val stripRows = (STRIP_BYTES / (stripWidth * bytesPerPixel)).coerceAtLeast(1)
+            val bandRows = (stripRows / scale).toInt().coerceIn(1, frame.height)
+            val matrix = Matrix().apply { setScale(scale, scale) }
+            val band = createBitmap(frame.width, bandRows, config)
+            val strips = (0..<frame.height step bandRows).map { top ->
+                val rows = min(bandRows, frame.height - top)
+                if (rows != band.height) band.reconfigure(frame.width, rows, config)
+                band.copyPixelsFromBuffer(
+                    frame.image.duplicate().apply {
+                        position(top * rowBytes)
+                        limit((top + rows) * rowBytes)
+                    },
+                )
+                val strip = if (stripWidth < frame.width) {
+                    Bitmap.createBitmap(band, 0, 0, frame.width, rows, matrix, true)
+                } else {
+                    band
+                }
+                // createBitmap returns a mutable bitmap despite its docs, and copy is the only way to an immutable one
+                strip.copy(config, false).also { if (strip !== band) strip.recycle() }
+            }
+            band.recycle()
+            DecodeResult(image = StripsImage(strips), isSampled = stripWidth < pageWidth)
+        }
     }
 
     class Factory : Decoder.Factory {
         override fun create(result: SourceFetchResult, options: Options, imageLoader: ImageLoader): Decoder? {
-            return if (options.newDecoder || options.customDecoder || isApplicable(result.source.source())) {
+            return if (options.newDecoder || options.webtoonStrips || isApplicable(result.source.source())) {
                 ImageDecoder(result.source, options)
             } else {
                 null
@@ -132,7 +197,7 @@ class ImageDecoder(private val resources: ImageSource, private val options: Opti
             }
             // SY -->
             source.peek().inputStream().use { stream ->
-                if (CbzCrypto.detectCoverImageArchive(stream)) return true
+                if (Injekt.get<Context>().appGraph.cbzCrypto.detectCoverImageArchive(stream)) return true
             }
             // SY <--
             return when (type) {
@@ -151,3 +216,12 @@ class ImageDecoder(private val resources: ImageSource, private val options: Opti
         override fun hashCode() = javaClass.hashCode()
     }
 }
+
+private const val STRIP_BYTES = 4 * 1024 * 1024
+
+private const val MAX_PAGE_BYTES = 128 * 1024 * 1024
+
+private const val MAX_STRIP_WIDTH = 4096
+
+// Each decode holds the whole native frame until its strips are copied, and the reader loads pages ahead in parallel
+private val stripDecodes = Semaphore(1)

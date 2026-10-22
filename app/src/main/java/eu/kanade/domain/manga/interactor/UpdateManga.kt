@@ -6,6 +6,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import tachiyomi.domain.manga.interactor.FetchInterval
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.repository.MangaRepository
 import kotlin.time.Clock
@@ -23,6 +24,12 @@ class UpdateManga(
     suspend fun awaitAll(mangaUpdates: List<MangaUpdate>): Boolean {
         return mangaRepository.updateAll(mangaUpdates)
     }
+
+    // SY -->
+    suspend fun awaitRemote(mangaRemoteUpdate: MangaRemoteUpdate): Boolean {
+        return mangaRepository.updateRemote(mangaRemoteUpdate)
+    }
+    // SY <--
 
     suspend fun awaitUpdateFetchInterval(
         manga: Manga,

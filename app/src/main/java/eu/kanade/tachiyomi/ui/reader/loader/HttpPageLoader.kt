@@ -13,16 +13,17 @@ import exh.util.DataSaver
 import exh.util.DataSaver.Companion.getImage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.suspendCancellableCoroutine
-import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withIOContext
+import kotlinx.coroutines.withContext
 import java.util.concurrent.PriorityBlockingQueue
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -32,11 +33,11 @@ import kotlin.math.min
 /**
  * Loader used to load chapters from an online source.
  */
-@OptIn(DelicateCoroutinesApi::class)
 internal class HttpPageLoader(
     private val chapter: ReaderChapter,
     private val source: HttpSource,
     private val chapterCache: ChapterCache,
+    private val appScope: CoroutineScope,
     // SY -->
     private val readerPreferences: ReaderPreferences,
     sourcePreferences: SourcePreferences,
@@ -56,11 +57,20 @@ internal class HttpPageLoader(
     private val dataSaver = DataSaver(source, sourcePreferences)
     // SY <--
 
+    // How many pending loadPage calls want each page index, counting their preloads. Once nothing wants a page
+    // in flight its download is cancelled instead of holding up the pages being read. Guards inFlight too.
+    private val wantedPages = HashMap<Int, Int>()
+
+    // SY -->
+    // The downloads in flight by page index, as SY downloads with several workers
+    private val inFlight = HashMap<Int, Job>()
+    // SY <--
+
     init {
         // EXH -->
         repeat(readerPreferences.readerThreads.get()) {
             // EXH <--
-            scope.launchIO {
+            scope.launch(Dispatchers.IO) {
                 flow {
                     while (true) {
                         emit(runInterruptible { queue.take() })
@@ -68,10 +78,17 @@ internal class HttpPageLoader(
                 }
                     .filter { it.page.status == Page.State.Queue }
                     .collect {
-                        internalLoadPage(
-                            page = it.page,
-                            force = it.priority == PriorityPage.RETRY,
-                        )
+                        coroutineScope {
+                            val load = launch {
+                                internalLoadPage(
+                                    page = it.page,
+                                    force = it.priority == PriorityPage.RETRY,
+                                )
+                            }
+                            synchronized(wantedPages) { inFlight[it.page.index] = load }
+                            load.join()
+                            synchronized(wantedPages) { inFlight.remove(it.page.index, load) }
+                        }
                     }
             }
             // EXH -->
@@ -113,11 +130,14 @@ internal class HttpPageLoader(
     /**
      * Loads a page through the queue. Handles re-enqueueing pages if they were evicted from the cache.
      */
-    override suspend fun loadPage(page: ReaderPage) = withIOContext {
+    override suspend fun loadPage(page: ReaderPage) {
         val imageUrl = page.imageUrl
 
-        // Check if the image has been deleted
-        if (page.status == Page.State.Ready && imageUrl != null && !chapterCache.isImageInCache(imageUrl)) {
+        // Check if the image has been deleted. Only this touches the disk; the queueing below
+        // stays on the caller's thread, so requests queue in the order they were made.
+        if (page.status == Page.State.Ready && imageUrl != null &&
+            !withContext(Dispatchers.IO) { chapterCache.isImageInCache(imageUrl) }
+        ) {
             page.status = Page.State.Queue
         }
 
@@ -126,11 +146,23 @@ internal class HttpPageLoader(
             page.status = Page.State.Queue
         }
 
+        val nextPages = nextPages(page, preloadSize)
+        val wanted = listOf(page) + nextPages
+        synchronized(wantedPages) {
+            wanted.forEach { wantedPages.merge(it.index, 1, Int::plus) }
+        }
+
         val queuedPages = mutableListOf<PriorityPage>()
         if (page.status == Page.State.Queue) {
             queuedPages += PriorityPage(page, PriorityPage.DEFAULT).also { queue.offer(it) }
         }
-        queuedPages += preloadNextPages(page, preloadSize)
+        queuedPages += nextPages.mapNotNull {
+            if (it.status == Page.State.Queue) {
+                PriorityPage(it, PriorityPage.ADJACENT).apply { queue.offer(this) }
+            } else {
+                null
+            }
+        }
 
         suspendCancellableCoroutine<Nothing> { continuation ->
             continuation.invokeOnCancellation {
@@ -138,6 +170,18 @@ internal class HttpPageLoader(
                     if (it.page.status == Page.State.Queue) {
                         queue.remove(it)
                     }
+                }
+                synchronized(wantedPages) {
+                    wanted.forEach {
+                        wantedPages.computeIfPresent(it.index) { _, count -> (count - 1).takeIf { it > 0 } }
+                    }
+                    // A cancelled load ends in Error, which the next loadPage of that page queues again
+                    // SY -->
+                    // Aggressive loading wants every page, even ones no loadPage asks for
+                    if (!readerPreferences.aggressivePageLoading.get()) {
+                        wanted.forEach { if (it.index !in wantedPages) inFlight[it.index]?.cancel() }
+                    }
+                    // SY <--
                 }
             }
         }
@@ -171,7 +215,7 @@ internal class HttpPageLoader(
 
         // Cache current page list progress for online chapters to allow a faster reopen
         chapter.pages?.let { pages ->
-            launchIO {
+            appScope.launch(Dispatchers.IO) {
                 try {
                     // Convert to pages without reader information
                     val pagesToSave = pages.map { Page(it.index, it.url, it.imageUrl) }
@@ -186,24 +230,14 @@ internal class HttpPageLoader(
     }
 
     /**
-     * Preloads the given [amount] of pages after the [currentPage] with a lower priority.
-     *
-     * @return a list of [PriorityPage] that were added to the [queue]
+     * Returns the [amount] of pages after [currentPage], which are preloaded with a lower priority.
      */
-    private fun preloadNextPages(currentPage: ReaderPage, amount: Int): List<PriorityPage> {
+    private fun nextPages(currentPage: ReaderPage, amount: Int): List<ReaderPage> {
         val pageIndex = currentPage.index
         val pages = currentPage.chapter.pages ?: return emptyList()
         if (pageIndex == pages.lastIndex) return emptyList()
 
-        return pages
-            .subList(pageIndex + 1, min(pageIndex + 1 + amount, pages.size))
-            .mapNotNull {
-                if (it.status == Page.State.Queue) {
-                    PriorityPage(it, PriorityPage.ADJACENT).apply { queue.offer(this) }
-                } else {
-                    null
-                }
-            }
+        return pages.subList(pageIndex + 1, min(pageIndex + 1 + amount, pages.size))
     }
 
     /**
@@ -221,14 +255,23 @@ internal class HttpPageLoader(
             val imageUrl = page.imageUrl!!
 
             if (force || !chapterCache.isImageInCache(imageUrl)) {
+                val live = page.downloadStream
                 page.status = Page.State.DownloadImage
-                val imageResponse = source.getImage(page, dataSaver = dataSaver)
-                chapterCache.putImageToCache(imageUrl, imageResponse)
+                try {
+                    val imageResponse = source.getImage(page, dataSaver = dataSaver)
+                    chapterCache.putImageToCache(imageUrl, imageResponse, live)
+                    live?.finish()
+                } catch (e: Throwable) {
+                    live?.finish(e)
+                    throw e
+                }
             }
 
+            page.downloadStream = null
             page.stream = { chapterCache.getImageFile(imageUrl).inputStream() }
             page.status = Page.State.Ready
         } catch (e: Throwable) {
+            page.downloadStream = null
             page.status = Page.State.Error(e)
             if (e is CancellationException) {
                 throw e
@@ -239,7 +282,7 @@ internal class HttpPageLoader(
     // EXH -->
     fun boostPage(page: ReaderPage) {
         if (page.status == Page.State.Queue) {
-            scope.launchIO {
+            scope.launch(Dispatchers.IO) {
                 loadPage(page)
             }
         }

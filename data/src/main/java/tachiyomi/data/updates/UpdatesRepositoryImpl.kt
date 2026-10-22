@@ -1,6 +1,7 @@
 package tachiyomi.data.updates
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.db.SqlDriver
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -11,6 +12,7 @@ import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.data.Database
 import tachiyomi.data.getUpdatesQuery
 import tachiyomi.data.subscribeToList
+import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.domain.updates.repository.UpdatesRepository
@@ -21,6 +23,8 @@ import tachiyomi.view.UpdatesView
 @ContributesBinding(AppScope::class)
 class UpdatesRepositoryImpl(
     private val database: Database,
+    private val driver: SqlDriver,
+    private val getCustomMangaInfo: GetCustomMangaInfo,
 ) : UpdatesRepository {
 
     override suspend fun awaitWithRead(
@@ -64,6 +68,7 @@ class UpdatesRepositoryImpl(
             )
             .subscribeToList().map {
                 getUpdatesQuery(
+                    driver = driver,
                     after = after,
                     limit = limit,
                     // invert because unread in Kotlin -> read column in SQL
@@ -114,33 +119,40 @@ class UpdatesRepositoryImpl(
         dateUpload: Long,
         dateFetch: Long,
         excludedScanlator: String?,
-    ): UpdatesWithRelations = UpdatesWithRelations(
-        mangaId = mangaId,
-        // SY -->
-        ogMangaTitle = mangaTitle,
-        // SY <--
-        chapterId = chapterId,
-        chapterName = chapterName,
-        scanlator = scanlator,
-        chapterUrl = chapterUrl,
-        read = read,
-        bookmark = bookmark,
-        lastPageRead = lastPageRead,
-        sourceId = sourceId,
-        dateFetch = dateFetch,
-        coverData = MangaCover(
+    ): UpdatesWithRelations {
+        val customMangaInfo = getCustomMangaInfo.get(mangaId)
+        return UpdatesWithRelations(
             mangaId = mangaId,
+            // SY -->
+            ogMangaTitle = mangaTitle,
+            customMangaInfo = customMangaInfo,
+            // SY <--
+            chapterId = chapterId,
+            chapterName = chapterName,
+            scanlator = scanlator,
+            chapterUrl = chapterUrl,
+            read = read,
+            bookmark = bookmark,
+            lastPageRead = lastPageRead,
             sourceId = sourceId,
-            isMangaFavorite = favorite,
-            ogUrl = thumbnailUrl,
-            lastModified = coverLastModified,
-        ),
-    )
+            dateFetch = dateFetch,
+            coverData = MangaCover(
+                mangaId = mangaId,
+                sourceId = sourceId,
+                isMangaFavorite = favorite,
+                ogUrl = thumbnailUrl,
+                customThumbnailUrl = if (favorite) customMangaInfo?.thumbnailUrl else null,
+                lastModified = coverLastModified,
+            ),
+        )
+    }
 
     fun mapUpdatesView(updatesView: UpdatesView): UpdatesWithRelations {
+        val customMangaInfo = getCustomMangaInfo.get(updatesView.mangaId)
         return UpdatesWithRelations(
             mangaId = updatesView.mangaId,
             ogMangaTitle = updatesView.mangaTitle,
+            customMangaInfo = customMangaInfo,
             chapterId = updatesView.chapterId,
             chapterName = updatesView.chapterName,
             scanlator = updatesView.scanlator,
@@ -155,6 +167,7 @@ class UpdatesRepositoryImpl(
                 sourceId = updatesView.source,
                 isMangaFavorite = updatesView.favorite,
                 ogUrl = updatesView.thumbnailUrl,
+                customThumbnailUrl = if (updatesView.favorite) customMangaInfo?.thumbnailUrl else null,
                 lastModified = updatesView.coverLastModified,
             ),
         )

@@ -23,6 +23,7 @@ import eu.kanade.tachiyomi.util.system.isConnectedToWifi
 import eu.kanade.tachiyomi.util.system.setForegroundSafely
 import eu.kanade.tachiyomi.util.system.workManager
 import exh.debug.DebugToggles
+import exh.debug.isEnabled
 import exh.eh.EHentaiUpdateWorkerConstants.UPDATES_PER_ITERATION
 import exh.log.xLog
 import exh.metadata.metadata.EHentaiSearchMetadata
@@ -36,6 +37,7 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import mihon.domain.source.interactor.UpdateMangaFromRemote
+import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
@@ -78,6 +80,8 @@ class EHentaiUpdateWorker(private val context: Context, workerParams: WorkerPara
     @Inject private lateinit var updateNotifier: EHentaiUpdateNotifier
 
     @Inject private lateinit var libraryUpdateNotifier: LibraryUpdateNotifier
+
+    @Inject private lateinit var preferenceStore: PreferenceStore
 
     override suspend fun doWork(): Result {
         graph.inject(this)
@@ -129,7 +133,7 @@ class EHentaiUpdateWorker(private val context: Context, workerParams: WorkerPara
             if (raisedMeta.aged ||
                 (
                     curTime - raisedMeta.lastUpdateCheck < MIN_BACKGROUND_UPDATE_FREQ &&
-                        DebugToggles.RESTRICT_EXH_GALLERY_UPDATE_CHECK_FREQUENCY.enabled
+                        DebugToggles.RESTRICT_EXH_GALLERY_UPDATE_CHECK_FREQUENCY.isEnabled(preferenceStore)
                     )
             ) {
                 return@mapNotNull null

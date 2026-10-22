@@ -8,9 +8,10 @@ import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.network.PREF_DOH_CLOUDFLARE
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.core.common.util.lang.withIOContext
 
 @Inject
 @ContributesIntoSet(AppScope::class)
@@ -20,7 +21,7 @@ class MoveDOHSettingMigration(
 ) : Migration {
     override val version: Float = 14f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         // Migrate DNS over HTTPS setting
         val wasDohEnabled = prefs.getBoolean("enable_doh", false)
@@ -31,6 +32,6 @@ class MoveDOHSettingMigration(
             }
         }
 
-        return@withIOContext true
+        return@withContext true
     }
 }

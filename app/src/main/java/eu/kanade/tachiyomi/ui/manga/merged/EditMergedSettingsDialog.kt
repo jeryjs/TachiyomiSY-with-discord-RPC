@@ -107,7 +107,7 @@ fun EditMergedSettingsDialog(
                     reference,
                     mergedData.sources
                         .firstOrNull { it.id == manga?.source }
-                        ?: StubSource(manga?.source ?: -1, lang = "", name = "")
+                        ?: StubSource(manga?.source ?: -1, lang = "", name = ""),
                 )
             }
             .toMutableStateList()

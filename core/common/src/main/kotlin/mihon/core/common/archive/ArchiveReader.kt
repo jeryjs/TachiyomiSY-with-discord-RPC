@@ -10,7 +10,7 @@ import tachiyomi.core.common.storage.openFileDescriptor
 import java.io.Closeable
 import java.io.InputStream
 
-class ArchiveReader(pfd: ParcelFileDescriptor) : Closeable {
+class ArchiveReader(pfd: ParcelFileDescriptor, val getDecryptedPassword: (() -> ByteArray)?) : Closeable {
     val size = pfd.statSize
     val address = Os.mmap(0, size, OsConstants.PROT_READ, OsConstants.MAP_PRIVATE, pfd.fileDescriptor, 0)
 
@@ -30,12 +30,12 @@ class ArchiveReader(pfd: ParcelFileDescriptor) : Closeable {
         address,
         size,
         // SY -->
-        encrypted,
+        getDecryptedPassword,
         // SY <--
     ).use { block(generateSequence { it.getNextEntry() }) }
 
     fun getInputStream(entryName: String): InputStream? {
-        val archive = ArchiveInputStream(address, size, /* SY --> */ encrypted /* SY <-- */)
+        val archive = ArchiveInputStream(address, size, /* SY --> */ getDecryptedPassword /* SY <-- */)
         try {
             while (true) {
                 val entry = archive.getNextEntry() ?: break
@@ -53,7 +53,7 @@ class ArchiveReader(pfd: ParcelFileDescriptor) : Closeable {
 
     // SY -->
     private fun checkEncryptionStatus() {
-        val archive = ArchiveInputStream(address, size, false)
+        val archive = ArchiveInputStream(address, size, null)
         try {
             while (true) {
                 val entry = archive.getNextEntry() ?: break
@@ -91,4 +91,4 @@ class ArchiveReader(pfd: ParcelFileDescriptor) : Closeable {
     }
 }
 
-fun UniFile.archiveReader(context: Context) = openFileDescriptor(context, "r").use { ArchiveReader(it) }
+fun UniFile.archiveReader(context: Context, getDecryptedPassword: (() -> ByteArray)?) = openFileDescriptor(context, "r").use { ArchiveReader(it, getDecryptedPassword) }

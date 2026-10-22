@@ -8,8 +8,6 @@ import rx.Completable
 import rx.Single
 import tachiyomi.core.common.util.lang.awaitSingle
 import tachiyomi.core.common.util.lang.runAsObservable
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.reflect.KClass
 
 /**
@@ -20,14 +18,15 @@ interface MetadataSource<M : RaisedSearchMetadata, I> : Source {
         suspend fun awaitId(url: String, sourceId: Long): Long?
     }
     interface InsertFlatMetadata {
+        suspend fun await(flatMetadata: FlatMetadata)
         suspend fun await(metadata: RaisedSearchMetadata)
     }
     interface GetFlatMetadataById {
         suspend fun await(id: Long): FlatMetadata?
     }
-    val getMangaId: GetMangaId get() = Injekt.get()
-    val insertFlatMetadata: InsertFlatMetadata get() = Injekt.get()
-    val getFlatMetadataById: GetFlatMetadataById get() = Injekt.get()
+    val getMangaId: GetMangaId
+    val insertFlatMetadata: InsertFlatMetadata
+    val getFlatMetadataById: GetFlatMetadataById
 
     /**
      * The class of the metadata used by this source

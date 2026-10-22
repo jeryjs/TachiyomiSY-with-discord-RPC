@@ -20,7 +20,9 @@ import com.google.api.services.drive.model.File
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.backup.models.Backup
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
@@ -30,7 +32,6 @@ import okio.gzip
 import okio.sink
 import okio.source
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
@@ -137,7 +138,7 @@ class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: Sync
 
         PipedOutputStream().use { pos ->
             PipedInputStream(pos).use { pis ->
-                withIOContext {
+                withContext(Dispatchers.IO) {
                     launch {
                         pos.sink().buffer().use { body.writeTo(it) }
                     }
@@ -203,7 +204,7 @@ class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: Sync
         }
         googleDriveService.refreshToken()
 
-        return withIOContext {
+        return withContext(Dispatchers.IO) {
             try {
                 val appDataFileList = getAppDataFileList(drive)
 
@@ -298,7 +299,7 @@ class GoogleDriveService(private val context: Context, private val syncPreferenc
             .setApprovalPrompt("force")
             .build()
     }
-    internal suspend fun refreshToken() = withIOContext {
+    internal suspend fun refreshToken() = withContext(Dispatchers.IO) {
         val refreshToken = syncPreferences.googleDriveRefreshToken.get()
 
         val jsonFactory: JsonFactory = JacksonFactory.getDefaultInstance()

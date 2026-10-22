@@ -17,6 +17,7 @@ import tachiyomi.domain.manga.repository.MangaMetadataRepository
 
 class MangaMetadataRepositoryImpl(
     private val database: Database,
+    private val mangaMapper: MangaMapper,
 ) : MangaMetadataRepository {
 
     override suspend fun getMetadataById(id: Long): SearchMetadata? {
@@ -75,7 +76,7 @@ class MangaMetadataRepositoryImpl(
 
     override suspend fun getExhFavoriteMangaWithMetadata(): List<Manga> {
         return database.mangasQueries
-            .getEhMangaWithMetadata(EH_SOURCE_ID, EXH_SOURCE_ID, MangaMapper::mapManga)
+            .getEhMangaWithMetadata(EH_SOURCE_ID, EXH_SOURCE_ID, mangaMapper::mapManga)
             .awaitAsList()
     }
 

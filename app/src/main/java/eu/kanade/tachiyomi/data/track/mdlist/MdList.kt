@@ -10,13 +10,13 @@ import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.online.all.MangaDex
 import exh.md.network.MangaDexAuthInterceptor
 import exh.md.utils.FollowStatus
 import exh.md.utils.MdUtil
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import tachiyomi.core.common.util.lang.awaitSingle
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
@@ -29,8 +29,8 @@ class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
             .map(Int::toString)
     }
 
-    private val mdex = GlobalScope.async {
-        MdUtil.getEnabledMangaDex()
+    suspend fun getEnabledMangaDex(): MangaDex? {
+        return MdUtil.getEnabledMangaDex(appGraph.sourcePreferences, appGraph.sourceManager)
     }
 
     val interceptor by lazy {
@@ -61,8 +61,8 @@ class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
     override fun displayScore(track: DomainTrack) = track.score.toInt().toString()
 
     override suspend fun update(track: Track, didReadChapter: Boolean): Track {
-        return withIOContext {
-            val mdex = mdex.await() ?: throw MangaDexNotFoundException()
+        return withContext(Dispatchers.IO) {
+            val mdex = getEnabledMangaDex() ?: throw MangaDexNotFoundException()
 
             val remoteTrack = mdex.fetchTrackingInfo(track.tracking_url)
             val followStatus = FollowStatus.fromLong(track.status)
@@ -123,8 +123,8 @@ class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
     )
 
     override suspend fun refresh(track: Track): Track {
-        return withIOContext {
-            val mdex = mdex.await() ?: throw MangaDexNotFoundException()
+        return withContext(Dispatchers.IO) {
+            val mdex = getEnabledMangaDex() ?: throw MangaDexNotFoundException()
             val remoteTrack = mdex.fetchTrackingInfo(track.tracking_url)
             track.copyPersonalFrom(remoteTrack)
             /*if (track.total_chapters == 0 && mangaMetadata.status == SManga.COMPLETED) {
@@ -144,8 +144,8 @@ class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
     }
 
     override suspend fun search(query: String): List<TrackSearch> {
-        return withIOContext {
-            val mdex = mdex.await() ?: throw MangaDexNotFoundException()
+        return withContext(Dispatchers.IO) {
+            val mdex = getEnabledMangaDex() ?: throw MangaDexNotFoundException()
             mdex.getSearchManga(1, query, FilterList())
                 .mangas
                 .map {
@@ -164,14 +164,16 @@ class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
 
     override suspend fun login(username: String, password: String): Unit = throw Exception("not used")
 
+    override suspend fun updateUserConfig() = Unit
+
     override fun logout() {
         super.logout()
         trackPreferences.trackToken(this).delete()
     }
 
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata {
-        return withIOContext {
-            val mdex = mdex.await() ?: throw MangaDexNotFoundException()
+        return withContext(Dispatchers.IO) {
+            val mdex = getEnabledMangaDex() ?: throw MangaDexNotFoundException()
             val manga = mdex.getMangaMetadata(track.toDbTrack())
             TrackMangaMetadata(
                 remoteId = 0,

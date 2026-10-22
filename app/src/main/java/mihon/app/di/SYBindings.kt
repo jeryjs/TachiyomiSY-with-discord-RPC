@@ -8,10 +8,13 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.source.online.MetadataSource
+import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import tachiyomi.data.Database
 import tachiyomi.data.manga.CustomMangaRepositoryImpl
 import tachiyomi.data.manga.FavoritesEntryRepositoryImpl
+import tachiyomi.data.manga.MangaMapper
 import tachiyomi.data.manga.MangaMergeRepositoryImpl
 import tachiyomi.data.manga.MangaMetadataRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
@@ -49,13 +52,13 @@ object SYBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesMangaMetadataRepository(database: Database): MangaMetadataRepository =
-        MangaMetadataRepositoryImpl(database)
+    fun providesMangaMetadataRepository(database: Database, mangaMapper: MangaMapper): MangaMetadataRepository =
+        MangaMetadataRepositoryImpl(database, mangaMapper)
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesMangaMergeRepository(database: Database): MangaMergeRepository =
-        MangaMergeRepositoryImpl(database)
+    fun providesMangaMergeRepository(database: Database, mangaMapper: MangaMapper): MangaMergeRepository =
+        MangaMergeRepositoryImpl(database, mangaMapper)
 
     @Provides
     @SingleIn(AppScope::class)
@@ -76,6 +79,11 @@ object SYBindings {
     @SingleIn(AppScope::class)
     fun providesCustomMangaRepository(context: Context): CustomMangaRepository =
         CustomMangaRepositoryImpl(context)
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun providesCbzCrypto(securityPreferences: SecurityPreferences): CbzCrypto =
+        CbzCrypto(securityPreferences)
 
     @Provides
     fun providesGetMangaId(getManga: GetManga): MetadataSource.GetMangaId =

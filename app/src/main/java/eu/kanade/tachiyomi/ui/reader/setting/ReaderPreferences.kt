@@ -7,6 +7,8 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
+import eu.kanade.tachiyomi.ui.reader.viewer.webgpu.WebGpuShader
+import eu.kanade.tachiyomi.ui.reader.viewer.webgpu.WebGpuShaders
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
@@ -208,9 +210,37 @@ class ReaderPreferences(
     // region WebGpu
 
     val transitionAnimation: Preference<TransitionAnimation> =
-        preferenceStore.getEnum("webgpu_transition_animation", TransitionAnimation.DEFAULT)
+        preferenceStore.getEnum("webgpu_transition_animation", TransitionAnimation.BASIC)
+
+    val transitionAnimationDual: Preference<TransitionAnimation> =
+        preferenceStore.getEnum("webgpu_dual_transition_animation", TransitionAnimation.BASIC)
 
     val cutoutMode: Preference<CutoutMode> = preferenceStore.getEnum("webgpu_cutout_mode", CutoutMode.AVOID)
+
+    val cutoutModeDual: Preference<CutoutMode> = preferenceStore.getEnum("webgpu_dual_cutout_mode", CutoutMode.IGNORE)
+
+    val continuousMinWidth: Preference<Int> = preferenceStore.getInt("webgpu_continuous_minwidth", 100)
+
+    val continuousGap: Preference<Int> = preferenceStore.getInt("webgpu_continuous_gap", 10)
+
+    val disableDoubleTapGestures: Preference<Boolean> =
+        preferenceStore.getBoolean("webgpu_disable_double_tap_gestures", false)
+
+    /** In run order. */
+    val imageFilters: Preference<List<WebGpuShader>> = preferenceStore.getObjectFromString(
+        "webgpu_image_filters",
+        emptyList(),
+        WebGpuShaders::serialize,
+        WebGpuShaders::deserialize,
+    )
+
+    /** In run order. */
+    val tileFilters: Preference<List<WebGpuShader>> = preferenceStore.getObjectFromString(
+        "webgpu_tile_filters",
+        emptyList(),
+        WebGpuShaders::serialize,
+        WebGpuShaders::deserialize,
+    )
 
     // endregion
 
@@ -286,7 +316,8 @@ class ReaderPreferences(
     }
 
     enum class TransitionAnimation(val titleRes: StringResource) {
-        DEFAULT(MR.strings.transition_animation_default),
+        BASIC(MR.strings.transition_animation_basic),
+        FLIP(MR.strings.transition_animation_flip),
         FLIP_LEFT(MR.strings.transition_animation_flip_left),
         FLIP_RIGHT(
             MR.strings.transition_animation_flip_right,
@@ -343,6 +374,13 @@ class ReaderPreferences(
             MR.strings.scale_type_fit_height,
             MR.strings.scale_type_original_size,
             MR.strings.scale_type_smart_fit,
+        )
+
+        val ImageScaleTypeWebGpuViewer = listOf(
+            MR.strings.scale_type_fit_screen,
+            MR.strings.scale_type_fit_width,
+            MR.strings.scale_type_fit_height,
+            MR.strings.scale_type_original_size,
         )
 
         val ZoomStart = listOf(

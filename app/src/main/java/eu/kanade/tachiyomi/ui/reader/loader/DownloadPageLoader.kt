@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import mihon.core.common.archive.archiveReader
 import tachiyomi.domain.manga.model.Manga
 
@@ -25,6 +26,9 @@ internal class DownloadPageLoader(
     private val downloadProvider: DownloadProvider,
     private val context: Context,
     private val readerPreferences: ReaderPreferences,
+    // SY -->
+    private val cbzCrypto: CbzCrypto,
+    // SY <--
 ) : PageLoader() {
 
     private var archivePageLoader: ArchivePageLoader? = null
@@ -53,11 +57,11 @@ internal class DownloadPageLoader(
     }
 
     private suspend fun getPagesFromArchive(file: UniFile): List<ReaderPage> {
-        val loader = ArchivePageLoader(file.archiveReader(context), context, readerPreferences).also { archivePageLoader = it }
+        val loader = ArchivePageLoader(file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz), context, readerPreferences).also { archivePageLoader = it }
         return loader.getPages()
     }
 
-    private fun getPagesFromDirectory(): List<ReaderPage> {
+    private suspend fun getPagesFromDirectory(): List<ReaderPage> {
         val pages = downloadManager.buildPageList(source, manga, chapter.chapter.toDomainChapter()!!)
         return pages.map { page ->
             ReaderPage(page.index, page.url, page.imageUrl) {

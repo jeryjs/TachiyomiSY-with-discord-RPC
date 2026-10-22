@@ -14,29 +14,30 @@ import tachiyomi.domain.manga.repository.MangaMergeRepository
 
 class MangaMergeRepositoryImpl(
     private val database: Database,
+    private val mangaMapper: MangaMapper,
 ) : MangaMergeRepository {
 
     override suspend fun getMergedManga(): List<Manga> {
         return database.mergedQueries
-            .selectAllMergedMangas(MangaMapper::mapManga)
+            .selectAllMergedMangas(mangaMapper::mapManga)
             .awaitAsList()
     }
 
     override suspend fun subscribeMergedManga(): Flow<List<Manga>> {
         return database.mergedQueries
-            .selectAllMergedMangas(MangaMapper::mapManga)
+            .selectAllMergedMangas(mangaMapper::mapManga)
             .subscribeToList()
     }
 
     override suspend fun getMergedMangaById(id: Long): List<Manga> {
         return database.mergedQueries
-            .selectMergedMangasById(id, MangaMapper::mapManga)
+            .selectMergedMangasById(id, mangaMapper::mapManga)
             .awaitAsList()
     }
 
     override suspend fun subscribeMergedMangaById(id: Long): Flow<List<Manga>> {
         return database.mergedQueries
-            .selectMergedMangasById(id, MangaMapper::mapManga)
+            .selectMergedMangasById(id, mangaMapper::mapManga)
             .subscribeToList()
     }
 
@@ -137,7 +138,7 @@ class MangaMergeRepositoryImpl(
 
     override suspend fun getMergeMangaForDownloading(mergeId: Long): List<Manga> {
         return database.mergedQueries
-            .selectMergedMangasForDownloadingById(mergeId, MangaMapper::mapManga)
+            .selectMergedMangasForDownloadingById(mergeId, mangaMapper::mapManga)
             .awaitAsList()
     }
 }

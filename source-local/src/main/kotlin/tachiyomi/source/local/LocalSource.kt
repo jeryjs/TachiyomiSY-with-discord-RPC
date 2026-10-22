@@ -14,10 +14,17 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import eu.kanade.tachiyomi.util.lang.compareToCaseInsensitiveNaturalOrder
+import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import eu.kanade.tachiyomi.util.storage.EpubFile
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import logcat.LogPriority
@@ -28,7 +35,6 @@ import nl.adaptivity.xmlutil.serialization.XML
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.core.metadata.comicinfo.COMIC_INFO_FILE
@@ -66,6 +72,7 @@ class LocalSource(
     private val coverManager: LocalCoverManager,
     // SY -->
     private val localSourceAllowHiddenFiles: LocalSourceAllowHiddenFiles,
+    private val cbzCrypto: CbzCrypto,
     // SY <--
 ) : Source, UnmeteredSource {
 
@@ -93,7 +100,9 @@ class LocalSource(
 
     override suspend fun getLatestUpdates(page: Int) = getSearchManga(page, "", LatestFilters)
 
-    override suspend fun getSearchManga(page: Int, query: String, filters: FilterList): MangasPage = withIOContext {
+    override suspend fun getSearchManga(page: Int, query: String, filters: FilterList): MangasPage = withContext(
+        Dispatchers.IO,
+    ) {
         val lastModifiedLimit = if (filters === LatestFilters) {
             System.currentTimeMillis() - LATEST_THRESHOLD
         } else {
@@ -170,7 +179,7 @@ class LocalSource(
         val existingFile = mangaDirFiles
             .firstOrNull { it.name == COMIC_INFO_FILE }
         val comicInfoArchiveFile = mangaDirFiles.firstOrNull { it.name == COMIC_INFO_ARCHIVE }
-        val comicInfoArchiveReader = comicInfoArchiveFile?.archiveReader(context)
+        val comicInfoArchiveReader = comicInfoArchiveFile?.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz)
         val existingComicInfo =
             (existingFile?.openInputStream() ?: comicInfoArchiveReader?.getInputStream(COMIC_INFO_FILE))?.use {
                 AndroidXmlReader(it, StandardCharsets.UTF_8.name()).use { xmlReader ->
@@ -216,7 +225,7 @@ class LocalSource(
     }
 
     // Manga details related
-    private suspend fun getMangaDetails(manga: SManga): SManga = withIOContext {
+    private suspend fun getMangaDetails(manga: SManga): SManga = withContext(Dispatchers.IO) {
         coverManager.find(manga.url)?.let {
             manga.thumbnail_url = it.uri.toString()
         }
@@ -247,7 +256,7 @@ class LocalSource(
                 comicInfoArchiveFile != null -> {
                     noXmlFile?.delete()
 
-                    comicInfoArchiveFile.archiveReader(context).getInputStream(COMIC_INFO_FILE)
+                    comicInfoArchiveFile.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz).getInputStream(COMIC_INFO_FILE)
                         ?.let { setMangaDetailsFromComicInfoFile(it, manga) }
                 }
 
@@ -286,7 +295,7 @@ class LocalSource(
                     if (copiedFile != null && copiedFile.name != COMIC_INFO_ARCHIVE) {
                         setMangaDetailsFromComicInfoFile(copiedFile.openInputStream(), manga)
                     } else if (copiedFile != null && copiedFile.name == COMIC_INFO_ARCHIVE) {
-                        copiedFile.archiveReader(context).getInputStream(COMIC_INFO_FILE)
+                        copiedFile.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz).getInputStream(COMIC_INFO_FILE)
                             ?.let { setMangaDetailsFromComicInfoFile(it, manga) }
                     } // SY <--
                     else {
@@ -299,7 +308,7 @@ class LocalSource(
             logcat(LogPriority.ERROR, e) { "Error setting manga details from local metadata for ${manga.title}" }
         }
 
-        return@withIOContext manga
+        return@withContext manga
     }
 
     private fun <T> getComicInfoForChapter(chapter: UniFile, block: (InputStream, /* SY --> */ Boolean /* <-- SY */) -> T): T? {
@@ -310,7 +319,7 @@ class LocalSource(
                 }
             }
         } else {
-            chapter.archiveReader(context).use { reader ->
+            chapter.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz).use { reader ->
                 reader.getInputStream(COMIC_INFO_FILE)?.use {
                     block(it, /* SY --> */ reader.encrypted /* SY <-- */)
                 }
@@ -339,7 +348,7 @@ class LocalSource(
         if (encrypt) {
             val comicInfoArchiveFile = folder.createFile(COMIC_INFO_ARCHIVE)
             comicInfoArchiveFile?.let { archive ->
-                ZipWriter(context, archive, encrypt = true).use { writer ->
+                ZipWriter(context, archive, encryptInfo = { ZipWriter.EncryptInfo(cbzCrypto.getPreferredEncryptionAlgo(), cbzCrypto.getDecryptedPasswordCbz()) }).use { writer ->
                     writer.write(comicInfoFileStream.use { it.readBytes() }, COMIC_INFO_FILE)
                 }
             }
@@ -370,10 +379,23 @@ class LocalSource(
         comicInfo.title?.let { chapter.name = it.value }
         comicInfo.number?.value?.toFloatOrNull()?.let { chapter.chapter_number = it }
         comicInfo.translator?.let { chapter.scanlator = it.value }
+
+        // only bother with partial dates if the year is not null, abandon date parsing otherwise
+        val year = comicInfo.year?.value?.takeIf { it > 0 }?.toString()?.padStart(4, '0') ?: return
+        val month = (comicInfo.month?.value?.coerceIn(1, 12) ?: 1).toString().padStart(2, '0')
+        val day = (comicInfo.day?.value?.coerceIn(1, 31) ?: 1).toString().padStart(2, '0')
+
+        val dateInstant = try {
+            LocalDate.parse("$year-$month-$day").atStartOfDayIn(TimeZone.currentSystemDefault())
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e)
+            null
+        }
+        dateInstant?.let { chapter.date_upload = it.toEpochMilliseconds() }
     }
 
     // Chapters
-    private suspend fun getChapterList(manga: SManga): List<SChapter> = withIOContext {
+    private suspend fun getChapterList(manga: SManga): List<SChapter> = withContext(Dispatchers.IO) {
         val chapters = fileSystem.getFilesInMangaDirectory(manga.url)
             // Only keep supported formats
             .filterNot { it.name.orEmpty().startsWith('.') }
@@ -391,15 +413,21 @@ class LocalSource(
                         .parseChapterNumber(manga.title, this.name, this.chapter_number.toDouble())
                         .toFloat()
 
-                    val format = Format.valueOf(chapterFile)
-                    if (format is Format.Epub) {
-                        EpubFile(format.file.archiveReader(context)).use { epub ->
-                            epub.fillMetadata(manga, this)
+                    try {
+                        val format = Format.valueOf(chapterFile)
+                        if (format is Format.Epub) {
+                            EpubFile(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz)).use { epub ->
+                                epub.fillMetadata(manga, this)
+                            }
+                        } else {
+                            getComicInfoForChapter(chapterFile) { stream, encrypted ->
+                                setChapterDetailsFromComicInfoFile(stream, this)
+                            }
                         }
-                    } else {
-                        getComicInfoForChapter(chapterFile) { stream, encrypted ->
-                            setChapterDetailsFromComicInfoFile(stream, this)
-                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        logcat(LogPriority.ERROR, e) { "Failed to read metadata for ${chapterFile.name}" }
                     }
                 }
             }
@@ -455,7 +483,7 @@ class LocalSource(
                     entry?.let { coverManager.update(manga, it.openInputStream()) }
                 }
                 is Format.Archive -> {
-                    format.file.archiveReader(context).use { reader ->
+                    format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz).use { reader ->
                         val entry = reader.useEntries { entries ->
                             entries
                                 .sortedWith { f1, f2 -> f1.name.compareToCaseInsensitiveNaturalOrder(f2.name) }
@@ -466,7 +494,7 @@ class LocalSource(
                     }
                 }
                 is Format.Epub -> {
-                    EpubFile(format.file.archiveReader(context)).use { epub ->
+                    EpubFile(format.file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz)).use { epub ->
                         val entry = epub.getImagesFromPages().firstOrNull()
 
                         entry?.let { coverManager.update(manga, epub.getInputStream(it)!!) }

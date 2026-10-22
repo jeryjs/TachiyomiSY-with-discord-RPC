@@ -1,15 +1,13 @@
 package tachiyomi.domain.updates.model
 
-import kotlinx.coroutines.runBlocking
-import tachiyomi.domain.chapter.interactor.GetChapter
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
+import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
-import uy.kohesive.injekt.injectLazy
 
 data class UpdatesWithRelations(
     val mangaId: Long,
     // SY -->
     val ogMangaTitle: String,
+    val customMangaInfo: CustomMangaInfo? = null,
     // SY <--
     val chapterId: Long,
     val chapterName: String,
@@ -23,12 +21,6 @@ data class UpdatesWithRelations(
     val coverData: MangaCover,
 ) {
     // SY -->
-    val mangaTitle: String = getCustomMangaInfo.get(mangaId)?.title ?: ogMangaTitle
-    val chapter by lazy { runBlocking { getChapter.await(chapterId) } }
-
-    companion object {
-        private val getCustomMangaInfo: GetCustomMangaInfo by injectLazy()
-        private val getChapter: GetChapter by injectLazy()
-    }
+    val mangaTitle: String = customMangaInfo?.title ?: ogMangaTitle
     // SY <--
 }

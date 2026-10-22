@@ -13,15 +13,19 @@ import eu.kanade.domain.source.interactor.CreateSourceCategory
 import eu.kanade.domain.source.interactor.DeleteSourceCategory
 import eu.kanade.domain.source.interactor.GetSourceCategories
 import eu.kanade.domain.source.interactor.RenameSourceCategory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
-import tachiyomi.core.common.util.lang.launchIO
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
+import kotlin.time.Duration.Companion.seconds
 
 @Inject
 @ViewModelKey
@@ -33,24 +37,21 @@ class SourceCategoryViewModel(
     private val deleteSourceCategory: DeleteSourceCategory,
 ) : ViewModel() {
 
-    val state: StateFlow<SourceCategoryScreenState>
-        field = MutableStateFlow<SourceCategoryScreenState>(SourceCategoryScreenState.Loading)
-
     private val _events: Channel<SourceCategoryEvent> = Channel(Int.MAX_VALUE)
     val events = _events.receiveAsFlow()
 
-    init {
-        viewModelScope.launchIO {
-            getSourceCategories.subscribe()
-                .collectLatest { categories ->
-                    state.update {
-                        SourceCategoryScreenState.Success(
-                            categories = categories,
-                        )
-                    }
-                }
-        }
+    private val dialog = MutableStateFlow<SourceCategoryDialog?>(null)
+
+    val state: StateFlow<SourceCategoryScreenState> = combine(
+        getSourceCategories.subscribe(),
+        dialog,
+    ) { categories, dialog ->
+        SourceCategoryScreenState.Success(
+            categories = categories,
+            dialog = dialog,
+        )
     }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), SourceCategoryScreenState.Loading)
 
     /**
      * Creates and adds a new category to the database.
@@ -58,7 +59,7 @@ class SourceCategoryViewModel(
      * @param name The name of the category to create.
      */
     fun createCategory(name: String) {
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             when (createSourceCategory.await(name)) {
                 is CreateSourceCategory.Result.InvalidName -> _events.send(SourceCategoryEvent.InvalidName)
                 else -> {}
@@ -72,7 +73,7 @@ class SourceCategoryViewModel(
      * @param categories The list of categories to delete.
      */
     fun deleteCategory(categories: String) {
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             deleteSourceCategory.await(categories)
         }
     }
@@ -84,7 +85,7 @@ class SourceCategoryViewModel(
      * @param categoryNew The new name of the category.
      */
     fun renameCategory(categoryOld: String, categoryNew: String) {
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             when (renameSourceCategory.await(categoryOld, categoryNew)) {
                 is CreateSourceCategory.Result.InvalidName -> _events.send(SourceCategoryEvent.InvalidName)
                 else -> {}
@@ -93,21 +94,11 @@ class SourceCategoryViewModel(
     }
 
     fun showDialog(dialog: SourceCategoryDialog) {
-        state.update {
-            when (it) {
-                SourceCategoryScreenState.Loading -> it
-                is SourceCategoryScreenState.Success -> it.copy(dialog = dialog)
-            }
-        }
+        this.dialog.value = dialog
     }
 
     fun dismissDialog() {
-        state.update {
-            when (it) {
-                SourceCategoryScreenState.Loading -> it
-                is SourceCategoryScreenState.Success -> it.copy(dialog = null)
-            }
-        }
+        this.dialog.value = null
     }
 }
 

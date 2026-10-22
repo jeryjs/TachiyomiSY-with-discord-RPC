@@ -6,6 +6,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import mihon.core.common.archive.ZipWriter
 import tachiyomi.core.common.storage.nameWithoutExtension
@@ -21,6 +22,9 @@ private const val COVER_ARCHIVE_NAME = "cover.cbi"
 class LocalCoverManager(
     private val context: Context,
     private val fileSystem: LocalSourceFileSystem,
+    // SY -->
+    private val cbzCrypto: CbzCrypto,
+    // SY <--
 ) {
 
     fun find(mangaUrl: String): UniFile? {
@@ -62,7 +66,16 @@ class LocalCoverManager(
         inputStream.use { input ->
             // SY -->
             if (encrypted) {
-                ZipWriter(context, targetFile, encrypt = true).use { writer ->
+                ZipWriter(
+                    context,
+                    targetFile,
+                    encryptInfo = {
+                        ZipWriter.EncryptInfo(
+                            cbzCrypto.getPreferredEncryptionAlgo(),
+                            cbzCrypto.getDecryptedPasswordCbz(),
+                        )
+                    },
+                ).use { writer ->
                     writer.write(inputStream.readBytes(), DEFAULT_COVER_NAME)
                 }
                 DiskUtil.createNoMediaFile(directory, context)

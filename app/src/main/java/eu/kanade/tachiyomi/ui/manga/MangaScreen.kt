@@ -25,6 +25,7 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.domain.manga.model.hasCustomCover
 import eu.kanade.domain.manga.model.toSManga
 import eu.kanade.domain.source.interactor.GetIncognitoState
+import eu.kanade.presentation.browse.components.RemoveMangaDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.manga.ChapterSettingsDialog
@@ -70,21 +71,20 @@ import exh.source.getMainSource
 import exh.source.isEhBasedSource
 import exh.ui.metadata.MetadataViewScreen
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.app.di.appGraph
 import mihon.feature.migration.config.MigrationConfigScreen
 import mihon.feature.migration.dialog.MigrateMangaDialog
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.launchUI
-import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.core.common.util.lang.withNonCancellableContext
-import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
@@ -134,7 +134,7 @@ class MangaScreen(
         LaunchedEffect(successState.manga, viewModel.source) {
             if (isHttpSource) {
                 try {
-                    withIOContext {
+                    withContext(Dispatchers.IO) {
                         assistUrl = getMangaUrl(viewModel.manga, viewModel.source)
                     }
                 } catch (e: Exception) {
@@ -174,7 +174,11 @@ class MangaScreen(
             onChapterClicked = { openChapter(context, it) },
             onDownloadChapter = viewModel::runChapterDownloadActions.takeIf { !successState.source.isLocalOrStub() },
             onAddToLibraryClicked = {
-                viewModel.toggleFavorite()
+                if (successState.manga.favorite) {
+                    viewModel.showRemoveFromLibraryDialog()
+                } else {
+                    viewModel.toggleFavorite()
+                }
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 if (!successState.manga.favorite && successState.hasLoggedInTrackers) viewModel.showTrackDialog()
             },
@@ -187,7 +191,7 @@ class MangaScreen(
                         viewModel.source,
                     )
                 } else {
-                    scope.launchIO {
+                    scope.launch(Dispatchers.IO) {
                         openMergedMangaWebview(
                             context,
                             navigator,
@@ -242,7 +246,7 @@ class MangaScreen(
             onMergedSettingsClicked = viewModel::showEditMergedSettingsDialog,
             onMergeClicked = { openSmartSearch(navigator, successState.manga) },
             onMergeWithAnotherClicked = {
-                mergeWithAnother(navigator, context, successState.manga, viewModel::smartSearchMerge)
+                mergeWithAnother(scope, navigator, context, successState.manga, viewModel::smartSearchMerge)
             },
             onOpenPagePreview = {
                 openPagePreview(context, successState.chapters.minByOrNull { it.chapter.sourceOrder }?.chapter, it)
@@ -277,6 +281,15 @@ class MangaScreen(
         val onDismissRequest = { viewModel.dismissDialog() }
         when (val dialog = successState.dialog) {
             null -> {}
+            MangaViewModel.Dialog.RemoveFromLibrary -> {
+                RemoveMangaDialog(
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = {
+                        if (successState.manga.favorite) viewModel.toggleFavorite()
+                    },
+                    mangaToRemove = successState.manga,
+                )
+            }
             is MangaViewModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,
@@ -361,6 +374,7 @@ class MangaScreen(
                             when (it) {
                                 EditCoverAction.EDIT -> getContent.launch("image/*")
                                 EditCoverAction.DELETE -> vm.deleteCustomCover(context)
+                                EditCoverAction.ADD_TO_LIBRARY -> vm.addToLibraryWarning(context)
                             }
                         },
                         onDismissRequest = onDismissRequest,
@@ -522,7 +536,7 @@ class MangaScreen(
         val sourceManager = context.appGraph.sourceManager
         val mergedManga = mergedMangaData.manga.values.filterNot { it.source == MERGED_SOURCE_ID }
         val sources = mergedManga.map { sourceManager.getOrStub(it.source) }
-        withUIContext {
+        withContext(Dispatchers.Main) {
             MaterialAlertDialogBuilder(context)
                 .setTitle(MR.strings.action_open_in_web_view.getString(context))
                 .setSingleChoiceItems(
@@ -554,18 +568,19 @@ class MangaScreen(
         navigator.push(SourcesScreen(smartSearchConfig))
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun mergeWithAnother(
+        scope: CoroutineScope,
         navigator: Navigator,
         context: Context,
         manga: Manga,
         smartSearchMerge: suspend (Manga, Long) -> Manga,
     ) {
-        launchUI {
+        scope.launch(Dispatchers.Main) {
             try {
-                val mergedManga = withNonCancellableContext {
+                // The merge finishes even if the screen is left while it runs
+                val mergedManga = context.appGraph.appScope.async {
                     smartSearchMerge(manga, smartSearchConfig?.origMangaId!!)
-                }
+                }.await()
 
                 navigator.popUntil { it is SourcesScreen }
                 navigator.pop()

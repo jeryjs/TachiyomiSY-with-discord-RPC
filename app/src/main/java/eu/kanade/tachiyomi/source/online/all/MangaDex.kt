@@ -3,6 +3,9 @@ package eu.kanade.tachiyomi.source.online.all
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.data.database.models.Track
@@ -50,13 +53,19 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.reflect.KClass
 
 @Suppress("OverridingDeprecatedMember")
-class MangaDex(delegate: HttpSource, val context: Context) :
+@AssistedInject
+class MangaDex(
+    @Assisted delegate: HttpSource,
+    val context: Context,
+    override val getMangaId: MetadataSource.GetMangaId,
+    override val insertFlatMetadata: MetadataSource.InsertFlatMetadata,
+    override val getFlatMetadataById: MetadataSource.GetFlatMetadataById,
+    private val trackerManager: TrackerManager,
+    private val trackPreferences: TrackPreferences,
+) :
     DelegatedHttpSource(delegate),
     MetadataSource<MangaDexSearchMetadata, Triple<MangaDto, List<String>, StatisticsMangaDto>>,
     UrlImportableSource,
@@ -64,6 +73,11 @@ class MangaDex(delegate: HttpSource, val context: Context) :
     LoginSource,
     RandomMangaSource,
     NamespaceSource {
+    @AssistedFactory
+    fun interface Factory {
+        fun create(delegate: HttpSource): MangaDex
+    }
+
     override val lang: String = delegate.lang
 
     private val mdLang by lazy {
@@ -72,8 +86,7 @@ class MangaDex(delegate: HttpSource, val context: Context) :
 
     override val matchingHosts: List<String> = listOf("mangadex.org", "www.mangadex.org")
 
-    val trackPreferences: TrackPreferences by injectLazy()
-    val mdList: MdList by lazy { Injekt.get<TrackerManager>().mdList }
+    val mdList: MdList by lazy { trackerManager.mdList }
 
     private val sourcePreferences: SharedPreferences by lazy {
         context.getSharedPreferences("source_$id", 0x0000)
@@ -112,7 +125,12 @@ class MangaDex(delegate: HttpSource, val context: Context) :
         SimilarService(client)
     }
     private val apiMangaParser by lazy {
-        ApiMangaParser(mdLang.lang)
+        ApiMangaParser(
+            mdLang.lang,
+            getManga = getMangaId,
+            insertFlatMetadata = insertFlatMetadata,
+            getFlatMetadataById = getFlatMetadataById,
+        )
     }
     private val followsHandler by lazy {
         FollowsHandler(mdLang.lang, mangadexAuthService)

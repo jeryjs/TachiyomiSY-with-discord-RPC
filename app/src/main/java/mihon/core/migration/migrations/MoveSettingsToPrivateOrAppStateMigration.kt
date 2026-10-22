@@ -4,12 +4,13 @@ import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mihon.core.migration.MigrateUtils
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
-import tachiyomi.core.common.util.lang.withIOContext
 
 @Inject
 @ContributesIntoSet(AppScope::class)
@@ -19,7 +20,7 @@ class MoveSettingsToPrivateOrAppStateMigration(
 ) : Migration {
     override val version: Float = 59f
 
-    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withIOContext {
+    override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         val prefsToReplace = listOf(
             "pref_download_only",
             "incognito_mode",
@@ -68,6 +69,6 @@ class MoveSettingsToPrivateOrAppStateMigration(
         // Deleting old download cache index files, but might as well clear it all out
         context.cacheDir.deleteRecursively()
 
-        return@withIOContext true
+        return@withContext true
     }
 }

@@ -1,13 +1,18 @@
 package tachiyomi.data.manga
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.json.JsonObject
 import tachiyomi.domain.library.model.LibraryManga
+import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 import tachiyomi.view.LibraryView
 
-object MangaMapper {
+@Inject
+class MangaMapper(
+    private val getCustomMangaInfo: GetCustomMangaInfo,
+) {
     @Suppress("UNUSED_PARAMETER")
     fun mapManga(
         id: Long,
@@ -68,6 +73,9 @@ object MangaMapper {
         version = version,
         notes = notes,
         memo = memo,
+        // SY -->
+        customMangaInfo = if (favorite) getCustomMangaInfo.get(id) else null,
+        // SY <--
     )
 
     fun mapLibraryManga(
@@ -244,6 +252,9 @@ object MangaMapper {
                 version = libraryView.version,
                 notes = libraryView.notes,
                 memo = libraryView.memo,
+                // SY -->
+                customMangaInfo = if (libraryView.favorite) getCustomMangaInfo.get(libraryView._id) else null,
+                // SY <--
             ),
             categories = libraryView.categories.split(",").map { it.toLong() },
             totalChapters = libraryView.totalCount,

@@ -1,6 +1,6 @@
 package exh.md.utils
 
-import android.app.Application
+import android.content.Context
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.track.mdlist.MdList
@@ -189,8 +189,8 @@ class MdUtil {
         }
 
         suspend fun getEnabledMangaDex(
-            sourcePreferences: SourcePreferences = Injekt.get(),
-            sourceManager: SourceManager = Injekt.get(),
+            sourcePreferences: SourcePreferences,
+            sourceManager: SourceManager,
         ): MangaDex? {
             return getEnabledMangaDexs(sourcePreferences, sourceManager).let { mangadexs ->
                 sourcePreferences.preferredMangaDexId.get().toLongOrNull()?.nullIfZero()
@@ -203,7 +203,7 @@ class MdUtil {
 
         suspend fun getEnabledMangaDexs(
             preferences: SourcePreferences,
-            sourceManager: SourceManager = Injekt.get(),
+            sourceManager: SourceManager,
         ): List<MangaDex> {
             val languages = preferences.enabledLanguages.get()
             val disabledSourceIds = preferences.disabledSources.get()
@@ -228,7 +228,7 @@ class MdUtil {
                 val altTitlesDesc = altTitles
                     .joinToString(
                         "\n",
-                        "${Injekt.get<Application>().stringResource(SYMR.strings.alt_titles)}:\n",
+                        "${Injekt.get<Context>().stringResource(SYMR.strings.alt_titles)}:\n",
                     ) { "• $it" }
                 description + (if (description.isBlank()) "" else "\n\n") + Parser.unescapeEntities(
                     altTitlesDesc,
@@ -248,7 +248,7 @@ class MdUtil {
             } else {
                 description + (if (description.isBlank()) "" else "\n\n") + parts.joinToString(
                     " ",
-                    "${Injekt.get<Application>().stringResource(SYMR.strings.final_chapter)}:\n",
+                    "${Injekt.get<Context>().stringResource(SYMR.strings.final_chapter)}:\n",
                 )
             }
         }

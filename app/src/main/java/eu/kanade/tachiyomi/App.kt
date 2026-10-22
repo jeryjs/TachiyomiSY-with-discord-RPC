@@ -62,6 +62,7 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.notify
 import exh.log.CrashlyticsPrinter
+import exh.log.DeferredPrinter
 import exh.log.EHLogLevel
 import exh.log.EnhancedFilePrinter
 import exh.log.XLogLogcatLogger
@@ -124,6 +125,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     @Inject private lateinit var syncPreferences: SyncPreferences
 
     @Inject private lateinit var storageManager: StorageManager
+    private val deferredXLogPrinter = DeferredPrinter()
     // SY <--
 
     private val disableIncognitoReceiver = DisableIncognitoReceiver()
@@ -144,6 +146,19 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             if (packageName != process) WebView.setDataDirectorySuffix(process)
         }
 
+        // SY -->
+        // XLog.init() can only be called once, and fork logging (xLogD etc.) runs while the graph
+        // below is being built: AndroidSourceManager logs delegated sources the moment it is
+        // constructed, which graph.inject(this) does. Initialise here, and attach the printers
+        // that need dependencies (file, Crashlytics) in setupExhLogging() through
+        // deferredXLogPrinter.
+        EHLogLevel.init(this)
+        XLog.init(
+            ehLogConfiguration(),
+            AndroidPrinter(),
+            deferredXLogPrinter,
+        )
+        // SY <--
         graph.inject(this)
         setupInjekt()
 
@@ -328,23 +343,25 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
     }
 
-    // EXH
-    private fun setupExhLogging() {
-        EHLogLevel.init(this)
-
+    private fun ehLogConfiguration(): LogConfiguration {
         val logLevel = when {
             EHLogLevel.shouldLog(EHLogLevel.EXTREME) -> LogLevel.ALL
             EHLogLevel.shouldLog(EHLogLevel.EXTRA) || BuildConfig.DEBUG -> LogLevel.DEBUG
             else -> LogLevel.WARN
         }
 
-        val logConfig = LogConfiguration.Builder()
+        return LogConfiguration.Builder()
             .logLevel(logLevel)
             .disableStackTrace()
             .disableBorder()
             .build()
+    }
 
-        val printers = mutableListOf<Printer>(AndroidPrinter())
+    // EXH
+    private fun setupExhLogging() {
+        // The log level is applied by ehLogConfiguration() at XLog.init() time; only the printers
+        // that need dependency injection are created here.
+        val printers = mutableListOf<Printer>()
 
         val logFolder = storageManager.getLogsDirectory()
 
@@ -373,10 +390,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             printers += CrashlyticsPrinter(LogLevel.ERROR)
         }
 
-        XLog.init(
-            logConfig,
-            *printers.toTypedArray(),
-        )
+        deferredXLogPrinter.add(*printers.toTypedArray())
 
         xLogD("Application booting...")
         xLogD(

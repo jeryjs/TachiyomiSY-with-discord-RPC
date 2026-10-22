@@ -4,6 +4,25 @@ import android.util.Log
 import com.elvishew.xlog.Logger
 import com.elvishew.xlog.XLog
 import com.elvishew.xlog.LogLevel as XLogLevel
+import com.elvishew.xlog.printer.Printer
+import java.util.concurrent.CopyOnWriteArrayList
+
+/**
+ * XLog.init() can only be called once, but fork logging runs while the Metro dependency graph is
+ * being built - before the printers that need dependencies (file, Crashlytics) can be created.
+ * Register this printer at init and add the remaining printers through [add] once they exist.
+ */
+class DeferredPrinter : Printer {
+    private val printers = CopyOnWriteArrayList<Printer>()
+
+    fun add(vararg printers: Printer) {
+        this.printers.addAll(printers)
+    }
+
+    override fun println(logLevel: Int, tag: String, message: String) {
+        printers.forEach { it.println(logLevel, tag, message) }
+    }
+}
 
 fun Any.xLog(): Logger = XLog.tag(this::class.java.simpleName).build()
 

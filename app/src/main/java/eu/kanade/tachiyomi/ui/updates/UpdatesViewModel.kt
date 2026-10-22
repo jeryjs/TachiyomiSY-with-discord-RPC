@@ -55,7 +55,6 @@ import kotlinx.datetime.minus
 import logcat.LogPriority
 import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.preference.TriState
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.interactor.UpdateChapter
@@ -290,19 +289,19 @@ class UpdatesViewModel(
         if (expectedIds.all { it in incompleteDownloadsByChapterId }) return
 
         incompleteDownloadRefreshJob?.cancel()
-        incompleteDownloadRefreshJob = viewModelScope.launchIO {
+        incompleteDownloadRefreshJob = viewModelScope.launch(Dispatchers.IO) {
             delay(250)
 
             val missingChapterIds = expectedIds.filterNot { it in incompleteDownloadsByChapterId }.toSet()
             if (missingChapterIds.isEmpty()) {
-                return@launchIO
+                return@launch
             }
 
             val updates = (state.value.items)
                 .map { it.update }
                 .filter { it.chapterId in missingChapterIds }
 
-            if (updates.isEmpty()) return@launchIO
+            if (updates.isEmpty()) return@launch
 
             val tmpArtifactsByManga = mutableMapOf<Pair<Long, String>, Set<String>>()
             val computed = updates.associate { update ->

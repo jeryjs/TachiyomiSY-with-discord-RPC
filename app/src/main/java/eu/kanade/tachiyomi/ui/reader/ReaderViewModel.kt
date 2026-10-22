@@ -105,7 +105,6 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.preference.toggle
-import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
@@ -705,12 +704,12 @@ class ReaderViewModel(
 
     fun runDownloadActions(chapters: List<Chapter>, action: ChapterDownloadAction) {
         if (chapters.isEmpty()) return
-        viewModelScope.launchNonCancellable {
+        appScope.launch {
             when (action) {
                 ChapterDownloadAction.START -> {
-                    val manga = manga ?: return@launchNonCancellable
+                    val manga = manga ?: return@launch
                     // Don't download if source isn't available
-                    sourceManager.get(manga.source) ?: return@launchNonCancellable
+                    sourceManager.get(manga.source) ?: return@launch
                     downloadManager.downloadChapters(manga, chapters)
                     // Auto start any errored downloads
                     if (chapters.any { downloadManager.getQueuedDownloadOrNull(it.id)?.status == Download.State.ERROR }) {
@@ -718,17 +717,17 @@ class ReaderViewModel(
                     }
                 }
                 ChapterDownloadAction.START_NOW -> {
-                    val chapterId = chapters.singleOrNull()?.id ?: return@launchNonCancellable
+                    val chapterId = chapters.singleOrNull()?.id ?: return@launch
                     downloadManager.startDownloadNow(chapterId)
                 }
                 ChapterDownloadAction.CANCEL -> {
-                    val chapterId = chapters.singleOrNull()?.id ?: return@launchNonCancellable
-                    val activeDownload = downloadManager.getQueuedDownloadOrNull(chapterId) ?: return@launchNonCancellable
+                    val chapterId = chapters.singleOrNull()?.id ?: return@launch
+                    val activeDownload = downloadManager.getQueuedDownloadOrNull(chapterId) ?: return@launch
                     downloadManager.cancelQueuedDownloads(listOf(activeDownload))
                 }
                 ChapterDownloadAction.DELETE -> {
-                    val manga = manga ?: return@launchNonCancellable
-                    val source = sourceManager.get(manga.source) ?: return@launchNonCancellable
+                    val manga = manga ?: return@launch
+                    val source = sourceManager.get(manga.source) ?: return@launch
                     downloadManager.deleteChapters(chapters, manga, source)
                 }
             }
@@ -891,7 +890,7 @@ class ReaderViewModel(
     }
 
     fun confirmStartReread() {
-        viewModelScope.launchNonCancellable {
+        appScope.launch {
             startReread()
         }
     }

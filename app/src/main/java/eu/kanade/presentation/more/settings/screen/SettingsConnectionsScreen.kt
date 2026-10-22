@@ -41,12 +41,13 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsService
 import eu.kanade.tachiyomi.util.system.openDiscordLoginActivity
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Close
 import mihon.icons.materialsymbols.roundedfilled.Visibility
 import mihon.icons.materialsymbols.roundedfilled.VisibilityOff
-import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
@@ -183,7 +184,7 @@ object SettingsConnectionsScreen : SearchableSettings {
                             inputError = true
                             return@Button
                         }
-                        scope.launchIO {
+                        scope.launch(Dispatchers.IO) {
                             inputError = false
                             processing = true
                             val result = checkLogin(
@@ -212,11 +213,11 @@ object SettingsConnectionsScreen : SearchableSettings {
     ): Boolean {
         return try {
             service.login(username, password)
-            withUIContext { context.toast(MR.strings.login_success) }
+            withContext(Dispatchers.Main) { context.toast(MR.strings.login_success) }
             true
         } catch (e: Throwable) {
             service.logout()
-            withUIContext { context.toast(e.message.toString()) }
+            withContext(Dispatchers.Main) { context.toast(e.message.toString()) }
             false
         }
     }

@@ -127,7 +127,6 @@ import mihon.core.metro.metroGraph
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
@@ -1438,7 +1437,7 @@ class ReaderActivity : BaseActivity() {
      */
     private fun updateDiscordRPC(exitingReader: Boolean) {
         if (connectionsPreferences.enableDiscordRPC().get()) {
-            viewModel.viewModelScope.launchIO {
+            viewModel.viewModelScope.launch(Dispatchers.IO) {
                 if (!exitingReader) {
                     val currentChapter = viewModel.state.value.currentChapter?.chapter
                     DiscordRPCService.setReaderActivity(

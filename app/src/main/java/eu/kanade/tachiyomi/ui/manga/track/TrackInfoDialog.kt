@@ -91,7 +91,6 @@ import mihon.core.metro.AppCoroutineScope
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.roundedfilled.Delete
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
@@ -590,6 +589,7 @@ data class TrackVolumeSelectorScreen(
     class Model(
         @Assisted private val track: Track,
         @Assisted private val trackerId: Long,
+        @AppCoroutineScope private val appScope: CoroutineScope,
         trackerManager: TrackerManager,
     ) : ViewModel() {
 
@@ -619,7 +619,7 @@ data class TrackVolumeSelectorScreen(
         }
 
         fun setVolume() {
-            viewModelScope.launchNonCancellable {
+            appScope.launch {
                 tracker.setRemoteLastVolumeRead(track.toDbTrack(), state.value.selection)
             }
         }
@@ -658,6 +658,7 @@ data class TrackRereadSelectorScreen(
     class Model(
         @Assisted private val track: Track,
         @Assisted private val trackerId: Long,
+        @AppCoroutineScope private val appScope: CoroutineScope,
         trackerManager: TrackerManager,
     ) : ViewModel() {
 
@@ -678,7 +679,7 @@ data class TrackRereadSelectorScreen(
         }
 
         fun setRereadCount() {
-            viewModelScope.launchNonCancellable {
+            appScope.launch {
                 tracker.setRemoteRereadCount(track.toDbTrack(), state.value.selection)
             }
         }

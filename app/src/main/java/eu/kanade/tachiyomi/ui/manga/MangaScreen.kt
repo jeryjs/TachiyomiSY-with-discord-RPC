@@ -84,7 +84,6 @@ import mihon.app.di.appGraph
 import mihon.feature.migration.config.MigrationConfigScreen
 import mihon.feature.migration.dialog.MigrateMangaDialog
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
@@ -266,7 +265,7 @@ class MangaScreen(
                     successState.source.isLocalOrStub() -> null
                     successState.source.isEhBasedSource() -> navigator.push(SettingsEhScreen)
                     else -> {
-                        scope.launchIO {
+                        scope.launch(Dispatchers.IO) {
                             val extensionManager = Injekt.get<ExtensionManager>()
                             val pkgName = extensionManager.getExtensionPackage(successState.manga.source)
                             pkgName?.let { navigator.push(ExtensionDetailsScreen(it)) }

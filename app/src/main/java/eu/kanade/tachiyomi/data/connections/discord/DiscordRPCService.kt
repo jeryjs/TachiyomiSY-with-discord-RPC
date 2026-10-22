@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.compose.ui.util.fastAny
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.R
@@ -20,9 +21,13 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.util.system.notificationBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.withIOContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import mihon.app.di.appGraph
+import mihon.core.metro.AppCoroutineScope
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category.Companion.UNCATEGORIZED_ID
 import tachiyomi.i18n.MR
@@ -35,9 +40,13 @@ class DiscordRPCService : Service() {
 
     private val connectionsManager: ConnectionsManager by injectLazy()
 
+    @Inject @AppCoroutineScope
+    private lateinit var appScope: CoroutineScope
+
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
+        applicationContext.appGraph.inject(this)
         startOrResumeRpc()
     }
 
@@ -79,7 +88,7 @@ class DiscordRPCService : Service() {
         }
         rpc = if (token.isNotBlank()) DiscordRPC(token, status) else null
         if (rpc != null) {
-            launchIO {
+            appScope.launch {
                 val cachedReaderData = lastReaderData
                 if (cachedReaderData != null) {
                     setReaderActivity(this@DiscordRPCService, cachedReaderData)
@@ -252,7 +261,7 @@ class DiscordRPCService : Service() {
                 }
             }
 
-            withIOContext {
+            withContext(Dispatchers.IO) {
                 val networkService: NetworkHelper by injectLazy()
                 val client = networkService.client
                 val response = if (!discordIncognito) {

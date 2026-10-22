@@ -101,7 +101,6 @@ import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.mapAsCheckboxState
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
@@ -303,11 +302,11 @@ class MangaViewModel(
         if (incompleteDownloadsLoaded) return
         incompleteDownloadsLoaded = true
 
-        viewModelScope.launchIO {
+        viewModelScope.launch(Dispatchers.IO) {
             delay(250)
 
-            val currentState = state.value as? State.Success ?: return@launchIO
-            if (currentState.manga.id != manga.id) return@launchIO
+            val currentState = state.value as? State.Success ?: return@launch
+            if (currentState.manga.id != manga.id) return@launch
 
             val chapterItems = chapters.toChapterListItems(manga, mergedData, includeIncompleteDownloads = true)
             updateSuccessState {

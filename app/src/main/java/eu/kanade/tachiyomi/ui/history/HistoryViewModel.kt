@@ -36,7 +36,6 @@ import logcat.LogPriority
 import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
@@ -140,8 +139,8 @@ class HistoryViewModel(
     }
 
     fun resumeManga(chapter: Chapter?) {
-        viewModelScope.launchIO {
-            if (chapter == null) return@launchIO
+        viewModelScope.launch(Dispatchers.IO) {
+            if (chapter == null) return@launch
             val nextChapters = getNextChapters.await(chapter.mangaId, chapter.id, onlyUnread = false)
             if (nextChapters.firstOrNull()?.read == true) {
                 sendNextChapterEvent(nextChapters.toMutableList().apply { add(0, chapter) })

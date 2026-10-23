@@ -39,8 +39,13 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
-import java.time.format.DateTimeFormatter
+import java.sql.Date
+import java.text.SimpleDateFormat
 import java.time.format.FormatStyle
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val HistoryItemHeight = 96.dp
 
@@ -100,20 +105,21 @@ fun HistoryItem(
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
             )
+            val formattedReadAtString = remember(history.readAt) {
+                history.readAt?.let {
+                    DateTimeFormatter.ofPattern("EEE, d MMM yyyy 'at' h:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
+                        .format(Instant.ofEpochMilli(it.toEpochMilliseconds()))
+                } ?: ""
+            }
             val readAt = remember(timeFormatter, history.readAt) {
                 history.readAt?.toTimestampString(timeFormatter) ?: ""
             }
             AnimatedVisibility(visible = !expanded) {
                 Text(
-                    text = if (history.chapterNumber > -1) {
-                        stringResource(
-                            MR.strings.recent_manga_time,
-                            formatChapterNumber(history.chapterNumber),
-                            readAt,
-                        )
-                    } else {
-                        readAt
-                    },
+                    text = stringResource(MR.strings.label_read_chapters) + " " +
+                        if (isPreviousHistory) formattedReadAtString
+                        else readAt,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                     style = textStyle,
                 )
@@ -133,24 +139,24 @@ fun HistoryItem(
                     .padding(start = 4.dp)
                     .fillMaxHeight(),
             )
-        }
 
-        if (!history.coverData.isMangaFavorite) {
-            IconButton(onClick = onClickFavorite) {
+            if (!history.coverData.isMangaFavorite) {
+                IconButton(onClick = onClickFavorite) {
+                    Icon(
+                        imageVector = MaterialSymbols.Rounded.Favorite,
+                        contentDescription = stringResource(MR.strings.add_to_library),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            IconButton(onClick = onClickDelete) {
                 Icon(
-                    imageVector = MaterialSymbols.Rounded.Favorite,
-                    contentDescription = stringResource(MR.strings.add_to_library),
+                    imageVector = MaterialSymbols.Rounded.Delete,
+                    contentDescription = stringResource(MR.strings.action_delete),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
-        }
-
-        IconButton(onClick = onClickDelete) {
-            Icon(
-                imageVector = MaterialSymbols.Rounded.Delete,
-                contentDescription = stringResource(MR.strings.action_delete),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
         }
     }
 }

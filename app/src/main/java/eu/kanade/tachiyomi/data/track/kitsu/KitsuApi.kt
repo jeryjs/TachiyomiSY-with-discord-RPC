@@ -55,12 +55,15 @@ class KitsuApi(
     }
 
     suspend fun addLibManga(track: Track): Track {
+        val progress = track.last_chapter_read.toInt().coerceAtLeast(0).let {
+            if (track.total_chapters > 0) it.coerceAtMost(track.total_chapters.toInt()) else it
+        }
         return graphQlClient
             .mutation(
                 KitsuAddLibMangaMutation(
                     media_id = track.remote_id.toString(),
                     status = track.toKitsuStatus(),
-                    progress = track.last_chapter_read.toInt(),
+                    progress = progress,
                     private = track.private,
                     rating = Optional.present(track.score.toInt().takeIf { it > 0 }),
                 ),
@@ -82,12 +85,16 @@ class KitsuApi(
         val libraryId = track.library_id
         requireNotNull(libraryId) { "Kitsu cannot update track with null library_id" }
 
+        val progress = track.last_chapter_read.toInt().coerceAtLeast(0).let {
+            if (track.total_chapters > 0) it.coerceAtMost(track.total_chapters.toInt()) else it
+        }
+
         return graphQlClient
             .mutation(
                 KitsuUpdateLibMangaMutation(
                     library_id = libraryId.toString(),
                     status = track.toKitsuStatus(),
-                    progress = track.last_chapter_read.toInt(),
+                    progress = progress,
                     private = track.private,
                     rating = Optional.present(track.score.toInt().takeIf { it > 0 }),
                     startedAt = Optional.present(

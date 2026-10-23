@@ -127,7 +127,8 @@ class Kitsu(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(
     override suspend fun update(track: Track, didReadChapter: Boolean): Track {
         if (track.status != COMPLETED) {
             if (didReadChapter) {
-                if (track.last_chapter_read.toLong() == track.total_chapters && track.total_chapters > 0) {
+                if (track.last_chapter_read.toLong() >= track.total_chapters && track.total_chapters > 0) {
+                    track.last_chapter_read = track.total_chapters.toDouble()
                     track.last_volume_read = track.total_volumes.toDouble()
                     track.status = COMPLETED
                     track.finished_reading_date = System.currentTimeMillis()
@@ -153,6 +154,7 @@ class Kitsu(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(
             track.copyPersonalFrom(remoteTrack, copyRemotePrivate = false)
             track.remote_id = remoteTrack.remote_id
             track.library_id = remoteTrack.library_id
+            track.total_chapters = remoteTrack.total_chapters
 
             if (track.status != COMPLETED) {
                 track.status = if (hasReadChapters) READING else track.status

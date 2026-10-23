@@ -14,7 +14,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class MyAnimeList(context: Context, id: Long) : BaseTracker(context, id, "MyAnimeList"), DeletableTracker {
+class MyAnimeList(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "MyAnimeList"), DeletableTracker {
 
     companion object {
         const val READING = 1L
@@ -161,11 +161,11 @@ class MyAnimeList(context: Context, id: Long) : BaseTracker(context, id, "MyAnim
         interceptor.setAuth(null)
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
 
-    // SY -->
     override suspend fun searchById(id: String): TrackSearch {
         return api.getMangaDetails(id.toInt())
     }

@@ -14,7 +14,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Shikimori(context: Context, id: Long) : BaseTracker(context, id, "Shikimori"), DeletableTracker {
+class Shikimori(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Shikimori"), DeletableTracker {
 
     companion object {
         const val READING = 1L
@@ -105,9 +105,11 @@ class Shikimori(context: Context, id: Long) : BaseTracker(context, id, "Shikimor
         return track
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+    // SY <--
 
     override fun getLogo() = R.drawable.brand_shikimori
 

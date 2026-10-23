@@ -145,7 +145,7 @@ private fun ColumnScope.FilterPage(
     )
     // TODO: re-enable when custom intervals are ready for stable
     if (
-        (isDebugBuildType || isPreviewBuildType) &&
+        /* SY --> */(isDebugBuildType || isPreviewBuildType)/* SY <-- */ &&
         LibraryPreferences.MANGA_OUTSIDE_RELEASE_PERIOD in autoUpdateMangaRestrictions
     ) {
         val filterIntervalCustom by viewModel.libraryPreferences.filterIntervalCustom.collectAsState()

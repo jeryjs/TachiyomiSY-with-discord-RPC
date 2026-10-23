@@ -55,6 +55,9 @@ import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 import kotlin.reflect.KClass
 
+/**
+ * SY-specific file
+ */
 @Suppress("OverridingDeprecatedMember")
 @AssistedInject
 class MangaDex(

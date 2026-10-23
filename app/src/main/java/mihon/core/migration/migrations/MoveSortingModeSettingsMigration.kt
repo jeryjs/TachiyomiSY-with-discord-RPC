@@ -3,7 +3,6 @@ package mihon.core.migration.migrations
 import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
@@ -11,16 +10,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.data.Database
-import tachiyomi.data.category.CategoryMapper
+import tachiyomi.domain.category.repository.CategoryRepository
 import tachiyomi.domain.library.service.LibraryPreferences
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveSortingModeSettingsMigration(
     private val context: Context,
     private val libraryPreferences: LibraryPreferences,
-    private val database: Database,
+    private val categoryRepository: CategoryRepository,
 ) : Migration {
     override val version: Float = 38f
 
@@ -39,16 +40,14 @@ class MoveSortingModeSettingsMigration(
         prefs.edit {
             putString(libraryPreferences.sortingMode.key(), newSortingMode)
         }
-        database.transaction {
-            database.categoriesQueries.getCategories(CategoryMapper::mapCategory).awaitAsList()
-                .filter { (it.flags and 0b00111100L) == 0b00100000L }
-                .forEach {
-                    database.categoriesQueries.updateFlags(
-                        categoryId = it.id,
-                        flags = it.flags and 0b00111100L.inv(),
-                    )
-                }
-        }
+        categoryRepository.getAll()
+            .filter { (it.flags and 0b00111100L) == 0b00100000L }
+            .forEach {
+                categoryRepository.updateFlags(
+                    categoryId = it.id,
+                    flags = it.flags and 0b00111100L.inv(),
+                )
+            }
 
         return@withContext true
     }

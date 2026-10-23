@@ -15,10 +15,8 @@ sealed class Preference {
     abstract val visible: Boolean
 
     sealed class PreferenceItem<T, R> : Preference() {
-        // SY -->
-        abstract val subtitle: CharSequence?
+        abstract val subtitle: /* SY --> */ CharSequence /* SY <-- */?
 
-        // SY <--
         abstract val icon: ImageVector?
         abstract val onValueChanged: suspend (value: T) -> R
 
@@ -27,7 +25,7 @@ sealed class Preference {
          */
         data class TextPreference(
             override val title: String,
-            override val subtitle: CharSequence? = null,
+            override val subtitle: /* SY --> */ CharSequence /* SY <-- */? = null,
             override val visible: Boolean = true,
             val widget: @Composable (() -> Unit)? = null,
             val onClick: (() -> Unit)? = null,
@@ -42,7 +40,7 @@ sealed class Preference {
         data class SwitchPreference(
             val preference: PreferenceData<Boolean>,
             override val title: String,
-            override val subtitle: CharSequence? = null,
+            override val subtitle: /* SY --> */ CharSequence /* SY <-- */? = null,
             override val visible: Boolean = true,
             override val onValueChanged: suspend (value: Boolean) -> Boolean = { true },
         ) : PreferenceItem<Boolean, Boolean>() {

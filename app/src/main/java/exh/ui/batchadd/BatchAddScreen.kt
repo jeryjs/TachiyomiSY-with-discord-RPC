@@ -39,6 +39,9 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.plus
 
+/**
+ * SY-specific file
+ */
 class BatchAddScreen : Screen() {
 
     @Composable

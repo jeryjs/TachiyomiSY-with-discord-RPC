@@ -18,6 +18,9 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 @Inject
 class EHConfigurator(
     val context: Context,

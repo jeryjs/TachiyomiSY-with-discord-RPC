@@ -19,6 +19,9 @@ import rx.Observable
 import kotlin.reflect.full.superclasses
 import kotlin.reflect.jvm.isAccessible
 
+/**
+ * SY-specific file
+ */
 class PageHandler(
     private val service: MangaDexService,
     private val mangaPlusHandler: MangaPlusHandler,

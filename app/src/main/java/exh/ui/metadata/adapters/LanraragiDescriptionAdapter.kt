@@ -9,6 +9,9 @@ import mihon.icons.sy.materialsymbols.roundedfilled.MenuBook
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun LanraragiDescription(state: State.Success, openMetadataViewer: () -> Unit) {
     val meta = state.meta as? LanraragiSearchMetadata ?: return

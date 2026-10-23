@@ -1,13 +1,15 @@
 package tachiyomi.data.track
 
 import tachiyomi.domain.track.model.Track
+import kotlin.time.Instant
 
 object TrackMapper {
     fun mapTrack(
         id: Long,
         mangaId: Long,
-        syncId: Long,
+        trackerId: Long,
         remoteId: Long,
+        remoteUrl: String,
         libraryId: Long?,
         title: String,
         lastVolumeRead: Double,
@@ -16,15 +18,14 @@ object TrackMapper {
         totalChapters: Long,
         status: Long,
         score: Double,
-        remoteUrl: String,
-        startDate: Long,
-        finishDate: Long,
+        startDate: Instant?,
+        finishDate: Instant?,
         private: Boolean,
         rereadCount: Long,
     ): Track = Track(
         id = id,
         mangaId = mangaId,
-        trackerId = syncId,
+        trackerId = trackerId,
         remoteId = remoteId,
         libraryId = libraryId,
         title = title,

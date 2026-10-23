@@ -5,6 +5,9 @@ import exh.source.ExhPreferences
 import okhttp3.FormBody
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 @Inject
 class EhUConfigBuilder(
     private val exhPreferences: ExhPreferences,

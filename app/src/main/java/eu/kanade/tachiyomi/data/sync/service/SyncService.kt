@@ -17,6 +17,9 @@ import logcat.logcat
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class SyncData(
     val deviceId: String = "",

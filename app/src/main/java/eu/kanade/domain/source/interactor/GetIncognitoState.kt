@@ -29,7 +29,7 @@ class GetIncognitoState(
         }
         if (mangaId != null) {
             val manga = customMangaManager.get(mangaId)
-            if (manga != null) isIncognito = isIncognito || manga.incognitoMode == true
+            if (manga != null) isIncognito = isIncognito || customMangaManager.getIncognitoMode(manga.id)
         }
         return isIncognito
     }

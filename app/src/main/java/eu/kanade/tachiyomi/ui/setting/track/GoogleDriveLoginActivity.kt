@@ -10,6 +10,9 @@ import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 class GoogleDriveLoginActivity : BaseOAuthLoginActivity() {
     @Inject private lateinit var googleDriveService: GoogleDriveService
 

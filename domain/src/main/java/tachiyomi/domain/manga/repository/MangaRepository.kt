@@ -5,6 +5,7 @@ import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaRemoteUpdate
 import tachiyomi.domain.manga.model.MangaUpdate
+import tachiyomi.domain.manga.model.MangaUserInfoUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
 
 interface MangaRepository {
@@ -37,7 +38,17 @@ interface MangaRepository {
 
     suspend fun resetViewerFlags(): Boolean
 
+    suspend fun deleteNonLibraryManga(sourceIds: List<Long>, keepReadManga: Boolean)
+
     suspend fun setMangaCategories(mangaId: Long, categoryIds: List<Long>)
+
+    suspend fun getExcludedScanlators(mangaId: Long): Set<String>
+
+    suspend fun getExcludedScanlatorsByMangaIds(mangaIds: List<Long>): Map<Long, List<String>>
+
+    fun getExcludedScanlatorsAsFlow(mangaId: Long): Flow<Set<String>>
+
+    suspend fun setExcludedScanlators(mangaId: Long, excludedScanlators: Set<String>)
 
     suspend fun update(update: MangaUpdate): Boolean
 
@@ -55,5 +66,24 @@ interface MangaRepository {
     suspend fun deleteManga(mangaId: Long)
 
     suspend fun getReadMangaNotInLibraryView(): List<LibraryManga>
+
+    suspend fun getMangasWithFavoriteTimestamp(): List<Manga>
+
+    suspend fun getMangasModifiedSince(since: Long): List<Manga>
+
+    suspend fun resetIsSyncing()
+
+    suspend fun updateUserInfo(
+        mangaId: Long,
+        title: String?,
+        author: String?,
+        artist: String?,
+        thumbnailUrl: String?,
+        description: String?,
+        genre: List<String>?,
+        status: Long?,
+    )
+
+    suspend fun updateUserInfoAll(updates: List<MangaUserInfoUpdate>)
     // SY <--
 }

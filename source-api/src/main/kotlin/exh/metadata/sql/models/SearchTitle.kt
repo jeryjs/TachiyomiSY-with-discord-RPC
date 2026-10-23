@@ -2,6 +2,9 @@ package exh.metadata.sql.models
 
 import kotlinx.serialization.Serializable
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class SearchTitle(
     // Title identifier, unique

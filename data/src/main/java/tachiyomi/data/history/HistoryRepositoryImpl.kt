@@ -22,18 +22,17 @@ import tachiyomi.domain.history.repository.HistoryRepository
 @ContributesBinding(AppScope::class)
 class HistoryRepositoryImpl(
     private val database: Database,
-    private val historyMapper: HistoryMapper,
 ) : HistoryRepository {
 
     override fun getHistory(query: String): Flow<List<HistoryWithRelations>> {
         return database.historyViewQueries
-            .history(query, historyMapper::mapHistoryWithRelations)
+            .history(query, HistoryMapper::mapHistoryWithRelations)
             .subscribeToList()
     }
 
     override suspend fun getLastHistory(): HistoryWithRelations? {
         return database.historyViewQueries
-            .getLatestHistory(historyMapper::mapHistoryWithRelations)
+            .getLatestHistory(HistoryMapper::mapHistoryWithRelations)
             .awaitAsOneOrNull()
     }
 
@@ -45,8 +44,17 @@ class HistoryRepositoryImpl(
 
     override suspend fun getHistoryByMangaId(mangaId: Long): List<History> {
         return database.historyQueries
-            .getHistoryByMangaId(mangaId, historyMapper::mapHistory)
+            .getHistoryByMangaId(mangaId, HistoryMapper::mapHistory)
             .awaitAsList()
+    }
+
+    override suspend fun getHistoryByMangaIds(mangaIds: List<Long>): Map<Long, List<History>> {
+        return database.historyQueries
+            .getHistoryByMangaIds(mangaIds) { mangaId, id, chapterId, readAt, readDuration ->
+                mangaId to HistoryMapper.mapHistory(id, chapterId, readAt, readDuration)
+            }
+            .awaitAsList()
+            .groupBy({ it.first }, { it.second })
     }
 
     override suspend fun resetHistory(historyId: Long) {
@@ -75,6 +83,10 @@ class HistoryRepositoryImpl(
         }
     }
 
+    override suspend fun deleteResetHistory() {
+        database.historyQueries.removeResettedHistory()
+    }
+
     override suspend fun upsertHistory(historyUpdate: HistoryUpdate) {
         // SY -->
         partialUpdate(historyUpdate)
@@ -93,7 +105,7 @@ class HistoryRepositoryImpl(
                     database.historyQueries.upsert(
                         chapterId = historyUpdate.chapterId,
                         readAt = historyUpdate.readAt,
-                        time_read = historyUpdate.sessionReadDuration,
+                        readDuration = historyUpdate.sessionReadDuration,
                     )
                 }
             }

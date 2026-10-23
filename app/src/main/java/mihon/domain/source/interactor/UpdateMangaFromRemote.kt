@@ -25,6 +25,7 @@ import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Inject
 class UpdateMangaFromRemote(
@@ -41,7 +42,7 @@ class UpdateMangaFromRemote(
         fetchDetails: Boolean = false,
         fetchChapters: Boolean = false,
         manualFetch: Boolean = false,
-        fetchWindow: Pair<Long, Long> = Pair(0, 0),
+        fetchWindow: ClosedRange<Instant>? = null,
         // SY -->
         throttleFunc: suspend () -> Unit = {},
         // SY <--
@@ -55,6 +56,7 @@ class UpdateMangaFromRemote(
             manualFetch = manualFetch,
             // SY -->
             throttleFunc = throttleFunc,
+            // SY <--
         )
     }
 
@@ -64,8 +66,10 @@ class UpdateMangaFromRemote(
         fetchDetails: Boolean = false,
         fetchChapters: Boolean = false,
         manualFetch: Boolean = false,
-        fetchWindow: Pair<Long, Long> = Pair(0, 0),
+        fetchWindow: ClosedRange<Instant>? = null,
+        // SY -->
         throttleFunc: suspend () -> Unit = {},
+        // SY <--
     ): Result<RemoteMangaUpdate> = withContext(Dispatchers.IO) {
         try {
             val chapters = chapterRepository.getChapterByMangaId(manga.id)
@@ -134,14 +138,14 @@ class UpdateMangaFromRemote(
             // Never refresh covers if the url is empty to avoid "losing" existing covers
             remoteManga.thumbnail_url.isNullOrEmpty() -> null
             !manualFetch && localManga.thumbnailUrl == remoteManga.thumbnail_url -> null
-            localManga.isLocal() -> Clock.System.now().toEpochMilliseconds()
+            localManga.isLocal() -> Clock.System.now()
             localManga.hasCustomCover(coverCache) -> {
                 coverCache.deleteFromCache(localManga, false)
                 null
             }
             else -> {
                 coverCache.deleteFromCache(localManga, false)
-                Clock.System.now().toEpochMilliseconds()
+                Clock.System.now()
             }
         }
 

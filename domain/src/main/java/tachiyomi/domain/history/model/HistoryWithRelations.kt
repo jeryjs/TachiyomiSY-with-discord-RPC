@@ -1,9 +1,8 @@
 package tachiyomi.domain.history.model
 
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
-import java.util.Date
+import kotlin.time.Instant
 
 data class HistoryWithRelations(
     val id: Long,
@@ -11,16 +10,17 @@ data class HistoryWithRelations(
     val mangaId: Long,
     // SY -->
     val ogTitle: String,
-    val customMangaInfo: CustomMangaInfo? = null,
+    val userTitle: String? = null,
+    // fork: kept so a history row can be named and resumed
     val chapter: Chapter? = null,
     // SY <--
     val chapterNumber: Double,
-    val readAt: Date?,
+    val readAt: Instant?,
     val readDuration: Long,
     val coverData: MangaCover,
 ) {
     // SY -->
-    val title: String = customMangaInfo?.title ?: ogTitle
+    val title: String = userTitle ?: ogTitle
 
     companion object {
         fun from(history: History, related: HistoryWithRelations, chapter: Chapter?): HistoryWithRelations {
@@ -29,7 +29,7 @@ data class HistoryWithRelations(
                 chapterId = history.chapterId,
                 mangaId = related.mangaId,
                 ogTitle = related.ogTitle,
-                customMangaInfo = related.customMangaInfo,
+                userTitle = related.userTitle,
                 chapter = chapter,
                 chapterNumber = chapter?.chapterNumber ?: -1.0,
                 readAt = history.readAt,

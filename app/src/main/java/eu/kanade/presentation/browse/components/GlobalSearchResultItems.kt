@@ -66,9 +66,11 @@ fun GlobalSearchResultItem(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                 )
+                // SY -->
                 if (subtitle != null) {
                     Text(text = subtitle)
                 }
+                // SY <--
             }
             IconButton(onClick = onClick) {
                 Icon(imageVector = MaterialSymbols.AutoMirroredRounded.ArrowForward, contentDescription = null)

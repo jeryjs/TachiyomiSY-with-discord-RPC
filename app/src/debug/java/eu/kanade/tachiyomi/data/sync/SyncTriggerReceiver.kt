@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 
 /**
+ * SY-specific file
+ *
  * Debug-only hook so automated tests can trigger a sync without UI:
  * `adb shell am broadcast -a <appId>.TRIGGER_SYNC -p <appId>`
  */

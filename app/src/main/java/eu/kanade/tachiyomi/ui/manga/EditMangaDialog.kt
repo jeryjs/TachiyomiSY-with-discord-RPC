@@ -80,6 +80,9 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.source.local.isLocal
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun EditMangaDialog(
     manga: Manga,

@@ -101,6 +101,9 @@ import java.net.URLEncoder
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
+/**
+ * SY-specific file
+ */
 // TODO Consider gallery updating when doing tabbed browsing
 @AssistedInject
 class EHentai(

@@ -12,6 +12,9 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import exh.pagepreview.components.PagePreviewScreen
 
+/**
+ * SY-specific file
+ */
 class PagePreviewScreen(private val mangaId: Long) : Screen() {
 
     @Composable

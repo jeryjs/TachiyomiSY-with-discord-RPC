@@ -12,7 +12,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.domain.manga.model.Manga as DomainManga
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Suwayomi(context: Context, id: Long) : BaseTracker(context, id, "Suwayomi"), EnhancedTracker {
+class Suwayomi(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Suwayomi"), EnhancedTracker {
 
     val api by lazy { SuwayomiApi(id, appGraph.sourceManager) }
 

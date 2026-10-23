@@ -238,7 +238,7 @@ fun LibraryBottomActionMenu(
     onMarkAsUnreadClicked: () -> Unit,
     onDownloadClicked: ((DownloadAction) -> Unit)?,
     onDeleteClicked: () -> Unit,
-    onMigrateClicked: (() -> Unit)?,
+    onMigrateClicked: (() -> Unit)/* SY --> */?/* SY <-- */,
     // SY -->
     onClickCleanTitles: (() -> Unit)?,
     onClickCollectRecommendations: (() -> Unit)?,
@@ -319,7 +319,6 @@ fun LibraryBottomActionMenu(
                     onLongClick = { onLongClickItem(4) },
                     onClick = onDeleteClicked,
                 )
-                // SY -->
                 Button(
                     title = stringResource(MR.strings.action_mark_as_read),
                     icon = MaterialSymbols.Rounded.DoneAll,
@@ -327,6 +326,7 @@ fun LibraryBottomActionMenu(
                     onLongClick = { onLongClickItem(1) },
                     onClick = onMarkAsReadClicked,
                 )
+                // SY -->
                 if (showOverflow) {
                     if (!moveMarkPrev) {
                         Button(

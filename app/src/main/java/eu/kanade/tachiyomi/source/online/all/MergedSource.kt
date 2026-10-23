@@ -37,6 +37,9 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class MergedSource(
     @Assisted

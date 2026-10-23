@@ -16,6 +16,9 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 @Serializable
 class TsuminoSearchMetadata : RaisedSearchMetadata() {
     var tmId: Int? = null

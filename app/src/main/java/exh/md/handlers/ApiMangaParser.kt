@@ -18,6 +18,9 @@ import exh.util.floor
 import exh.util.nullIfEmpty
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 class ApiMangaParser(
     private val lang: String,
     private val getManga: MetadataSource.GetMangaId,

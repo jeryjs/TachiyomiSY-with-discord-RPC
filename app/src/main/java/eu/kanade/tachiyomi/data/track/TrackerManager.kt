@@ -22,7 +22,9 @@ import kotlinx.coroutines.flow.combine
 @Inject
 @SingleIn(AppScope::class)
 class TrackerManager(
+    // SY -->
     context: Context,
+    // SY <--
 ) {
 
     // SY -->
@@ -32,8 +34,6 @@ class TrackerManager(
     }
 
     val mdList = MdList(context, MDLIST)
-    // SY <--
-
     val myAnimeList = MyAnimeList(context, 1L)
     val aniList = Anilist(context, 2L)
     val kitsu = Kitsu(context, 3L)
@@ -46,6 +46,7 @@ class TrackerManager(
     val hikka = Hikka(context, 10L)
     val mangaBaka = MangaBaka(context, 11L)
     val comick = Comick(context, 12L)
+    // SY <--
 
     val trackers = listOf(
         // SY -->

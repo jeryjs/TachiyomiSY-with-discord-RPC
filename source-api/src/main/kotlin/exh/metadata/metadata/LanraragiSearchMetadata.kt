@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 @Serializable
 class LanraragiSearchMetadata : RaisedSearchMetadata() {
     var url get() = arcId?.let { "/reader?id=$it" }

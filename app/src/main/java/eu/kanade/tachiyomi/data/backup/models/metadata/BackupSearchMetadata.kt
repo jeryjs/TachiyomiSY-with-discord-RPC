@@ -4,6 +4,9 @@ import exh.metadata.sql.models.SearchMetadata
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class BackupSearchMetadata(
     @ProtoNumber(1) var uploader: String? = null,

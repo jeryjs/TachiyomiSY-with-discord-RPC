@@ -39,14 +39,16 @@ class PagerPageHolder(
     readerThemedContext: Context,
     val viewer: PagerViewer,
     val page: ReaderPage,
+    // SY -->
     private var extraPage: ReaderPage? = null,
+    // SY <--
 ) : ReaderPageImageView(readerThemedContext), ViewPagerAdapter.PositionableView {
 
     /**
      * Item that identifies this view. Needed by the adapter to not recreate views.
      */
     override val item
-        get() = page to extraPage
+        get() = /* SY --> */page to extraPage/* SY <-- */
 
     /**
      * Loading progress bar to indicate the current progress.
@@ -65,14 +67,19 @@ class PagerPageHolder(
      */
     private var loadJob: Job? = null
 
+    // SY -->
+
     /**
      * Job for loading the page.
      */
     private var extraLoadJob: Job? = null
+    // SY <--
 
     init {
+        // SY -->
         loadJob = scope.launch { loadPageAndProcessStatus(1) }
         extraLoadJob = scope.launch { loadPageAndProcessStatus(2) }
+        // SY <--
     }
 
     /**
@@ -83,8 +90,10 @@ class PagerPageHolder(
         super.onDetachedFromWindow()
         loadJob?.cancel()
         loadJob = null
+        // SY -->
         extraLoadJob?.cancel()
         extraLoadJob = null
+        // SY <--
     }
 
     private fun initProgressIndicator() {
@@ -101,7 +110,7 @@ class PagerPageHolder(
      * Otherwise, this function does not return. It will continue to process status changes until
      * the Job is cancelled.
      */
-    private suspend fun loadPageAndProcessStatus(pageIndex: Int) {
+    private suspend fun loadPageAndProcessStatus(/* SY --> */pageIndex: Int/* SY <-- */) {
         // SY -->
         val page = if (pageIndex == 1) page else extraPage
         page ?: return
@@ -159,14 +168,18 @@ class PagerPageHolder(
      * Called when the page is ready.
      */
     private suspend fun setImage() {
+        // SY -->
         if (extraPage == null) {
             progressIndicator?.setProgress(0)
         } else {
             progressIndicator?.setProgress(95)
         }
+        // SY <--
 
         val streamFn = page.stream ?: return
+        // SY -->
         val streamFn2 = extraPage?.stream
+        // SY <--
 
         try {
             // SY -->
@@ -179,7 +192,8 @@ class PagerPageHolder(
             // Splitting, merging and sampling the background decode the image, which is CPU work
             val (source, isAnimated, background) = withContext(Dispatchers.Default) {
                 // SY -->
-                val source = if (viewer.config.dualPageSplit) {
+                // A single page can still need rotating when it's wide
+                val source = if (viewer.config.dualPageSplit || (viewer.config.dualPageRotateToFit && buffer2 == null)) {
                     process(item.first, buffer)
                 } else {
                     mergePages(buffer, buffer2)
@@ -251,6 +265,7 @@ class PagerPageHolder(
         }
     }
 
+    // SY -->
     private fun mergePages(imageSource: BufferedSource, imageSource2: BufferedSource?): BufferedSource {
         // Handle adding a center margin to wide images if requested
         if (imageSource2 == null) {
@@ -367,6 +382,7 @@ class PagerPageHolder(
             }
         }
     }
+    // SY <--
 
     private fun splitInHalf(imageSource: BufferedSource): BufferedSource {
         var side = when {
@@ -384,6 +400,7 @@ class PagerPageHolder(
             }
         }
 
+        // SY -->
         val sideMargin = if ((viewer.config.centerMarginType and PagerConfig.CenterMarginType.DOUBLE_PAGE_CENTER_MARGIN) >
             0 &&
             viewer.config.doublePages &&
@@ -393,8 +410,9 @@ class PagerPageHolder(
         } else {
             0
         }
+        // SY <--
 
-        return ImageUtil.splitInHalf(imageSource, side, sideMargin)
+        return ImageUtil.splitInHalf(imageSource, side, /* SY --> */sideMargin/* SY <-- */)
     }
 
     private fun onPageSplit(page: ReaderPage) {

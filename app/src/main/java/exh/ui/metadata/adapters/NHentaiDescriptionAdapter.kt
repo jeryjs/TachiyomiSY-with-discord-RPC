@@ -19,6 +19,9 @@ import java.time.ZonedDateTime
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun NHentaiDescription(state: State.Success, openMetadataViewer: () -> Unit) {
     val meta = state.meta as? NHentaiSearchMetadata ?: return

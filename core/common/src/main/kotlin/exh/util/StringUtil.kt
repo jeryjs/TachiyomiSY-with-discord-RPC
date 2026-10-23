@@ -2,6 +2,9 @@ package exh.util
 
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 fun Collection<String>.trimAll() = map { it.trim() }
 fun Collection<String>.dropBlank() = filter { it.isNotBlank() }
 fun Collection<String>.dropEmpty() = filter { it.isNotEmpty() }

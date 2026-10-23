@@ -3,6 +3,9 @@ package exh.md.utils
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 enum class MangaDexRelation(val res: StringResource, val mdString: String?) {
     SIMILAR(SYMR.strings.relation_similar, null),
     MONOCHROME(SYMR.strings.relation_monochrome, "monochrome"),

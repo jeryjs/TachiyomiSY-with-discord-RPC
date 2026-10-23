@@ -36,8 +36,10 @@ class GetEnabledSources(
             repository.getSources(),
         ) {
                 pinnedSourceIds,
+                /* SY --> */
                 (enabledLanguages, disabledSources, lastUsedSource),
                 (excludedFromDataSaver, sourcesInCategories, sourceCategoriesFilter),
+                /* SY <-- */
                 sources,
             ->
 
@@ -47,7 +49,9 @@ class GetEnabledSources(
             val sourcesInSourceCategories = sourcesAndCategories.map { it.first }
             sources
                 .filter { it.lang in enabledLanguages || it.isLocal() }
-                .filterNot { it.id.toString() in disabledSources || it.id in BlacklistedSources.HIDDEN_SOURCES }
+                .filterNot {
+                    it.id.toString() in disabledSources /* SY --> */ || it.id in BlacklistedSources.HIDDEN_SOURCES /* SY <-- */
+                }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
                 .flatMap {
                     val flag = if ("${it.id}" in pinnedSourceIds) Pins.pinned else Pins.unpinned
@@ -58,8 +62,10 @@ class GetEnabledSources(
                     // SY <--
                     val source = it.copy(
                         pin = flag,
+                        /* SY --> */
                         isExcludedFromDataSaver = it.id.toString() in excludedFromDataSaver,
                         categories = categories,
+                        /* SY <-- */
                     )
                     val toFlatten = mutableListOf(source)
                     if (source.id == lastUsedSource) {

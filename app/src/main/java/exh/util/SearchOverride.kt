@@ -10,6 +10,8 @@ import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 
 /**
+ * SY-specific file
+ *
  * A version of fetchSearchManga that supports URL importing
  */
 fun UrlImportableSource.urlImportFetchSearchManga(

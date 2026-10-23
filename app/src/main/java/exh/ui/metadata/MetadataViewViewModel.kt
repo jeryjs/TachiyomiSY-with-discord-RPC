@@ -22,6 +22,9 @@ import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class MetadataViewViewModel(
     @Assisted val mangaId: Long,

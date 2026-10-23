@@ -39,6 +39,9 @@ import java.text.DecimalFormatSymbols
 import java.util.Locale
 import kotlin.time.Duration.Companion.nanoseconds
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun DebugModeOverlay(enableSourceBlacklist: Boolean) {
     Box(Modifier.fillMaxSize()) {

@@ -80,6 +80,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 object SettingsEhScreen : SearchableSettings {
 
     @ReadOnlyComposable

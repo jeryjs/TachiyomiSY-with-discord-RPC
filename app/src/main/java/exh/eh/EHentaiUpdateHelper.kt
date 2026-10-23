@@ -29,7 +29,11 @@ import tachiyomi.domain.manga.model.FavoriteEntryAlternative
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import java.io.File
+import kotlin.time.Clock
 
+/**
+ * SY-specific file
+ */
 data class ChapterChain(val manga: Manga, val chapters: List<Chapter>, val history: List<History>)
 
 @Inject
@@ -105,18 +109,14 @@ class EHentaiUpdateHelper(
             val (chapterUpdates, newChapters, new) = getChapterList(accepted, toDiscard, chainsAsChapters)
 
             toDiscard.forEach {
-                mangaUpdates += MangaUpdate(
-                    id = it.manga.id,
-                    favorite = false,
-                    dateAdded = 0,
-                )
+                mangaUpdates += MangaUpdate(it.manga.id) {
+                    favoriteAt = null
+                }
             }
             if (!accepted.manga.favorite) {
-                mangaUpdates += MangaUpdate(
-                    id = accepted.manga.id,
-                    favorite = true,
-                    dateAdded = System.currentTimeMillis(),
-                )
+                mangaUpdates += MangaUpdate(accepted.manga.id) {
+                    favoriteAt = Clock.System.now()
+                }
             }
 
             val newAccepted = ChapterChain(accepted.manga, newChapters, emptyList())
@@ -125,8 +125,11 @@ class EHentaiUpdateHelper(
             // Apply changes to all manga
             updateManga.awaitAll(mangaUpdates)
             // Insert new chapters for accepted manga
-            chapterRepository.updateAllRemote(chapterUpdates)
-            chapterRepository.addAll(newChapters)
+            chapterRepository.updateFromRemote(
+                removedIds = emptyList(),
+                added = newChapters,
+                updated = chapterUpdates,
+            )
 
             val (newHistory, deleteHistory) = getHistory(
                 getChaptersByMangaId.await(accepted.manga.id),
@@ -198,7 +201,7 @@ class EHentaiUpdateHelper(
         val newHistory = currentChapters.mapNotNull { chapter ->
             val newHistory = history[chapter.url]
                 ?.maxByOrNull {
-                    it.readAt?.time ?: 0
+                    it.readAt?.toEpochMilliseconds() ?: 0L
                 }
                 ?.takeIf { it.chapterId != chapter.id && it.readAt != null }
             if (newHistory != null) {

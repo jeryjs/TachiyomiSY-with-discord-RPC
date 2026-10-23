@@ -65,6 +65,8 @@ fun PUT(
         .cacheControl(cache)
         .build()
 }
+
+// SY -->
 fun PATCH(
     url: String,
     headers: Headers = DEFAULT_HEADERS,
@@ -78,6 +80,7 @@ fun PATCH(
         .cacheControl(cache)
         .build()
 }
+// SY <--
 
 fun DELETE(
     url: String,

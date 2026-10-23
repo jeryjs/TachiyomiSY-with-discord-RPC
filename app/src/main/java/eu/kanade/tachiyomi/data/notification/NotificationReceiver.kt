@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import androidx.core.net.toUri
 import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreWorker
@@ -27,7 +26,7 @@ import tachiyomi.core.common.Constants
 import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
-import tachiyomi.domain.chapter.model.toChapterUpdate
+import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
@@ -83,7 +82,9 @@ class NotificationReceiver : BroadcastReceiver() {
                 )
             ACTION_CANCEL_RESTORE -> cancelRestore(context)
 
+            // SY -->
             ACTION_CANCEL_SYNC -> cancelSync(context)
+            // SY <--
             // Cancel library update and dismiss notification
             ACTION_CANCEL_LIBRARY_UPDATE -> cancelLibraryUpdate(context)
             // Mark updated manga chapters as read
@@ -162,6 +163,8 @@ class NotificationReceiver : BroadcastReceiver() {
         }
     }
 
+    // SY -->
+
     /**
      * Method called when user wants to stop a backup restore job.
      *
@@ -172,6 +175,7 @@ class NotificationReceiver : BroadcastReceiver() {
             SyncDataJob.stop(context)
         }
     }
+    // SY <--
 
     /**
      * Method called when user wants to mark manga chapters as read
@@ -183,7 +187,6 @@ class NotificationReceiver : BroadcastReceiver() {
         launchAsync {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
-                    val chapter = it.copy(read = true)
                     if (downloadPreferences.removeAfterMarkedAsRead.get()) {
                         val manga = getManga.await(mangaId)
                         if (manga != null) {
@@ -193,7 +196,7 @@ class NotificationReceiver : BroadcastReceiver() {
                             }
                         }
                     }
-                    chapter.toChapterUpdate()
+                    ChapterUpdate(it.id) { read = true }
                 }
             updateChapter.awaitAll(toUpdate)
         }
@@ -237,7 +240,9 @@ class NotificationReceiver : BroadcastReceiver() {
 
         private const val ACTION_CANCEL_RESTORE = "$ID.$NAME.CANCEL_RESTORE"
 
+        // SY -->
         private const val ACTION_CANCEL_SYNC = "$ID.$NAME.CANCEL_SYNC"
+        // SY <--
 
         private const val ACTION_CANCEL_LIBRARY_UPDATE = "$ID.$NAME.CANCEL_LIBRARY_UPDATE"
 
@@ -350,20 +355,18 @@ class NotificationReceiver : BroadcastReceiver() {
 
             When programmatically dismissing this notification, the group notification is not automatically dismissed.
              */
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val groupKey = context.notificationManager.activeNotifications.find {
-                    it.id == notificationId
-                }?.groupKey
+            val groupKey = context.notificationManager.activeNotifications.find {
+                it.id == notificationId
+            }?.groupKey
 
-                if (groupId != null && groupId != 0 && !groupKey.isNullOrEmpty()) {
-                    val notifications = context.notificationManager.activeNotifications.filter {
-                        it.groupKey == groupKey
-                    }
+            if (groupId != null && groupId != 0 && !groupKey.isNullOrEmpty()) {
+                val notifications = context.notificationManager.activeNotifications.filter {
+                    it.groupKey == groupKey
+                }
 
-                    if (notifications.size == 2) {
-                        context.cancelNotification(groupId)
-                        return
-                    }
+                if (notifications.size == 2) {
+                    context.cancelNotification(groupId)
+                    return
                 }
             }
 
@@ -595,6 +598,8 @@ class NotificationReceiver : BroadcastReceiver() {
             )
         }
 
+        // SY -->
+
         /**
          * Returns [PendingIntent] that cancels a sync restore job.
          *
@@ -614,5 +619,6 @@ class NotificationReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
         }
+        // SY <--
     }
 }

@@ -15,7 +15,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Hikka(context: Context, id: Long) : BaseTracker(context, id, "Hikka"), DeletableTracker {
+class Hikka(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Hikka"), DeletableTracker {
 
     companion object {
         const val READING = 0L

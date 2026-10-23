@@ -1,6 +1,7 @@
 package tachiyomi.domain.track.model
 
 import java.io.Serializable
+import kotlin.time.Instant
 
 data class Track(
     val id: Long,
@@ -16,8 +17,8 @@ data class Track(
     val status: Long,
     val score: Double,
     val remoteUrl: String,
-    val startDate: Long,
-    val finishDate: Long,
+    val startDate: Instant?,
+    val finishDate: Instant?,
     val private: Boolean,
     val rereadCount: Long = 0,
 ) : Serializable

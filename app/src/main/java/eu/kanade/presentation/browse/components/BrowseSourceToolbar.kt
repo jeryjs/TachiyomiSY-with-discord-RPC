@@ -33,7 +33,7 @@ fun BrowseSourceToolbar(
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     source: Source?,
-    displayMode: LibraryDisplayMode?,
+    displayMode: /* SY --> */ LibraryDisplayMode? /* SY <-- */,
     onDisplayModeChange: (LibraryDisplayMode) -> Unit,
     navigateUp: () -> Unit,
     onWebViewClick: () -> Unit,
@@ -45,7 +45,7 @@ fun BrowseSourceToolbar(
     // Avoid capturing unstable source in actions lambda
     val title = source?.name
     val isLocalSource = source is LocalSource
-    val isConfigurableSource = source?.anyIs<ConfigurableSource>() == true
+    val isConfigurableSource = /* SY --> */ source?.anyIs<ConfigurableSource>() == true /* SY <-- */
 
     var selectingDisplayMode by remember { mutableStateOf(false) }
 
@@ -59,6 +59,7 @@ fun BrowseSourceToolbar(
         actions = {
             AppBarActions(
                 actions = buildList {
+                    // SY -->
                     if (displayMode != null) {
                         add(
                             AppBar.Action(
@@ -95,7 +96,7 @@ fun BrowseSourceToolbar(
                         if (isConfigurableSource && displayMode != null) {
                             add(
                                 AppBar.OverflowAction(
-                                    title = stringResource(MR.strings.action_web_view),
+                                    title = stringResource(MR.strings.action_open_in_web_view),
                                     onClick = onWebViewClick,
                                 ),
                             )

@@ -16,6 +16,9 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getAndSet
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveExtensionRepoSettingsMigration(

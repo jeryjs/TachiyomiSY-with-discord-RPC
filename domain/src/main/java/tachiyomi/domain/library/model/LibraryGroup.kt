@@ -1,5 +1,8 @@
 package tachiyomi.domain.library.model
 
+/**
+ * SY-specific file
+ */
 object LibraryGroup {
 
     const val BY_DEFAULT = 0

@@ -4,6 +4,9 @@ import dev.zacsweers.metro.Inject
 import tachiyomi.core.common.preference.plusAssign
 import tachiyomi.domain.library.service.LibraryPreferences
 
+/**
+ * SY-specific file
+ */
 @Inject
 class CreateSortTag(
     private val preferences: LibraryPreferences,

@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 class MangaDexLoginActivity : BaseOAuthLoginActivity() {
 
     @Inject private lateinit var sourceManager: SourceManager

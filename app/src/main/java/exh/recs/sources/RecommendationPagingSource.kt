@@ -22,6 +22,8 @@ import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.sy.SYMR
 
 /**
+ * SY-specific file
+ *
  * General class for recommendation sources.
  */
 abstract class RecommendationPagingSource(

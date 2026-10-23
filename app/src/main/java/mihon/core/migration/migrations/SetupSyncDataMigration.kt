@@ -8,6 +8,9 @@ import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class SetupSyncDataMigration(

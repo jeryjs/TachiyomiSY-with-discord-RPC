@@ -35,10 +35,10 @@ android {
     defaultConfig {
         applicationId = "eu.kanade.tachiyomi.sy"
 
-        versionCode = 83
+        versionCode = 84
         versionName = "1.13.2"
 
-        buildConfigField("String", "UPSTREAM_VERSION", """"0.20.1"""")
+        buildConfigField("String", "UPSTREAM_VERSION", """"0.21.2"""")
 
         buildConfigField("boolean", "INCLUDE_UPDATER", "false")
 
@@ -179,6 +179,7 @@ dependencies {
     implementation(projects.iconsSy.customMaterialSymbols)
     implementation(projects.iconsSy.materialSymbols)
     // SY <--
+    implementation(projects.core.archive)
     implementation(projects.core.common)
     implementation(projects.core.metro)
     implementation(projects.coreMetadata)
@@ -205,16 +206,9 @@ dependencies {
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
 
-    implementation(libs.androidx.sqlite.bundled)
-    // SY -->
-    implementation(sylibs.sqlcipher)
-    // SY <--
-
     implementation(libs.kotlin.reflect)
 
     implementation(libs.bundles.kotlinx.coroutines)
-
-    implementation(libs.sqldelight.async)
 
     implementation(libs.kotlinx.datetime)
 

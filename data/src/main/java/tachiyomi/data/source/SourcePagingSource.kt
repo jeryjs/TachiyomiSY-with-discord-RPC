@@ -6,6 +6,7 @@ import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.MetadataMangasPage
 import exh.metadata.metadata.RaisedSearchMetadata
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.domain.manga.model.toDomainManga
@@ -19,27 +20,33 @@ class SourceSearchPagingSource(
     private val filters: FilterList,
     networkToLocalManga: NetworkToLocalManga,
 ) : BaseSourcePagingSource(source, networkToLocalManga) {
+    // SY -->
     override suspend fun requestNextPage(source: Source?, currentPage: Int): MangasPage {
         return source!!.getSearchManga(currentPage, query, filters)
     }
+    // SY <--
 }
 
 class SourcePopularPagingSource(
     source: suspend () -> Source,
     networkToLocalManga: NetworkToLocalManga,
 ) : BaseSourcePagingSource(source, networkToLocalManga) {
+    // SY -->
     override suspend fun requestNextPage(source: Source?, currentPage: Int): MangasPage {
         return source!!.getPopularManga(currentPage)
     }
+    // SY <--
 }
 
 class SourceLatestPagingSource(
     source: suspend () -> Source,
     networkToLocalManga: NetworkToLocalManga,
 ) : BaseSourcePagingSource(source, networkToLocalManga) {
+    // SY -->
     override suspend fun requestNextPage(source: Source?, currentPage: Int): MangasPage {
         return source!!.getLatestUpdates(currentPage)
     }
+    // SY <--
 }
 
 abstract class BaseSourcePagingSource(
@@ -51,15 +58,19 @@ abstract class BaseSourcePagingSource(
 
     private val seenManga = hashSetOf<String>()
 
+    // SY -->
     abstract suspend fun requestNextPage(source: Source?, currentPage: Int): MangasPage
+    // SY <--
 
     override suspend fun load(
         params: LoadParams<Long>,
-    ): LoadResult<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */> {
+    ): LoadResult<Long, /* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */> {
         val page = params.key ?: 1
 
         return try {
+            // SY -->
             val source = source?.invoke()
+            // SY <--
             val mangasPage = withContext(Dispatchers.IO) {
                 requestNextPage(source, page.toInt())
                     .takeIf { it.mangas.isNotEmpty() }
@@ -69,6 +80,8 @@ abstract class BaseSourcePagingSource(
             // SY -->
             getPageLoadResult(source, params, mangasPage)
             // SY <--
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             LoadResult.Error(e)
         }
@@ -79,7 +92,7 @@ abstract class BaseSourcePagingSource(
         source: Source?,
         params: LoadParams<Long>,
         mangasPage: MangasPage,
-    ): LoadResult.Page<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */> {
+    ): LoadResult.Page<Long, /* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */> {
         val page = params.key ?: 1
 
         // SY -->
@@ -103,7 +116,7 @@ abstract class BaseSourcePagingSource(
     // SY <--
 
     override fun getRefreshKey(
-        state: PagingState<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */>,
+        state: PagingState<Long, /* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */>,
     ): Long? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)

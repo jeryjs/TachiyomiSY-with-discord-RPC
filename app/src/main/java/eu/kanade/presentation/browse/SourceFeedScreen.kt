@@ -26,6 +26,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
 
+/**
+ * SY-specific file
+ */
 sealed class SourceFeedUI {
     abstract val id: Long
 

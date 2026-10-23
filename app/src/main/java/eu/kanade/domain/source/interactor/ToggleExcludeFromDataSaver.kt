@@ -5,6 +5,9 @@ import eu.kanade.domain.source.service.SourcePreferences
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.domain.source.model.Source
 
+/**
+ * SY-specific file
+ */
 @Inject
 class ToggleExcludeFromDataSaver(
     private val preferences: SourcePreferences,

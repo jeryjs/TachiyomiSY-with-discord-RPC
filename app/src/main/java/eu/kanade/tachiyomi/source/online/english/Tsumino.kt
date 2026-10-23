@@ -30,6 +30,9 @@ import tachiyomi.core.common.util.lang.runAsObservable
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class Tsumino(
     @Assisted delegate: HttpSource,

@@ -31,19 +31,28 @@ import mihon.app.di.AppGraph
 import mihon.app.di.appGraph
 import mihon.core.metro.metroGraph
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.data.Database
-import tachiyomi.data.manga.MangaMapper
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.category.repository.CategoryRepository
+import tachiyomi.domain.chapter.repository.ChapterRepository
+import tachiyomi.domain.manga.repository.MangaRepository
+import tachiyomi.domain.sync.repository.SyncRepository
 import java.util.concurrent.TimeUnit
 
+/**
+ * SY-specific file
+ */
 class SyncDataJob(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
 
     private val graph: AppGraph = context.metroGraph()
 
-    @Inject private lateinit var database: Database
+    @Inject private lateinit var mangaRepository: MangaRepository
 
-    @Inject private lateinit var mangaMapper: MangaMapper
+    @Inject private lateinit var chapterRepository: ChapterRepository
+
+    @Inject private lateinit var categoryRepository: CategoryRepository
+
+    @Inject private lateinit var syncRepository: SyncRepository
 
     @Inject private lateinit var syncPreferences: SyncPreferences
 
@@ -75,7 +84,7 @@ class SyncDataJob(private val context: Context, workerParams: WorkerParameters) 
         setForegroundSafely()
 
         return try {
-            SyncManager(context, database, mangaMapper, syncPreferences, json, protoBuf, getCategories, backupCreatorFactory, notifier, mangaRestorerFactory).syncData()
+            SyncManager(context, mangaRepository, chapterRepository, categoryRepository, syncRepository, syncPreferences, json, protoBuf, getCategories, backupCreatorFactory, notifier, mangaRestorerFactory).syncData()
             Result.success()
         } catch (e: OutOfMemoryError) {
             logcat(LogPriority.ERROR, e)

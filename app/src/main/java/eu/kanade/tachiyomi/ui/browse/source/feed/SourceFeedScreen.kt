@@ -25,6 +25,9 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * SY-specific file
+ */
 class SourceFeedScreen(val sourceId: Long) : Screen() {
 
     @Composable

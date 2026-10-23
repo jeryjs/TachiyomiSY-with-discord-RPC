@@ -16,6 +16,9 @@ import kotlinx.serialization.json.putJsonArray
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
+/**
+ * SY-specific file
+ */
 interface Serializer<in T : Filter<out Any?>> {
     fun JsonObjectBuilder.serialize(filter: T) {}
     fun deserialize(json: JsonObject, filter: T) {}

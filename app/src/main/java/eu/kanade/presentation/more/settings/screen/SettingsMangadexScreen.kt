@@ -59,6 +59,9 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * SY-specific file
+ */
 object SettingsMangadexScreen : SearchableSettings {
 
     @ReadOnlyComposable

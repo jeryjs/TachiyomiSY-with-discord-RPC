@@ -49,6 +49,8 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 
 /**
+ * SY-specific file
+ *
  * Lines of a metadata description, stacked with the panel's line spacing.
  */
 @Composable

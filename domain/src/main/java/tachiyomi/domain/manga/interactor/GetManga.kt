@@ -11,7 +11,7 @@ import tachiyomi.domain.manga.repository.MangaRepository
 @Inject
 class GetManga(
     private val mangaRepository: MangaRepository,
-) : MetadataSource.GetMangaId {
+) /* SY --> */ : MetadataSource.GetMangaId/* SY <-- */ {
 
     suspend fun await(id: Long): Manga? {
         return try {

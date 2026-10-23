@@ -3,7 +3,6 @@ package eu.kanade.presentation.more.settings.screen
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -36,7 +35,7 @@ import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.DownloadManager
-import eu.kanade.tachiyomi.data.library.LibraryUpdateWorker
+import eu.kanade.tachiyomi.data.library.MetadataUpdateWorker
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.network.PREF_DOH_360
 import eu.kanade.tachiyomi.network.PREF_DOH_ADGUARD
@@ -145,18 +144,9 @@ object SettingsAdvancedScreen : SearchableSettings {
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(MR.strings.pref_manage_notifications),
                 onClick = {
-                    // SY -->
-                    val intent = Intent().apply {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                        } else {
-                            setAction("android.settings.APP_NOTIFICATION_SETTINGS")
-                            putExtra("app_package", context.packageName)
-                            putExtra("app_uid", context.applicationInfo.uid)
-                        }
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                     }
-                    // SY <--
                     context.startActivity(intent)
                 },
             ),
@@ -345,24 +335,20 @@ object SettingsAdvancedScreen : SearchableSettings {
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_refresh_library_covers),
-                    onClick = {
-                        scope.launch {
-                            LibraryUpdateWorker.startNow(context.workManager, target = LibraryUpdateWorker.Target.COVERS)
-                        }
-                    },
+                    onClick = { scope.launch { MetadataUpdateWorker.startNow(context.workManager) } },
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_reset_viewer_flags),
                     subtitle = stringResource(MR.strings.pref_reset_viewer_flags_summary),
                     onClick = {
-                        context.appGraph.appScope.launch {
+                        /* SY --> */ context.appGraph.appScope.launch /* SY <-- */ {
                             val success = context.appGraph.resetViewerFlags.await()
                             val message = if (success) {
                                 MR.strings.pref_reset_viewer_flags_success
                             } else {
                                 MR.strings.pref_reset_viewer_flags_error
                             }
-                            withContext(Dispatchers.Main) { context.toast(message) }
+                            /* SY --> */ withContext(Dispatchers.Main) { context.toast(message) } /* SY <-- */
                         }
                     },
                 ),
@@ -442,7 +428,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                     entries = extensionInstallerPref.entries
                         .filter {
                             // TODO: allow private option in stable versions once URL handling is more fleshed out
-                            if (isPreviewBuildType || isDebugBuildType) {
+                            if (/* SY --> */ isPreviewBuildType || isDebugBuildType /* SY <-- */) {
                                 true
                             } else {
                                 it != BasePreferences.ExtensionInstaller.PRIVATE

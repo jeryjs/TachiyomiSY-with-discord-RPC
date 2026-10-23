@@ -22,6 +22,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
+/**
+ * SY-specific file
+ */
 class MdList(context: Context, id: Long) : BaseTracker(context, id, "MDList") {
 
     companion object {

@@ -18,6 +18,9 @@ import mihon.icons.materialsymbols.automirroredrounded.Label
 import mihon.icons.materialsymbols.rounded.Delete
 import tachiyomi.presentation.core.components.material.padding
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun BiometricTimesListItem(
     modifier: Modifier,

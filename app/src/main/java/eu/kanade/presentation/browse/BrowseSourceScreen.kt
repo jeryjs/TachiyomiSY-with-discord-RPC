@@ -103,7 +103,7 @@ fun BrowseSourceContent(
                     ),
                 )
             } else {
-                listOfNotNull(
+                /* SY --> */ listOfNotNull /* SY <-- */(
                     EmptyScreenAction(
                         stringRes = MR.strings.action_retry,
                         icon = MaterialSymbols.Rounded.Refresh,

@@ -22,6 +22,7 @@ class ReleaseServiceImpl(
     private val json: Json,
 ) : ReleaseService {
 
+    // SY -->
     override suspend fun latest(repository: String): Release {
         return withContext(Dispatchers.IO) {
             with(json) {
@@ -33,4 +34,5 @@ class ReleaseServiceImpl(
             }
         }
     }
+    // SY <--
 }

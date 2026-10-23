@@ -110,7 +110,7 @@ fun SetIntervalDialog(
                 }
                 Spacer(Modifier.height(MaterialTheme.padding.small))
 
-                if (onValueChanged != null && (isDebugBuildType || isPreviewBuildType)) {
+                if (onValueChanged != null && /* SY --> */ (isDebugBuildType || isPreviewBuildType) /* SY <-- */) {
                     Text(stringResource(MR.strings.manga_interval_custom_amount))
 
                     BoxWithConstraints(

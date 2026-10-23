@@ -43,9 +43,12 @@ data class MALAuthor(
 @Serializable
 data class MALMangaCovers(
     val large: String = "",
+    // SY -->
     val medium: String,
+    // SY <--
 )
 
+// SY -->
 @Serializable
 data class MALMangaMetadata(
     val id: Long,
@@ -55,3 +58,4 @@ data class MALMangaMetadata(
     val covers: MALMangaCovers,
     val authors: List<MALAuthorNode>,
 )
+// SY <--

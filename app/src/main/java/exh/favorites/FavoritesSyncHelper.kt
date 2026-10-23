@@ -44,6 +44,9 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.sy.SYMR
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 // TODO only apply database changes after sync
 @Inject
 class FavoritesSyncHelper(

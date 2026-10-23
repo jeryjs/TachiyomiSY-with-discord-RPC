@@ -9,17 +9,20 @@ import kotlinx.coroutines.withContext
 import mihon.core.migration.MigrateUtils
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.data.Database
+import tachiyomi.domain.eh.repository.EhRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class DelegateNHentaiMigration(
-    private val database: Database,
+    private val ehRepository: EhRepository,
 ) : Migration {
     override val version: Float = 6f
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
-        MigrateUtils.updateSourceId(database, NHentai.otherId, 6907)
+        MigrateUtils.updateSourceId(ehRepository, NHentai.otherId, 6907)
 
         return@withContext true
     }

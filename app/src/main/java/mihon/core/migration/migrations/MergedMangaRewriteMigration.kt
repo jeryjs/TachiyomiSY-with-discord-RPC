@@ -1,6 +1,5 @@
 package mihon.core.migration.migrations
 
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
@@ -14,11 +13,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
-import tachiyomi.data.Database
-import tachiyomi.data.chapter.ChapterMapper
 import tachiyomi.domain.chapter.interactor.DeleteChapters
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
+import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.GetMangaBySource
 import tachiyomi.domain.manga.interactor.InsertMergedReference
@@ -27,10 +25,13 @@ import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MergedMangaRewriteMigration(
-    private val database: Database,
+    private val chapterRepository: ChapterRepository,
     private val getMangaBySource: GetMangaBySource,
     private val getManga: GetManga,
     private val updateManga: UpdateManga,
@@ -54,7 +55,7 @@ class MergedMangaRewriteMigration(
                 mangaConfigs.onEach { mergedManga ->
                     val newFirst = mergedManga.second.children.firstOrNull()?.url?.let {
                         if (getManga.await(it, MERGED_SOURCE_ID) != null) return@onEach
-                        mangaToUpdate += MangaUpdate(id = mergedManga.first.id, url = it)
+                        mangaToUpdate += MangaUpdate(mergedManga.first.id) { url = it }
                         mergedManga.first.copy(url = it)
                     } ?: mergedManga.first
                     mergedMangaReferences += MergedMangaReference(
@@ -96,21 +97,9 @@ class MergedMangaRewriteMigration(
                     .flatten()
                     .mapNotNull { it.load(getManga, sourceManager) }
                     .distinct()
-                val chapters =
-                    database.ehQueries
-                        .getChaptersByMangaIds(
-                            mergedMangas.map { it.id },
-                            ChapterMapper::mapChapter,
-                        )
-                        .awaitAsList()
+                val chapters = chapterRepository.getChaptersByMangaIds(mergedMangas.map { it.id })
 
-                val mergedMangaChapters =
-                    database.ehQueries
-                        .getChaptersByMangaIds(
-                            loadedMangaList.map { it.manga.id },
-                            ChapterMapper::mapChapter,
-                        )
-                        .awaitAsList()
+                val mergedMangaChapters = chapterRepository.getChaptersByMangaIds(loadedMangaList.map { it.manga.id })
 
                 val mergedMangaChaptersMatched = mergedMangaChapters.mapNotNull { chapter ->
                     loadedMangaList.firstOrNull {
@@ -118,7 +107,7 @@ class MergedMangaRewriteMigration(
                     }?.let { it to chapter }
                 }
                 val parsedChapters = chapters.filter {
-                    it.read || it.lastPageRead != 0L
+                    it.read || it.lastPageRead != 0
                 }.mapNotNull { chapter -> readUrlConfig(chapter.url)?.let { chapter to it } }
                 val chaptersToUpdate = mutableListOf<ChapterUpdate>()
                 parsedChapters.forEach { parsedChapter ->
@@ -127,11 +116,10 @@ class MergedMangaRewriteMigration(
                             it.first.source.id == parsedChapter.second.source &&
                             it.first.manga.url == parsedChapter.second.mangaUrl
                     }?.let {
-                        chaptersToUpdate += ChapterUpdate(
-                            it.second.id,
-                            read = parsedChapter.first.read,
-                            lastPageRead = parsedChapter.first.lastPageRead,
-                        )
+                        chaptersToUpdate += ChapterUpdate(it.second.id) {
+                            read = parsedChapter.first.read
+                            lastPageRead = parsedChapter.first.lastPageRead
+                        }
                     }
                 }
 

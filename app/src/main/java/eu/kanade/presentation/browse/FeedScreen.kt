@@ -50,6 +50,9 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 data class FeedItemUI(
     val feed: FeedSavedSearch,
     val savedSearch: SavedSearch?,

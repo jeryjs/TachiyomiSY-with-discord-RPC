@@ -9,6 +9,9 @@ import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 import tachiyomi.domain.backup.service.BackupPreferences
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class AlwaysBackupMigration(

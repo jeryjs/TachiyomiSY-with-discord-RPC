@@ -28,6 +28,9 @@ import tachiyomi.presentation.core.components.SectionCard
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 class SyncTriggerOptionsScreen : Screen() {
 
     @Composable

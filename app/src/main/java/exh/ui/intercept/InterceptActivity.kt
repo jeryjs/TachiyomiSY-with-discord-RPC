@@ -47,6 +47,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 
+/**
+ * SY-specific file
+ */
 class InterceptActivity : BaseActivity() {
     private val graph: AppGraph by lazy { metroGraph() }
 

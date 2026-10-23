@@ -17,7 +17,7 @@ import tachiyomi.presentation.core.util.collectAsState
 import kotlin.time.Duration.Companion.milliseconds
 
 @Stable
-class DisplayRefreshHost(private val readerPreferences: ReaderPreferences) {
+class DisplayRefreshHost(/* SY --> */ private val readerPreferences: ReaderPreferences /* SY <-- */) {
 
     internal var currentDisplayRefresh by mutableStateOf(false)
 

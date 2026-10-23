@@ -15,7 +15,7 @@ import eu.kanade.tachiyomi.util.lang.htmlDecode
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class MangaUpdates(context: Context, id: Long) : BaseTracker(context, id, "MangaUpdates"), DeletableTracker {
+class MangaUpdates(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "MangaUpdates"), DeletableTracker {
 
     companion object {
         const val READING_LIST = 0L
@@ -128,6 +128,7 @@ class MangaUpdates(context: Context, id: Long) : BaseTracker(context, id, "Manga
         saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         val series = api.getSeries(track)
         return series.let {
@@ -141,8 +142,6 @@ class MangaUpdates(context: Context, id: Long) : BaseTracker(context, id, "Manga
             )
         }
     }
-
-    // SY -->
     override suspend fun searchById(id: String): TrackSearch? {
         /*
          * MangaUpdates uses newer base36 IDs (in URLs displayed as an encoded string, internally as a long)

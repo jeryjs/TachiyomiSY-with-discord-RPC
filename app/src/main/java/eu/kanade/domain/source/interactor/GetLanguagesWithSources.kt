@@ -22,7 +22,7 @@ class GetLanguagesWithSources(
             preferences.disabledSources.changes(),
             repository.getOnlineSources(),
         ) { enabledLanguage, disabledSource, onlineSources ->
-            val sortedSources = onlineSources.filterNot { it.id in BlacklistedSources.HIDDEN_SOURCES }.sortedWith(
+            val sortedSources = onlineSources/* SY --> */.filterNot { it.id in BlacklistedSources.HIDDEN_SOURCES } /* SY <-- */.sortedWith(
                 compareBy<Source> { it.id.toString() in disabledSource }
                     .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name },
             )

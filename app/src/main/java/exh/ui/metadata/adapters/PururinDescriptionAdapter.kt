@@ -13,6 +13,9 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun PururinDescription(state: State.Success, openMetadataViewer: () -> Unit) {
     val meta = state.meta as? PururinSearchMetadata ?: return

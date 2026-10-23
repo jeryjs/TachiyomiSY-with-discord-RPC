@@ -25,6 +25,9 @@ import tachiyomi.core.common.util.lang.runAsObservable
 import uy.kohesive.injekt.injectLazy
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 class BilibiliHandler(currentClient: OkHttpClient) {
     val baseUrl = "https://www.bilibilicomics.com"
     val headers = Headers.Builder()

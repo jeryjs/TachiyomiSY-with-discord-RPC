@@ -188,7 +188,10 @@ class ReaderActivity : BaseActivity() {
 
     private var menuToggleToast: Toast? = null
     private var readingModeToast: Toast? = null
+
+    // SY -->
     private val displayRefreshHost by lazy { DisplayRefreshHost(readerPreferences) }
+    // SY <--
 
     private val windowInsetsController by lazy { WindowInsetsControllerCompat(window, window.decorView) }
 
@@ -240,7 +243,9 @@ class ReaderActivity : BaseActivity() {
 
         config = ReaderConfig()
         setMenuVisibility(viewModel.state.value.menuVisible)
+        // SY -->
         enableExhAutoScroll()
+        // SY <--
 
         // Finish when incognito mode is disabled
         preferences.incognitoMode.changes()
@@ -435,6 +440,7 @@ class ReaderActivity : BaseActivity() {
                 )
             }
 
+            // SY -->
             is ReaderViewModel.Dialog.ChapterList -> {
                 var chapters by remember {
                     mutableStateOf(viewModel.getChapters())
@@ -468,7 +474,6 @@ class ReaderActivity : BaseActivity() {
                     downloadManager = downloadManager,
                 )
             }
-            // SY -->
             ReaderViewModel.Dialog.AutoScrollHelp -> AlertDialog(
                 onDismissRequest = onDismissRequest,
                 confirmButton = {
@@ -657,8 +662,10 @@ class ReaderActivity : BaseActivity() {
             chapterTitle = state.currentChapter?.chapter?.name,
             navigateUp = onBackPressedDispatcher::onBackPressed,
             onClickTopAppBar = ::openMangaScreen,
+            // SY -->
             // bookmarked = state.bookmarked,
             // onToggleBookmarked = viewModel::toggleChapterBookmark,
+            // SY <--
             onOpenInWebView = ::openChapterInWebView.takeIf { isHttpSource },
             onOpenInBrowser = ::openChapterInBrowser.takeIf { isHttpSource },
             onShare = ::shareChapter.takeIf { isHttpSource },
@@ -742,6 +749,7 @@ class ReaderActivity : BaseActivity() {
         )
     }
 
+    // SY -->
     private fun enableExhAutoScroll() {
         readerPreferences.autoscrollInterval.changes()
             .combine(viewModel.state.map { it.autoScroll }.distinctUntilChanged()) { interval, enabled ->
@@ -891,7 +899,7 @@ class ReaderActivity : BaseActivity() {
             }
         }
     }
-// EXH <--
+    // SY <--
 
     /**
      * Sets the visibility of the menu according to [visible].
@@ -1447,11 +1455,11 @@ class ReaderActivity : BaseActivity() {
                             mangaId = viewModel.manga?.id,
                             mangaTitle = viewModel.manga?.title,
                             thumbnailUrl = viewModel.manga?.thumbnailUrl,
-                            chapterNumber = Pair(currentChapter?.chapter_number ?: -1f, viewModel.getChapters().size),
+                            chapterNumber = Pair(currentChapter?.chapterNumber?.toFloat() ?: -1f, viewModel.getChapters().size),
                             chapterTitle = if (connectionsPreferences.useChapterTitles().get()) {
                                 currentChapter?.name
                             } else {
-                                currentChapter?.chapter_number.toString()
+                                currentChapter?.chapterNumber.toString()
                             },
                         ),
                     )

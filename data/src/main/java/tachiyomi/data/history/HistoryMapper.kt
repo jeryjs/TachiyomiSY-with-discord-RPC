@@ -1,20 +1,16 @@
 package tachiyomi.data.history
 
-import dev.zacsweers.metro.Inject
 import tachiyomi.domain.history.model.History
 import tachiyomi.domain.history.model.HistoryWithRelations
-import tachiyomi.domain.manga.interactor.GetCustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
-import java.util.Date
+import kotlin.time.Instant
 
-@Inject
-class HistoryMapper(
-    private val getCustomMangaInfo: GetCustomMangaInfo,
-) {
+object HistoryMapper {
+
     fun mapHistory(
         id: Long,
         chapterId: Long,
-        readAt: Date?,
+        readAt: Instant?,
         readDuration: Long,
     ): History = History(
         id = id,
@@ -31,19 +27,22 @@ class HistoryMapper(
         thumbnailUrl: String?,
         sourceId: Long,
         isFavorite: Boolean,
-        coverLastModified: Long,
+        coverLastModified: Instant?,
         chapterNumber: Double,
-        readAt: Date?,
+        readAt: Instant?,
         readDuration: Long,
+        // SY -->
+        userTitle: String?,
+        userThumbnailUrl: String?,
+        // SY <--
     ): HistoryWithRelations {
-        val customMangaInfo = getCustomMangaInfo.get(mangaId)
         return HistoryWithRelations(
             id = historyId,
             chapterId = chapterId,
             mangaId = mangaId,
             // SY -->
             ogTitle = title,
-            customMangaInfo = customMangaInfo,
+            userTitle = userTitle,
             // SY <--
             chapterNumber = chapterNumber,
             readAt = readAt,
@@ -52,8 +51,10 @@ class HistoryMapper(
                 mangaId = mangaId,
                 sourceId = sourceId,
                 isMangaFavorite = isFavorite,
+                // SY -->
                 ogUrl = thumbnailUrl,
-                customThumbnailUrl = if (isFavorite) customMangaInfo?.thumbnailUrl else null,
+                userThumbnailUrl = userThumbnailUrl,
+                // SY <--
                 lastModified = coverLastModified,
             ),
         )

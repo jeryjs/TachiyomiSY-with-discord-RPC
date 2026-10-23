@@ -5,6 +5,9 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
+/**
+ * SY-specific file
+ */
 object FirebaseConfig {
     private var analytics: FirebaseAnalytics? = null
     private var crashlytics: FirebaseCrashlytics? = null

@@ -5,6 +5,9 @@ import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.SManga
 import exh.metadata.metadata.RaisedSearchMetadata
 
+/**
+ * SY-specific file
+ */
 interface FollowsSource : Source {
     suspend fun fetchFollows(page: Int): MangasPage
 

@@ -13,7 +13,7 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Bangumi(context: Context, id: Long) : BaseTracker(context, id, "Bangumi") {
+class Bangumi(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Bangumi") {
 
     private val json: Json by injectLazy()
 
@@ -78,9 +78,11 @@ class Bangumi(context: Context, id: Long) : BaseTracker(context, id, "Bangumi") 
         return api.search(query)
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+    // SY <--
 
     override suspend fun refresh(track: Track): Track {
         val remoteStatusTrack = api.statusLibManga(track, getUsername()) ?: throw Exception("Could not find manga")

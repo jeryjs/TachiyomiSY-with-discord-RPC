@@ -16,6 +16,9 @@ import kotlinx.coroutines.withContext
 import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 
+/**
+ * SY-specific file
+ */
 class MangaHandler(
     private val lang: String,
     private val service: MangaDexService,

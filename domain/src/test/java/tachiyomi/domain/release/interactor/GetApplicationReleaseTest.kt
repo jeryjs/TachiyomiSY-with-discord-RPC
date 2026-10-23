@@ -21,6 +21,7 @@ class GetApplicationReleaseTest {
         getApplicationRelease = GetApplicationRelease(releaseService)
     }
 
+    // SY -->
     @Test
     fun `When has update but is preview expect new update`() = runTest {
         val release = Release(
@@ -120,4 +121,5 @@ class GetApplicationReleaseTest {
 
         result shouldBe GetApplicationRelease.Result.NoNewUpdate
     }
+    // SY <--
 }

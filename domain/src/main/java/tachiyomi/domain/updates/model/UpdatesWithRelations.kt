@@ -1,13 +1,13 @@
 package tachiyomi.domain.updates.model
 
-import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.MangaCover
+import kotlin.time.Instant
 
 data class UpdatesWithRelations(
     val mangaId: Long,
     // SY -->
     val ogMangaTitle: String,
-    val customMangaInfo: CustomMangaInfo? = null,
+    val userTitle: String? = null,
     // SY <--
     val chapterId: Long,
     val chapterName: String,
@@ -15,12 +15,12 @@ data class UpdatesWithRelations(
     val chapterUrl: String,
     val read: Boolean,
     val bookmark: Boolean,
-    val lastPageRead: Long,
+    val lastPageRead: Int,
     val sourceId: Long,
-    val dateFetch: Long,
+    val dateFetch: Instant,
     val coverData: MangaCover,
 ) {
     // SY -->
-    val mangaTitle: String = customMangaInfo?.title ?: ogMangaTitle
+    val mangaTitle: String = userTitle ?: ogMangaTitle
     // SY <--
 }

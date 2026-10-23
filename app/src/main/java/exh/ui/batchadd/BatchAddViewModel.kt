@@ -24,6 +24,9 @@ import kotlinx.coroutines.withContext
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())

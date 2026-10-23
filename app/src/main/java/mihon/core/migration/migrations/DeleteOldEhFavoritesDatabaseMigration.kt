@@ -11,6 +11,9 @@ import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 import java.io.File
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class DeleteOldEhFavoritesDatabaseMigration(

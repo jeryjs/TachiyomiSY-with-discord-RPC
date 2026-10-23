@@ -15,6 +15,9 @@ import mihon.core.migration.MigrationContext
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveEncryptionSettingsToAppStateMigration(

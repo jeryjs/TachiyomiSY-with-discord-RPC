@@ -13,6 +13,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/**
+ * SY-specific file
+ */
 @Serializable
 class EHentaiSearchMetadata : RaisedSearchMetadata() {
     var gId: String?

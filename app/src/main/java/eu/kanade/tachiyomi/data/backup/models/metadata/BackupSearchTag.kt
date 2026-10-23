@@ -4,6 +4,9 @@ import exh.metadata.sql.models.SearchTag
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class BackupSearchTag(
     @ProtoNumber(1) var namespace: String? = null,

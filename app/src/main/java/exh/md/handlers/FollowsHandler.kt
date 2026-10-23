@@ -18,6 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
+/**
+ * SY-specific file
+ */
 class FollowsHandler(
     private val lang: String,
     private val service: MangaDexAuthService,

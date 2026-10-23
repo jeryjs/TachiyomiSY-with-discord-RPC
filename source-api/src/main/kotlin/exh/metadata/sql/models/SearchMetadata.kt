@@ -2,6 +2,9 @@ package exh.metadata.sql.models
 
 import kotlinx.serialization.Serializable
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class SearchMetadata(
     // Manga ID this gallery is linked to

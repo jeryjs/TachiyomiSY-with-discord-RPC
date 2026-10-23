@@ -77,7 +77,9 @@ class ExtensionManager(
     // A full load replaces both maps, so install events wait for it and apply on top instead of being overwritten
     private val loadMutex = Mutex()
 
+    // SY -->
     private val iconMap = ConcurrentHashMap<String, Drawable>()
+    // SY <--
 
     @Volatile
     private var stores = emptyList<ExtensionStore>()
@@ -157,6 +159,7 @@ class ExtensionManager(
         }
     }
 
+    // SY -->
     suspend fun getAppIconForSource(sourceId: Long): Drawable? {
         val pkgName = getExtensionPackage(sourceId)
 
@@ -167,15 +170,14 @@ class ExtensionManager(
             }
         }
 
-        // SY -->
         return when (sourceId) {
             EH_SOURCE_ID -> ContextCompat.getDrawable(context, R.mipmap.ic_ehentai_source)
             EXH_SOURCE_ID -> ContextCompat.getDrawable(context, R.mipmap.ic_exhentai_source)
             MERGED_SOURCE_ID -> ContextCompat.getDrawable(context, R.mipmap.ic_merged_source)
             else -> null
         }
-        // SY <--
     }
+    // SY <--
 
     private var availableExtensionsSourcesData: Map<Long, StubSource> = emptyMap()
 
@@ -218,7 +220,7 @@ class ExtensionManager(
         }
     }
 
-    // EXH -->
+    // SY -->
     private fun <T : Extension> Map<String, T>.filterNotBlacklisted(): Map<String, T> {
         val blacklistEnabled = preferences.enableSourceBlacklist.get()
         return filterNot { (_, extension) ->
@@ -232,7 +234,7 @@ class ExtensionManager(
     private fun Extension.isBlacklisted(blacklistEnabled: Boolean = preferences.enableSourceBlacklist.get()): Boolean {
         return pkgName in BlacklistedSources.BLACKLISTED_EXTENSIONS && blacklistEnabled
     }
-    // EXH <--
+    // SY <--
 
     /**
      * Finds the available extensions in the stores and updates [availableExtensionListFlow].

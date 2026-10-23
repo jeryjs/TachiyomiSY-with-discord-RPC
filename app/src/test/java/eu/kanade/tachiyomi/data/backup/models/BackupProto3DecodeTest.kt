@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 /**
+ * SY-specific file
+ *
  * A SyncYomi v2 server re-encodes backups with proto3 semantics: zero-valued scalars are never written (and
  * other clients never send them). Every backup model must therefore decode with all scalar fields absent.
  */

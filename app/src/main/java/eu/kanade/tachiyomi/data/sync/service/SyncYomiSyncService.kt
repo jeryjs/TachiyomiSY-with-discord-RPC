@@ -31,6 +31,9 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+/**
+ * SY-specific file
+ */
 class SyncYomiSyncService(
     context: Context,
     json: Json,

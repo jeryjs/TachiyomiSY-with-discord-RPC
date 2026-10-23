@@ -17,6 +17,8 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.sy.SYMR
 
 /**
+ * SY-specific file
+ *
  * MangaDexSimilarPagingSource inherited from the general Pager.
  */
 class MangaDexSimilarPagingSource(

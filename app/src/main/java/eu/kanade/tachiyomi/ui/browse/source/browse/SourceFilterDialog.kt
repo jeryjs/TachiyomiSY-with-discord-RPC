@@ -94,6 +94,7 @@ fun SourceFilterDialog(
                 HorizontalDivider()
             }
 
+            // SY -->
             if (openMangaDexRandom != null && openMangaDexFollows != null) {
                 item {
                     MangaDexFilterHeader(
@@ -110,6 +111,7 @@ fun SourceFilterDialog(
                     onSavedSearchPress = onSavedSearchPress,
                 )
             }
+            // SY <--
 
             item {
                 CheckboxItem(

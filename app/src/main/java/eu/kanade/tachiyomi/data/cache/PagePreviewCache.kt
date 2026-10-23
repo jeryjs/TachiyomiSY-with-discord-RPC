@@ -20,6 +20,8 @@ import java.io.File
 import java.io.IOException
 
 /**
+ * SY-specific file
+ *
  * Class used to create page preview cache
  * For each page in a page preview list a file is created
  * For each page preview page a Json list is created and converted to a file.
@@ -67,7 +69,7 @@ class PagePreviewCache(
     val readableSize: String
         get() = Formatter.formatFileSize(context, realSize)
 
-    // --> EH
+    // SY -->
     // Cache size is in MB
     private fun setupDiskCache(cacheSize: Long): DiskLruCache {
         return DiskLruCache.open(
@@ -77,7 +79,7 @@ class PagePreviewCache(
             cacheSize * 1024 * 1024,
         )
     }
-    // <-- EH
+    // SY <--
 
     /**
      * Get page list from cache.

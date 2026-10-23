@@ -9,6 +9,9 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.repository.MangaMetadataRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetFlatMetadataById(
     private val mangaMetadataRepository: MangaMetadataRepository,

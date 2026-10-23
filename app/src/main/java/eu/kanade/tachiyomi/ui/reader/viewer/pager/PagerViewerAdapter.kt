@@ -24,13 +24,18 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     /**
      * Paired list of currently set items.
      */
+    // SY -->
     var joinedItems: MutableList<Pair<ReaderItem, ReaderItem?>> = mutableListOf()
+        // SY <--
         private set
+
+    // SY -->
 
     /**
      * Single list of items
      */
     private var subItems: MutableList<ReaderItem> = mutableListOf()
+    // SY <--
 
     /**
      * Holds preprocessed items so they don't get removed when changing chapter
@@ -64,7 +69,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * has R2L direction.
      */
     fun setChapters(chapters: ViewerChapters, forceTransition: Boolean) {
-        val newItems = mutableListOf<ReaderItem>()
+        val newItems = /* SY --> */mutableListOf<ReaderItem>()/* SY <-- */
 
         // Forces chapter transition if there is missing chapters
         val prevHasMissingChapters = calculateChapterGap(chapters.currChapter, chapters.prevChapter) > 0
@@ -118,12 +123,17 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         chapters.nextChapter?.pages?.let(newItems::addAll)
 
         // Resets double-page splits, else insert pages get misplaced
+        // SY -->
         subItems.filterIsInstance<InsertPage>().also { subItems.removeAll(it) }
+        // SY <--
 
         val adjacentChapterIds = setOfNotNull(chapters.prevChapter?.chapter?.id, chapters.nextChapter?.chapter?.id)
         preprocessed = preprocessed.filter { it.chapter.chapter.id in adjacentChapterIds }
+        // SY -->
         subItems = newItems.toMutableList()
+        // SY <--
 
+        // SY -->
         var useSecondPage = false
         if (shifted != viewer.config.shiftDoublePage || (doubledUp != viewer.config.doublePages && doubledUp)) {
             if (shifted && (doubledUp == viewer.config.doublePages)) {
@@ -133,6 +143,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
         doubledUp = viewer.config.doublePages
         setJoinedItems(useSecondPage)
+        // SY <--
 
         // Will skip insert page otherwise
         if (insertPageLastPage != null) {
@@ -144,19 +155,23 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * Returns the amount of items of the adapter.
      */
     override fun getCount(): Int {
+        // SY -->
         return joinedItems.size
+        // SY <--
     }
 
     /**
      * Creates a new view for the item at the given [position].
      */
     override fun createView(container: ViewGroup, position: Int): View {
+        // SY -->
         val item = joinedItems[position].first
         val item2 = joinedItems[position].second
         return when (item) {
             is ReaderPage -> PagerPageHolder(readerThemedContext, viewer, item, item2 as? ReaderPage)
+            // SY <--
             is ChapterTransition -> PagerTransitionHolder(readerThemedContext, viewer, item)
-            // SY --> else -> throw NotImplementedError("Holder for ${item.javaClass} not implemented") SY <--
+            else -> throw NotImplementedError("Holder for ${item.javaClass} not implemented")
         }
     }
 
@@ -165,7 +180,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      */
     override fun getItemPosition(view: Any): Int {
         if (view is PositionableView) {
-            val position = joinedItems.indexOf(view.item)
+            val position = /* SY --> */joinedItems.indexOf(view.item)/* SY <-- */
             if (position != -1) {
                 return position
             } else {
@@ -178,7 +193,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     fun onPageSplit(currentPage: Any?, newPage: InsertPage) {
         if (currentPage !is ReaderPage) return
 
-        val currentIndex = joinedItems.indexOfFirst { it.first == currentPage }
+        val currentIndex = /* SY --> */joinedItems.indexOfFirst { it.first == currentPage } /* SY <-- */
 
         // Put aside pages of an adjacent chapter until it becomes the current one, so they are not lost on the change
         if (currentPage.chapter.chapter.id != currentChapter?.chapter?.id) {
@@ -197,23 +212,25 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
 
         // It will enter a endless cycle of insert pages
-        if (viewer is R2LPagerViewer && placeAtIndex - 1 >= 0 && joinedItems[placeAtIndex - 1].first is InsertPage) {
+        if (viewer is R2LPagerViewer && placeAtIndex - 1 >= 0 && /* SY --> */joinedItems[placeAtIndex - 1].first is InsertPage/* SY <-- */) {
             return
         }
 
         // Same here it will enter a endless cycle of insert pages
-        if (joinedItems[placeAtIndex].first is InsertPage) {
+        if (/* SY --> */joinedItems[placeAtIndex].first is InsertPage/* SY <-- */) {
             return
         }
 
-        joinedItems.add(placeAtIndex, newPage to null)
+        /* SY --> */joinedItems.add(placeAtIndex, newPage to null)/* SY <-- */
 
         notifyDataSetChanged()
     }
 
     fun cleanupPageSplit() {
+        // SY -->
         val insertPages = joinedItems.filter { it.first is InsertPage }
         joinedItems.removeAll(insertPages)
+        // SY <--
         notifyDataSetChanged()
     }
 

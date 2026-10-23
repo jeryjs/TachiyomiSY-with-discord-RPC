@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Anilist(context: Context, id: Long) : BaseTracker(context, id, "AniList"), DeletableTracker {
+class Anilist(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "AniList"), DeletableTracker {
 
     companion object {
         const val READING = 1L
@@ -248,11 +248,11 @@ class Anilist(context: Context, id: Long) : BaseTracker(context, id, "AniList"),
         interceptor.setAuth(null)
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
 
-    // SY -->
     override suspend fun searchById(id: String): TrackSearch? {
         return api.searchById(id)
     }

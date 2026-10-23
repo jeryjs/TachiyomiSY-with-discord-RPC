@@ -5,6 +5,9 @@ import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.repository.FeedSavedSearchRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetFeedSavedSearchBySourceId(
     private val feedSavedSearchRepository: FeedSavedSearchRepository,

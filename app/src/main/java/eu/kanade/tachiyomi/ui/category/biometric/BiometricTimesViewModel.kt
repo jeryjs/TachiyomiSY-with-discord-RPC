@@ -26,6 +26,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())

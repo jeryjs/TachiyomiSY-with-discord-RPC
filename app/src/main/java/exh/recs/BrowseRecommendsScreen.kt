@@ -24,6 +24,9 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.LoadingScreen
 import java.io.Serializable
 
+/**
+ * SY-specific file
+ */
 class BrowseRecommendsScreen(
     private val args: Args,
     private val isExternalSource: Boolean,

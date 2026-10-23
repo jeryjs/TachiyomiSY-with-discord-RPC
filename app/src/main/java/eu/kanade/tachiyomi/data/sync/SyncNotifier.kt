@@ -16,6 +16,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 import mihon.icons.materialsymbols.R as MaterialSymbolsR
 
+/**
+ * SY-specific file
+ */
 @Inject
 class SyncNotifier(
     private val context: Context,
@@ -26,7 +29,7 @@ class SyncNotifier(
         Notifications.CHANNEL_SYNC_LIBRARY,
     ) {
         setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
-        setSmallIcon(R.drawable.ic_tachi)
+        setSmallIcon(R.drawable.ic_mihon)
         setAutoCancel(false)
         setOngoing(true)
         setOnlyAlertOnce(true)
@@ -36,7 +39,7 @@ class SyncNotifier(
         Notifications.CHANNEL_SYNC_LIBRARY,
     ) {
         setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
-        setSmallIcon(R.drawable.ic_tachi)
+        setSmallIcon(R.drawable.ic_mihon)
         setAutoCancel(false)
     }
 

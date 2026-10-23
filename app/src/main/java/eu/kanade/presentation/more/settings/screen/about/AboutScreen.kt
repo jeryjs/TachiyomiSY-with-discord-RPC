@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,6 +53,7 @@ import mihon.icons.simpleicons.Github
 import mihon.icons.simpleicons.Reddit
 import mihon.icons.simpleicons.SimpleIcons
 import mihon.icons.simpleicons.X
+import tachiyomi.core.common.Constants
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import tachiyomi.i18n.MR
@@ -105,7 +107,9 @@ object AboutScreen : Screen() {
                 contentPadding = contentPadding,
             ) {
                 item {
-                    LogoHeader()
+                    LogoHeader(
+                        iconPadding = PaddingValues(vertical = 56.dp),
+                    )
                 }
 
                 item {
@@ -121,7 +125,7 @@ object AboutScreen : Screen() {
                     )
                 }
 
-                if (BuildConfig.INCLUDE_UPDATER) {
+                if (/* SY --> */ BuildConfig.INCLUDE_UPDATER /* SY <-- */) {
                     item {
                         TextPreferenceWidget(
                             title = stringResource(
@@ -187,12 +191,14 @@ object AboutScreen : Screen() {
                     }
                 }
 
+                // SY -->
                 // item {
                 //     TextPreferenceWidget(
                 //         title = stringResource(MR.strings.help_translate),
                 //         onPreferenceClick = { uriHandler.openUri("https://mihon.app/docs/contribute#translation") },
                 //     )
                 // }
+                // SY <--
 
                 item {
                     TextPreferenceWidget(
@@ -223,7 +229,7 @@ object AboutScreen : Screen() {
                         LinkIcon(
                             label = "Discord",
                             icon = SimpleIcons.Discord,
-                            url = "https://discord.gg/mihon",
+                            url = Constants.URL_DISCORD,
                         )
                         LinkIcon(
                             label = "X",
@@ -315,7 +321,7 @@ object AboutScreen : Screen() {
             }
             // SY <--
             else -> {
-                "Stable ${BuildConfig.VERSION_NAME}".let {
+                /* SY --> */ "Stable ${BuildConfig.VERSION_NAME}" /* SY <-- */.let {
                     if (withBuildDate) {
                         "$it (${getFormattedBuildTime()})"
                     } else {

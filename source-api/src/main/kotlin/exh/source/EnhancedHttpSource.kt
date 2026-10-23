@@ -10,6 +10,9 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import exh.pref.DelegateSourcePreferences
 import okhttp3.Response
 
+/**
+ * SY-specific file
+ */
 @Suppress("OverridingDeprecatedMember", "DEPRECATION")
 class EnhancedHttpSource(
     val originalSource: HttpSource,

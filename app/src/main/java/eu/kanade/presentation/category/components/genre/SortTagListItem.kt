@@ -20,6 +20,9 @@ import mihon.icons.sy.materialsymbols.rounded.ArrowDropDown
 import mihon.icons.sy.materialsymbols.rounded.ArrowDropUp
 import tachiyomi.presentation.core.components.material.padding
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun SortTagListItem(
     modifier: Modifier,

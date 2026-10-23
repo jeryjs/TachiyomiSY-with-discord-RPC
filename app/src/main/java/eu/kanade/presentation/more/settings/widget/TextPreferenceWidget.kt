@@ -25,7 +25,8 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 fun TextPreferenceWidget(
     modifier: Modifier = Modifier,
     title: String? = null,
-    subtitle: CharSequence? = null,
+    subtitle: /* SY --> */ CharSequence /* SY <-- */? = null,
+    // SY --> fork keeps the Painter-capable icon
     icon: Any? = null, // Can be either ImageVector or Painter
     iconTint: Color = MaterialTheme.colorScheme.primary,
     widget: @Composable (() -> Unit)? = null,

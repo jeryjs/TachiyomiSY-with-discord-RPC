@@ -17,7 +17,7 @@ import uy.kohesive.injekt.injectLazy
 import java.text.DecimalFormat
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Kitsu(context: Context, id: Long) : BaseTracker(context, id, "Kitsu"), DeletableTracker {
+class Kitsu(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Kitsu"), DeletableTracker {
 
     private data class RatingSystem(
         val name: String,
@@ -218,9 +218,11 @@ class Kitsu(context: Context, id: Long) : BaseTracker(context, id, "Kitsu"), Del
         interceptor.newAuth(null)
     }
 
+    // SY -->
     override suspend fun getMangaMetadata(track: DomainTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+    // SY <--
 
     fun saveToken(oauth: KitsuOAuth?) {
         trackPreferences.trackToken(this).set(json.encodeToString(oauth))

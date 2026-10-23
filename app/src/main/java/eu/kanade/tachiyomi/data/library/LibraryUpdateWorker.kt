@@ -104,6 +104,7 @@ import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @OptIn(ExperimentalAtomicApi::class)
 class LibraryUpdateWorker(private val context: Context, workerParams: WorkerParameters) :
@@ -125,7 +126,9 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
 
     @Inject private lateinit var filterChaptersForDownload: FilterChaptersForDownload
 
+    // SY -->
     @Inject private lateinit var updateManga: UpdateManga
+    // SY <--
 
     @Inject private lateinit var updateMangaFromRemote: UpdateMangaFromRemote
 
@@ -174,6 +177,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
 
         setForegroundSafely()
 
+        // SY -->
         val target = inputData.getString(KEY_TARGET)?.let { Target.valueOf(it) }
             ?: Target.CHAPTERS
 
@@ -181,19 +185,19 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
         if (target == Target.CHAPTERS) {
             libraryPreferences.lastUpdatedTimestamp.set(Clock.System.now().toEpochMilliseconds())
         }
+        // SY <--
 
         val categoryId = inputData.getLong(KEY_CATEGORY, -1L)
         // SY -->
         val group = inputData.getInt(KEY_GROUP, LibraryGroup.BY_DEFAULT)
         val groupExtra = inputData.getString(KEY_GROUP_EXTRA)
         // SY <--
-        addMangaToQueue(categoryId, group, groupExtra)
+        addMangaToQueue(categoryId, /* SY --> */ group, groupExtra /* SY <-- */)
 
         return withContext(Dispatchers.IO) {
             try {
                 when (target) {
                     Target.CHAPTERS -> updateChapterList()
-                    Target.COVERS -> updateCovers()
                     // SY -->
                     Target.SYNC_FOLLOWS -> syncFollows()
                     Target.PUSH_FAVORITES -> pushFavorites()
@@ -231,7 +235,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
      *
      * @param categoryId the ID of the category to update, or -1 if no category specified.
      */
-    private suspend fun addMangaToQueue(categoryId: Long, group: Int, groupExtra: String?) {
+    private suspend fun addMangaToQueue(categoryId: Long, /* SY --> */ group: Int, groupExtra: String? /* SY <-- */) {
         val libraryManga = getLibraryManga.await()
         // SY -->
         val groupLibraryUpdateType = libraryPreferences.groupLibraryUpdateType.get()
@@ -246,8 +250,8 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
             (groupLibraryUpdateType == GroupLibraryMode.ALL_BUT_UNGROUPED && group == LibraryGroup.UNGROUPED)
         ) {
             // SY <--
-            val includedCategories = libraryPreferences.updateCategories.get().map { it.toLong() }.toSet()
-            val excludedCategories = libraryPreferences.updateCategoriesExclude.get().map { it.toLong() }.toSet()
+            val includedCategories = libraryPreferences.updateCategories.get().map { it.toLong() } /* SY --> */.toSet()/* SY <-- */
+            val excludedCategories = libraryPreferences.updateCategoriesExclude.get().map { it.toLong() } /* SY --> */.toSet()/* SY <-- */
 
             libraryManga.filter {
                 val included = includedCategories.isEmpty() || it.categories.intersect(includedCategories).isNotEmpty()
@@ -295,10 +299,10 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
         val restrictions = libraryPreferences.autoUpdateMangaRestrictions.get()
         val skippedUpdates = mutableListOf<Pair<Manga, String?>>()
         val timeZone = TimeZone.currentSystemDefault()
-        val (_, fetchWindowUpperBound) = fetchInterval.getWindow(
+        val fetchWindowUpperBound = fetchInterval.getWindow(
             Clock.System.now().toLocalDateTime(timeZone).date,
             timeZone,
-        )
+        ).endInclusive
 
         mangaToUpdate = listToUpdate
             // SY -->
@@ -328,7 +332,8 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
                         false
                     }
 
-                    MANGA_OUTSIDE_RELEASE_PERIOD in restrictions && it.manga.nextUpdate > fetchWindowUpperBound -> {
+                    MANGA_OUTSIDE_RELEASE_PERIOD in restrictions &&
+                        it.manga.nextUpdate.let { next -> next != null && next > fetchWindowUpperBound } -> {
                         skippedUpdates.add(
                             it.manga to context.stringResource(MR.strings.skipped_reason_not_in_release_period),
                         )
@@ -384,6 +389,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
                 .map { mangaInSource ->
                     async {
                         semaphore.withPermit {
+                            // SY -->
                             if (
                                 mdlistLogged &&
                                 mangaInSource.firstOrNull()
@@ -406,6 +412,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
                                     }
                                 }
                             }
+                            // SY <--
                             mangaInSource.forEach { libraryManga ->
                                 val manga = libraryManga.manga
                                 ensureActive()
@@ -507,7 +514,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
      * @param manga the manga to update.
      * @return a pair of the inserted and removed chapters.
      */
-    private suspend fun updateManga(manga: Manga, fetchWindow: Pair<Long, Long>): List<Chapter> {
+    private suspend fun updateManga(manga: Manga, fetchWindow: ClosedRange<Instant>): List<Chapter> {
         val source = sourceManager.getOrStub(manga.source)
 
         val update = updateMangaFromRemote(
@@ -520,50 +527,6 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
             .getOrThrow()
 
         return if (update.manga.favorite) update.newChapters else emptyList()
-    }
-
-    private suspend fun updateCovers() {
-        val semaphore = Semaphore(5)
-        val progressCount = AtomicInt(0)
-        val currentlyUpdatingManga = CopyOnWriteArrayList<Manga>()
-
-        coroutineScope {
-            mangaToUpdate.groupBy { it.manga.source }
-                .values
-                .map { mangaInSource ->
-                    async {
-                        semaphore.withPermit {
-                            mangaInSource.forEach { libraryManga ->
-                                val manga = libraryManga.manga
-                                ensureActive()
-
-                                withUpdateNotification(
-                                    currentlyUpdatingManga,
-                                    progressCount,
-                                    manga,
-                                ) {
-                                    val source = sourceManager.get(manga.source) ?: return@withUpdateNotification
-                                    try {
-                                        updateMangaFromRemote(
-                                            source,
-                                            manga,
-                                            fetchDetails = true,
-                                            fetchChapters = false,
-                                            manualFetch = true,
-                                        ).getOrThrow()
-                                    } catch (e: Throwable) {
-                                        // Ignore errors and continue
-                                        logcat(LogPriority.ERROR, e)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .awaitAll()
-        }
-
-        notifier.cancelProgressNotification()
     }
 
     // SY -->
@@ -601,8 +564,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
                             url = networkManga.url,
                             ogTitle = networkManga.title,
                             source = mangaDex.id,
-                            favorite = true,
-                            dateAdded = System.currentTimeMillis(),
+                            favoriteAt = Clock.System.now(),
                         ),
                     )
                 } else if (!dbManga.favorite) {
@@ -721,7 +683,6 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
      */
     enum class Target {
         CHAPTERS, // Manga chapters
-        COVERS, // Manga covers
 
         // SY -->
         SYNC_FOLLOWS, // MangaDex specific, pull mangadex manga in reading, rereading
@@ -742,10 +703,13 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
          */
         private const val KEY_CATEGORY = "category"
 
+        // SY -->
+
         /**
          * Key that defines what should be updated.
          */
         private const val KEY_TARGET = "target"
+        // SY <--
 
         // SY -->
 
@@ -811,8 +775,8 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
         suspend fun startNow(
             workManager: WorkManager,
             category: Category? = null,
-            target: Target = Target.CHAPTERS,
             // SY -->
+            target: Target = Target.CHAPTERS,
             group: Int = LibraryGroup.BY_DEFAULT,
             groupExtra: String? = null,
             // SY <--
@@ -825,13 +789,14 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
 
             val inputData = workDataOf(
                 KEY_CATEGORY to category?.id,
-                KEY_TARGET to target.name,
                 // SY -->
+                KEY_TARGET to target.name,
                 KEY_GROUP to group,
                 KEY_GROUP_EXTRA to groupExtra,
                 // SY <--
             )
 
+            // SY -->
             // Always sync the data before library update if syncing is enabled.
             val context = Injekt.get<Context>()
             val syncPreferences: SyncPreferences = context.appGraph.syncPreferences
@@ -866,6 +831,7 @@ class LibraryUpdateWorker(private val context: Context, workerParams: WorkerPara
 
                 workManager.enqueueUniqueWork(WORK_NAME_MANUAL, ExistingWorkPolicy.KEEP, request)
             }
+            // SY <--
 
             return true
         }

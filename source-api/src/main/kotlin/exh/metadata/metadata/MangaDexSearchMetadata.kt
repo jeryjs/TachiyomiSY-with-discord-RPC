@@ -10,6 +10,9 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 @Serializable
 class MangaDexSearchMetadata : RaisedSearchMetadata(), TrackerIdMetadata {
     var mdUuid: String? = null

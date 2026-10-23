@@ -9,6 +9,9 @@ import exh.recs.batch.RankedSearchResults
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
 
+/**
+ * SY-specific file
+ */
 class StaticResultPagingSource(
     val data: RankedSearchResults,
     networkToLocalManga: NetworkToLocalManga,

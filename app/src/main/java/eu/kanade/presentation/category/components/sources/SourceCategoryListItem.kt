@@ -19,6 +19,9 @@ import mihon.icons.materialsymbols.rounded.Delete
 import mihon.icons.materialsymbols.rounded.Edit
 import tachiyomi.presentation.core.components.material.padding
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun SourceCategoryListItem(
     modifier: Modifier,

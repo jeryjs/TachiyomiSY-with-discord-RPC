@@ -4,6 +4,9 @@ import dev.zacsweers.metro.Inject
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.repository.SavedSearchRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetSavedSearchById(
     private val savedSearchRepository: SavedSearchRepository,

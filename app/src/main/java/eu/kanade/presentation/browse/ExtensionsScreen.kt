@@ -104,7 +104,7 @@ fun ExtensionScreen(
                     MR.strings.empty_screen
                 }
                 EmptyScreen(
-                    msg,
+                    stringRes = msg,
                     modifier = Modifier.padding(contentPadding),
                     actions = listOf(
                         EmptyScreenAction(

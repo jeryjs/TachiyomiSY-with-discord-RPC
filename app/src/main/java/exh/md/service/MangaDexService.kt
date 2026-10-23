@@ -22,6 +22,9 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 
+/**
+ * SY-specific file
+ */
 class MangaDexService(
     private val client: OkHttpClient,
     private val headers: Headers,

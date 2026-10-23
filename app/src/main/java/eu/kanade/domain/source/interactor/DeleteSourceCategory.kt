@@ -5,6 +5,9 @@ import eu.kanade.domain.source.service.SourcePreferences
 import tachiyomi.core.common.preference.getAndSet
 import tachiyomi.core.common.preference.minusAssign
 
+/**
+ * SY-specific file
+ */
 @Inject
 class DeleteSourceCategory(private val preferences: SourcePreferences) {
 

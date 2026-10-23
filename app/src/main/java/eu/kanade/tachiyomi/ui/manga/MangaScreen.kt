@@ -96,7 +96,9 @@ import uy.kohesive.injekt.api.get
 class MangaScreen(
     private val mangaId: Long,
     val fromSource: Boolean = false,
+    // SY -->
     private val smartSearchConfig: SourcesScreen.SmartSearchConfig? = null,
+    // SY <--
 ) : Screen(), AssistContentScreen {
 
     private var assistUrl: String? = null
@@ -172,6 +174,7 @@ class MangaScreen(
             navigateUp = navigator::pop,
             onChapterClicked = { openChapter(context, it) },
             onDownloadChapter = viewModel::runChapterDownloadActions.takeIf { !successState.source.isLocalOrStub() },
+            downloadProgressProvider = viewModel::getDownloadProgress,
             onAddToLibraryClicked = {
                 if (successState.manga.favorite) {
                     viewModel.showRemoveFromLibraryDialog()
@@ -229,7 +232,9 @@ class MangaScreen(
             onEditFetchIntervalClicked = viewModel::showSetFetchIntervalDialog.takeIf {
                 successState.manga.favorite
             },
+            // SY -->
             previewsRowCount = successState.previewsRowCount,
+            // SY <--
             onMigrateClicked = {
                 navigator.push(MigrationConfigScreen(successState.manga.id))
             }.takeIf {
@@ -560,7 +565,7 @@ class MangaScreen(
     }
     // SY <--
 
-    // EXH -->
+    // SY -->
     private fun openSmartSearch(navigator: Navigator, manga: Manga) {
         val smartSearchConfig = SourcesScreen.SmartSearchConfig(manga.title, manga.id)
 
@@ -592,14 +597,14 @@ class MangaScreen(
             }
         }
     }
-    // EXH <--
+    // SY <--
 
-    // AZ -->
+    // SY -->
     private fun openRecommends(navigator: Navigator, source: Source?, manga: Manga) {
         source ?: return
         RecommendsScreen.Args.SingleSourceManga(manga.id, source.id)
             .let(::RecommendsScreen)
             .let(navigator::push)
     }
-    // AZ <--
+    // SY <--
 }

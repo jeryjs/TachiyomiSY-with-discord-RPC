@@ -20,7 +20,11 @@ import tachiyomi.domain.manga.interactor.GetFavorites
 import tachiyomi.domain.manga.interactor.InsertFavoriteEntries
 import tachiyomi.domain.manga.model.FavoriteEntry
 import tachiyomi.domain.manga.model.Manga
+import kotlin.time.Clock
 
+/**
+ * SY-specific file
+ */
 @Inject
 class LocalFavoritesStorage(
     private val getFavorites: GetFavorites,
@@ -40,8 +44,7 @@ class LocalFavoritesStorage(
         .asFlow()
         .map {
             it.fav to it.manga.toDomainManga(EXH_SOURCE_ID).copy(
-                favorite = true,
-                dateAdded = System.currentTimeMillis(),
+                favoriteAt = Clock.System.now(),
             )
         }
         .parseToFavoriteEntries()

@@ -5,6 +5,8 @@ import eu.kanade.tachiyomi.data.backup.models.BackupExtensionStore
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 
 /**
+ * SY-specific file
+ *
  * Keeps only manga (and their chapters) modified at or after the last successful upload, which is all a
  * SyncYomi protocol v2 server needs. `lastModifiedAt` is in epoch seconds, set by the database triggers.
  *

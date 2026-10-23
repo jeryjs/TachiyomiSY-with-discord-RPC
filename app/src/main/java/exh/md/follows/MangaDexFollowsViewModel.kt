@@ -39,6 +39,9 @@ import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class MangaDexFollowsViewModel(
     @Assisted sourceId: Long,

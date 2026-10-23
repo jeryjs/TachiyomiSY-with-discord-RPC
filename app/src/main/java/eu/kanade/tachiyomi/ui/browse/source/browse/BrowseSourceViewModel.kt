@@ -71,8 +71,8 @@ import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
-import tachiyomi.domain.manga.model.toMangaUpdate
 import tachiyomi.domain.source.interactor.DeleteSavedSearchById
 import tachiyomi.domain.source.interactor.GetRemoteManga
 import tachiyomi.domain.source.interactor.InsertSavedSearch
@@ -87,7 +87,7 @@ import kotlin.time.Duration.Companion.seconds
 import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 
 @AssistedInject
-open class BrowseSourceViewModel(
+/* SY --> */open/* SY <-- */ class BrowseSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,
     // SY -->
@@ -215,15 +215,15 @@ open class BrowseSourceViewModel(
                 createSourcePagingSource(listing.query ?: "", listing.filters)
                 // SY <--
             }.flow.map { pagingData ->
-                pagingData.map { (manga, metadata) ->
+                pagingData.map { /* SY --> */(manga, metadata)/* SY <-- */ ->
                     getManga.subscribe(manga.url, manga.source)
                         .map { it ?: manga }
                         // SY -->
                         .combineMetadata(metadata)
-                        // SY <--
-                        .stateIn(viewModelScope)
+                        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), manga to metadata)
+                    // SY <--
                 }
-                    .filter { !(state.value.hideEntriesInLibraryState?:false) || !it.value.first.favorite }
+                    .filter { !hideInLibraryItems || !it.value/* SY --> */.first/* SY <-- */.favorite }
             }
                 .cachedIn(viewModelScope)
         }
@@ -342,22 +342,16 @@ open class BrowseSourceViewModel(
      */
     fun changeMangaFavorite(manga: Manga) {
         appScope.launch {
-            val new = manga.copy(
-                favorite = !manga.favorite,
-                dateAdded = when (manga.favorite) {
-                    true -> 0
-                    false -> Clock.System.now().toEpochMilliseconds()
-                },
-            )
-
-            if (!new.favorite) {
+            val update = if (manga.favorite) {
                 manga.removeCovers(coverCache)
+                MangaUpdate(manga.id) { favoriteAt = null }
             } else {
                 setMangaDefaultChapterFlags.await(manga)
                 addTracks.bindEnhancedTrackers(manga, sourceManager.getOrStub(manga.source))
+                MangaUpdate(manga.id) { favoriteAt = Clock.System.now() }
             }
 
-            updateManga.await(new.toMangaUpdate())
+            updateManga.await(update)
         }
     }
 
@@ -493,7 +487,7 @@ open class BrowseSourceViewModel(
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
     }
 
-    // EXH -->
+    // SY -->
     fun onSaveSearch() {
         viewModelScope.launch(Dispatchers.IO) {
             val names = savedSearches.value.map { it.name }
@@ -580,5 +574,5 @@ open class BrowseSourceViewModel(
     protected fun update(block: (State) -> State) {
         state.update(block)
     }
-    // EXH <--
+    // SY <--
 }

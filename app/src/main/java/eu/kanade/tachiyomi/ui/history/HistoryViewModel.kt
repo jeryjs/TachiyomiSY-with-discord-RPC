@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -32,10 +31,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import logcat.LogPriority
 import mihon.core.metro.AppCoroutineScope
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
+import tachiyomi.core.common.util.lang.SubscriberGate
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
@@ -73,6 +74,8 @@ class HistoryViewModel(
     private val getChapter: GetChapter,
 ) : ViewModel() {
 
+    private val subscriberGate = SubscriberGate()
+
     val snackbarHostState: SnackbarHostState = SnackbarHostState()
 
     private val _events: Channel<Event> = Channel(Channel.UNLIMITED)
@@ -93,7 +96,7 @@ class HistoryViewModel(
                 .map { it.toHistoryUiModels() }
                 .flowOn(Dispatchers.Default)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
+        .stateIn(viewModelScope + subscriberGate, SharingStarted.Eagerly, emptyList())
 
     private val expandedStates = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
 
@@ -119,13 +122,13 @@ class HistoryViewModel(
             expandedStates = expandedStates,
         )
     }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
+        .stateIn(viewModelScope + subscriberGate, subscriberGate.whileSubscribed(5.seconds), State())
 
     private fun List<HistoryWithRelations>.toHistoryUiModels(): List<HistoryUiModel> {
         return map { history -> HistoryUiModel.Item(history) }
             .insertSeparators { before, after ->
-                val beforeDate = before?.item?.readAt?.time?.toLocalDate()
-                val afterDate = after?.item?.readAt?.time?.toLocalDate()
+                val beforeDate = before?.item?.readAt?.toLocalDate()
+                val afterDate = after?.item?.readAt?.toLocalDate()
                 when {
                     beforeDate != afterDate && afterDate != null -> HistoryUiModel.Header(afterDate)
                     // Return null to avoid adding a separator between two items.
@@ -174,7 +177,7 @@ class HistoryViewModel(
     private fun loadPreviousHistory(historyItem: HistoryWithRelations) {
         viewModelScope.launch {
             val previousHistoryList = getHistory.await(historyItem.mangaId)
-                .filter { (it.readAt?.time ?: 0) > 0 }
+                .filter { (it.readAt?.toEpochMilliseconds() ?: 0) > 0 }
                 .sortedByDescending { it.readAt }
                 .map { HistoryWithRelations.from(it, historyItem, getChapter.await(it.chapterId)) }
 

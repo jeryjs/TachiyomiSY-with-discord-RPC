@@ -11,6 +11,8 @@ import tachiyomi.core.common.util.lang.runAsObservable
 import kotlin.reflect.KClass
 
 /**
+ * SY-specific file
+ *
  * LEWD!
  */
 interface MetadataSource<M : RaisedSearchMetadata, I> : Source {

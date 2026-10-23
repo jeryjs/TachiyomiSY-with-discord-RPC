@@ -13,6 +13,9 @@ import mihon.core.migration.MigrationContext
 import tachiyomi.core.common.util.system.logcat
 import java.io.File
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class ClearBrokenPagePreviewCacheMigration(

@@ -4,6 +4,9 @@ import dev.zacsweers.metro.Inject
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 
+/**
+ * SY-specific file
+ */
 @Inject
 class ExhPreferences(
     private val preferenceStore: PreferenceStore,

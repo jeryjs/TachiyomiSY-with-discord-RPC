@@ -58,7 +58,7 @@ class StatsScreen : Screen() {
             }
 
             StatsScreenContent(
-                state = state as? StatsScreenState.Success ?: return@Scaffold,
+                state = /* SY --> */state as? StatsScreenState.Success ?: return@Scaffold, /* SY <-- */
                 paddingValues = paddingValues,
             )
         }

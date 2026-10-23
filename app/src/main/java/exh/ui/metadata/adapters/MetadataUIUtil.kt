@@ -7,6 +7,9 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.sy.SYMR
 import kotlin.math.roundToInt
 
+/**
+ * SY-specific file
+ */
 object MetadataUIUtil {
     fun getRatingString(
         context: Context,

@@ -40,6 +40,9 @@ import mihon.icons.materialsymbols.rounded.Close
 import tachiyomi.presentation.core.components.SettingsItemsPaddings
 import tachiyomi.presentation.core.util.runOnEnterKeyPressed
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun AutoCompleteItem(
     name: String,

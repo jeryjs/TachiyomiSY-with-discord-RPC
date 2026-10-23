@@ -18,7 +18,7 @@ class TrustExtensionRepositoryMigration(
     private val sourcePreferences: SourcePreferences,
     private val repository: ExtensionStoreRepository,
 ) : Migration {
-    override val version: Float = 67f
+    override val version: Float = /* SY --> */67f/* SY <-- */
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
         for ((index, source) in sourcePreferences.extensionRepos.get().withIndex()) {

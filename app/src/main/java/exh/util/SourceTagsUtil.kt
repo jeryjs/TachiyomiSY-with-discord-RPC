@@ -11,6 +11,9 @@ import exh.source.mangaDexSourceIds
 import exh.source.nHentaiSourceIds
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 object SourceTagsUtil {
     fun getWrappedTag(
         sourceId: Long?,

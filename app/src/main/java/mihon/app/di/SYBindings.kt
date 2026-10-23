@@ -14,7 +14,6 @@ import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import tachiyomi.data.Database
 import tachiyomi.data.manga.CustomMangaRepositoryImpl
 import tachiyomi.data.manga.FavoritesEntryRepositoryImpl
-import tachiyomi.data.manga.MangaMapper
 import tachiyomi.data.manga.MangaMergeRepositoryImpl
 import tachiyomi.data.manga.MangaMetadataRepositoryImpl
 import tachiyomi.data.source.FeedSavedSearchRepositoryImpl
@@ -31,8 +30,10 @@ import tachiyomi.domain.source.repository.SavedSearchRepository
 import tachiyomi.source.local.LocalSourceAllowHiddenFiles
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 
-// SY -->
-// Metro bindings for SY specific repositories and singletons.
+/**
+ * SY-specific file
+ * Metro bindings for SY specific repositories and singletons.
+ */
 @BindingContainer
 object SYBindings {
 
@@ -52,13 +53,13 @@ object SYBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesMangaMetadataRepository(database: Database, mangaMapper: MangaMapper): MangaMetadataRepository =
-        MangaMetadataRepositoryImpl(database, mangaMapper)
+    fun providesMangaMetadataRepository(database: Database): MangaMetadataRepository =
+        MangaMetadataRepositoryImpl(database)
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesMangaMergeRepository(database: Database, mangaMapper: MangaMapper): MangaMergeRepository =
-        MangaMergeRepositoryImpl(database, mangaMapper)
+    fun providesMangaMergeRepository(database: Database): MangaMergeRepository =
+        MangaMergeRepositoryImpl(database)
 
     @Provides
     @SingleIn(AppScope::class)
@@ -77,13 +78,13 @@ object SYBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesCustomMangaRepository(context: Context): CustomMangaRepository =
-        CustomMangaRepositoryImpl(context)
+    fun providesCbzCrypto(securityPreferences: SecurityPreferences): CbzCrypto =
+        CbzCrypto(securityPreferences)
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesCbzCrypto(securityPreferences: SecurityPreferences): CbzCrypto =
-        CbzCrypto(securityPreferences)
+    fun providesCustomMangaRepository(context: Context): CustomMangaRepository =
+        CustomMangaRepositoryImpl(context)
 
     @Provides
     fun providesGetMangaId(getManga: GetManga): MetadataSource.GetMangaId =
@@ -97,4 +98,3 @@ object SYBindings {
     fun providesGetFlatMetadataById(getFlatMetadataById: GetFlatMetadataById): MetadataSource.GetFlatMetadataById =
         getFlatMetadataById
 }
-// SY <--

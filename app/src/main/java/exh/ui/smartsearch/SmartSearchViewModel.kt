@@ -21,6 +21,9 @@ import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class SmartSearchViewModel(
     @Assisted sourceId: Long,

@@ -21,6 +21,9 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import java.io.Serializable
 
+/**
+ * SY-specific file
+ */
 class RecommendsScreen(private val args: Args) : Screen() {
 
     sealed interface Args : Serializable {

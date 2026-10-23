@@ -21,6 +21,9 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.sy.SYMR
 
+/**
+ * SY-specific file
+ */
 class MyAnimeListPagingSource(
     manga: Manga,
     networkToLocalManga: NetworkToLocalManga,

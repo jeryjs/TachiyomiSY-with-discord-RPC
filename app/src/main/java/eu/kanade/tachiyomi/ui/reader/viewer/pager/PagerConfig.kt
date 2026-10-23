@@ -33,7 +33,9 @@ class PagerConfig(
 
     var dualPageSplitChangedListener: ((Boolean) -> Unit)? = null
 
+    // SY -->
     var reloadChapterListener: ((Boolean) -> Unit)? = null
+    // SY <--
 
     var imageScaleType = 1
         private set
@@ -214,6 +216,7 @@ class PagerConfig(
         navigationModeChangedListener?.invoke()
     }
 
+    // SY -->
     object CenterMarginType {
         const val NONE = 0
         const val DOUBLE_PAGE_CENTER_MARGIN = 1
@@ -234,4 +237,5 @@ class PagerConfig(
             else -> Color.WHITE
         }
     }
+    // SY <--
 }

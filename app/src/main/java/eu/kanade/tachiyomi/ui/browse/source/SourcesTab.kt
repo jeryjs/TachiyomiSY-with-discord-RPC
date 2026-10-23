@@ -30,7 +30,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun Screen.sourcesTab(
+    // SY -->
     smartSearchConfig: SmartSearchConfig? = null,
+    // SY <--
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     // SY -->
@@ -86,6 +88,7 @@ fun Screen.sourcesTab(
                 onLongClickItem = viewModel::showSourceDialog,
             )
 
+            // SY -->
             when (val dialog = state.dialog) {
                 is SourcesViewModel.Dialog.SourceLongClick -> {
                     val source = dialog.source
@@ -99,7 +102,6 @@ fun Screen.sourcesTab(
                             viewModel.toggleSource(source)
                             viewModel.closeDialog()
                         },
-                        // SY -->
                         onClickSetCategories = {
                             viewModel.showSourceCategoriesDialog(source)
                         }.takeIf { state.categories.isNotEmpty() },
@@ -124,6 +126,7 @@ fun Screen.sourcesTab(
                 }
                 null -> Unit
             }
+            // SY <--
 
             val internalErrString = stringResource(MR.strings.internal_error)
             LaunchedEffect(Unit) {

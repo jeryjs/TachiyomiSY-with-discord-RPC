@@ -53,8 +53,8 @@ import mihon.core.metro.AppCoroutineScope
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.FlipToBack
 import mihon.icons.materialsymbols.rounded.SelectAll
-import tachiyomi.core.common.util.lang.toLong
-import tachiyomi.data.Database
+import tachiyomi.domain.history.repository.HistoryRepository
+import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.source.interactor.GetSourcesWithNonLibraryManga
 import tachiyomi.domain.source.model.Source
 import tachiyomi.domain.source.model.SourceWithCount
@@ -230,7 +230,8 @@ class ClearDatabaseScreen : Screen() {
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 class ClearDatabaseViewModel(
-    private val database: Database,
+    private val mangaRepository: MangaRepository,
+    private val historyRepository: HistoryRepository,
     private val getSourcesWithNonLibraryManga: GetSourcesWithNonLibraryManga,
     @AppCoroutineScope private val appScope: CoroutineScope,
 ) : ViewModel() {
@@ -257,8 +258,8 @@ class ClearDatabaseViewModel(
         val state = state.value as? State.Ready ?: return
         // Finishes even if the screen is left while it runs
         appScope.launch {
-            database.mangasQueries.deleteNonLibraryManga(state.selection, keepReadManga.toLong())
-            database.historyQueries.removeResettedHistory()
+            mangaRepository.deleteNonLibraryManga(state.selection, keepReadManga)
+            historyRepository.deleteResetHistory()
         }.join()
     }
 

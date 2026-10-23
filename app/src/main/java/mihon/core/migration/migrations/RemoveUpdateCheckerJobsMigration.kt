@@ -16,6 +16,9 @@ import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.preference.getEnum
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class RemoveUpdateCheckerJobsMigration(

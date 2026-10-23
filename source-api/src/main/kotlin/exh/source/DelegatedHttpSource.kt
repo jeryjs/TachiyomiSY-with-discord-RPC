@@ -15,6 +15,9 @@ import okhttp3.Response
 import rx.Observable
 import tachiyomi.core.common.util.lang.awaitSingle
 
+/**
+ * SY-specific file
+ */
 @Suppress("OverridingDeprecatedMember", "DEPRECATION")
 abstract class DelegatedHttpSource(val delegate: HttpSource) : HttpSource() {
     /**

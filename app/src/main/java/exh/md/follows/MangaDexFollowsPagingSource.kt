@@ -7,6 +7,8 @@ import tachiyomi.data.source.BaseSourcePagingSource
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 
 /**
+ * SY-specific file
+ *
  * LatestUpdatesPager inherited from the general Pager.
  */
 class MangaDexFollowsPagingSource(val mangadex: suspend () -> MangaDex, networkToLocalManga: NetworkToLocalManga) :

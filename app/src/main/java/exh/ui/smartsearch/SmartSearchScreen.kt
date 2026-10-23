@@ -30,6 +30,9 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * SY-specific file
+ */
 class SmartSearchScreen(
     private val sourceId: Long,
     private val smartSearchConfig: SourcesScreen.SmartSearchConfig,

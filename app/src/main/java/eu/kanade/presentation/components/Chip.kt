@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import tachiyomi.presentation.core.util.animateElevation
 import androidx.compose.material3.SuggestionChipDefaults as SuggestionChipDefaultsM3
 
+/**
+ * SY-specific file
+ */
 @ExperimentalMaterial3Api
 @Composable
 fun SuggestionChip(

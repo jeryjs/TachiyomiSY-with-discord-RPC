@@ -11,6 +11,9 @@ import exh.source.getMainSource
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.manga.model.Manga
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetPagePreviews(
     private val pagePreviewCache: PagePreviewCache,

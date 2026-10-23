@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.ui.reader.loader
 import android.content.Context
 import android.net.Uri
 import com.hippo.unifile.UniFile
-import eu.kanade.tachiyomi.data.database.models.toDomainChapter
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
@@ -12,7 +11,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.util.storage.CbzCrypto
-import mihon.core.common.archive.archiveReader
+import mihon.core.archive.archiveReader
 import tachiyomi.domain.manga.model.Manga
 
 /**
@@ -24,9 +23,9 @@ internal class DownloadPageLoader(
     private val source: Source,
     private val downloadManager: DownloadManager,
     private val downloadProvider: DownloadProvider,
+    // SY -->
     private val context: Context,
     private val readerPreferences: ReaderPreferences,
-    // SY -->
     private val cbzCrypto: CbzCrypto,
     // SY <--
 ) : PageLoader() {
@@ -41,7 +40,7 @@ internal class DownloadPageLoader(
             dbChapter.name,
             dbChapter.scanlator,
             dbChapter.url,
-            /* SY --> */ manga.ogTitle, /* <-- SY */
+            /* SY --> */ manga.ogTitle, /* SY <-- */
             source,
         )
         return if (chapterPath?.isFile == true) {
@@ -57,12 +56,12 @@ internal class DownloadPageLoader(
     }
 
     private suspend fun getPagesFromArchive(file: UniFile): List<ReaderPage> {
-        val loader = ArchivePageLoader(file.archiveReader(context, cbzCrypto::getDecryptedPasswordCbz), context, readerPreferences).also { archivePageLoader = it }
+        val loader = ArchivePageLoader(file.archiveReader(context, /* SY --> */cbzCrypto::getDecryptedPasswordCbz/* SY <-- */), /* SY --> */context, readerPreferences/* SY <-- */).also { archivePageLoader = it }
         return loader.getPages()
     }
 
     private suspend fun getPagesFromDirectory(): List<ReaderPage> {
-        val pages = downloadManager.buildPageList(source, manga, chapter.chapter.toDomainChapter()!!)
+        val pages = downloadManager.buildPageList(source, manga, chapter.chapter)
         return pages.map { page ->
             ReaderPage(page.index, page.url, page.imageUrl) {
                 context.contentResolver.openInputStream(page.uri ?: Uri.EMPTY)!!

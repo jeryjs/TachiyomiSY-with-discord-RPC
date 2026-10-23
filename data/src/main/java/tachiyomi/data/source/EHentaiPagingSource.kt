@@ -9,6 +9,9 @@ import mihon.domain.manga.model.toDomainManga
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
 
+/**
+ * SY-specific file
+ */
 abstract class EHentaiPagingSource(
     override val source: suspend () -> Source,
     networkToLocalManga: NetworkToLocalManga,

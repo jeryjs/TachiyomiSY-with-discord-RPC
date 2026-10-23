@@ -17,10 +17,10 @@ class VerticalNavigatorMigration(
     private val preferenceStore: PreferenceStore,
     private val readerPreferences: ReaderPreferences,
 ) : Migration {
-    override val version: Float = 79f
+    override val version: Float = /* SY --> */79f/* SY <-- */
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
-        if (migrationContext.previousVersion == 78) {
+        if (migrationContext.previousVersion == /* SY --> */78/* SY <-- */) {
             val oldVerticalNavigator = preferenceStore.getBoolean("pref_webtoon_vertical_navigator", true)
             if (oldVerticalNavigator.get()) {
                 readerPreferences.verticalNavigator.set(setOf(ReadingMode.WEBTOON, ReadingMode.CONTINUOUS_VERTICAL))

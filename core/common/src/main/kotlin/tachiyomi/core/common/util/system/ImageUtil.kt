@@ -113,14 +113,14 @@ object ImageUtil {
     /**
      * Extract the 'side' part from [BufferedSource] and return it as [BufferedSource].
      */
-    fun splitInHalf(imageSource: BufferedSource, side: Side, sidePadding: Int): BufferedSource {
+    fun splitInHalf(imageSource: BufferedSource, side: Side, /* SY --> */sidePadding: Int/* SY <-- */): BufferedSource {
         val imageBitmap = BitmapFactory.decodeStream(imageSource.inputStream())
         val height = imageBitmap.height
         val width = imageBitmap.width
 
-        val singlePage = Rect(0, 0, width / 2 + sidePadding, height)
+        val singlePage = Rect(0, 0, /* SY --> */width / 2 + sidePadding/* SY <-- */, height)
 
-        val half = createBitmap(width / 2 + sidePadding, height)
+        val half = createBitmap(/* SY --> */width / 2 + sidePadding/* SY <-- */, height)
         val part = when (side) {
             Side.RIGHT -> Rect(width - width / 2, 0, width, height)
             Side.LEFT -> Rect(0, 0, width / 2, height)
@@ -248,8 +248,16 @@ object ImageUtil {
             null
         }
 
+        if (image == null) return Color.WHITE.toDrawable()
+        return try {
+            chooseBackground(context, image)
+        } finally {
+            image.recycle()
+        }
+    }
+
+    private fun chooseBackground(context: Context, image: Bitmap): Drawable {
         val whiteColor = Color.WHITE
-        if (image == null) return whiteColor.toDrawable()
         if (image.width < 50 || image.height < 50) {
             return whiteColor.toDrawable()
         }

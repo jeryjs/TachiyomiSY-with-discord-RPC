@@ -5,6 +5,9 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MergeMangaSettingsUpdate
 import tachiyomi.domain.manga.model.MergedMangaReference
 
+/**
+ * SY-specific file
+ */
 interface MangaMergeRepository {
     suspend fun getMergedManga(): List<Manga>
 
@@ -31,4 +34,6 @@ interface MangaMergeRepository {
     suspend fun deleteByMergeId(mergeId: Long)
 
     suspend fun getMergeMangaForDownloading(mergeId: Long): List<Manga>
+
+    suspend fun getAllReferences(): List<MergedMangaReference>
 }

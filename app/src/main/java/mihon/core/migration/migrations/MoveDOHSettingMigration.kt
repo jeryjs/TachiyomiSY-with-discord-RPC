@@ -13,6 +13,9 @@ import kotlinx.coroutines.withContext
 import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveDOHSettingMigration(

@@ -55,7 +55,7 @@ fun SourcesScreen(
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
         state.isEmpty -> EmptyScreen(
-            MR.strings.source_empty_screen,
+            /* SY --> */ MR.strings.source_empty_screen /* SY <-- */,
             modifier = Modifier.padding(contentPadding),
         )
         else -> {
@@ -258,7 +258,7 @@ fun SourceOptionsDialog(
 
 sealed interface SourceUiModel {
     data class Item(val source: Source) : SourceUiModel
-    data class Header(val language: String, val isCategory: Boolean) : SourceUiModel
+    data class Header(val language: String, /* SY --> */ val isCategory: Boolean /* SY <-- */) : SourceUiModel
 }
 
 // SY -->

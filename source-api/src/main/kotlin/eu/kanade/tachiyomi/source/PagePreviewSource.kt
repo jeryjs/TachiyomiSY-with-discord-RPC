@@ -10,6 +10,9 @@ import kotlinx.serialization.Transient
 import okhttp3.CacheControl
 import okhttp3.Response
 
+/**
+ * SY-specific file
+ */
 interface PagePreviewSource : Source {
 
     suspend fun getPagePreviewList(manga: SManga, chapters: List<SChapter>, page: Int): PagePreviewPage

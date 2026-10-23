@@ -9,6 +9,9 @@ import tachiyomi.domain.manga.model.Manga
 import java.net.URI
 import java.net.URISyntaxException
 
+/**
+ * SY-specific file
+ */
 object EXHMigrations {
 
     fun migrateBackupEntry(manga: Manga): Manga {

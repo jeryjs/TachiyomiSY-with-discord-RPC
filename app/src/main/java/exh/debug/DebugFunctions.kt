@@ -25,23 +25,28 @@ import mihon.core.migration.MigrationJobFactory
 import mihon.core.migration.MigrationStrategyFactory
 import mihon.core.migration.Migrator
 import mihon.domain.source.interactor.UpdateMangaFromRemote
-import tachiyomi.data.Database
+import tachiyomi.domain.eh.repository.EhRepository
 import tachiyomi.domain.manga.interactor.GetAllManga
 import tachiyomi.domain.manga.interactor.GetExhFavoriteMangaWithMetadata
 import tachiyomi.domain.manga.interactor.GetFavorites
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetSearchMetadata
 import tachiyomi.domain.manga.interactor.InsertFlatMetadata
+import tachiyomi.domain.search.repository.SavedSearchRepository
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.UUID
 
+/**
+ * SY-specific file
+ */
 @Suppress("unused")
 @Inject
 class DebugFunctions(
     private val context: Context,
-    private val database: Database,
+    private val ehRepository: EhRepository,
+    private val savedSearchRepository: SavedSearchRepository,
     private val sourceManager: SourceManager,
     private val updateMangaFromRemote: UpdateMangaFromRemote,
     private val getFavorites: GetFavorites,
@@ -131,7 +136,7 @@ class DebugFunctions(
     }
 
     fun addAllMangaInDatabaseToLibrary() {
-        runBlocking { database.ehQueries.addAllMangaInDatabaseToLibrary() }
+        runBlocking { ehRepository.addAllMangaInDatabaseToLibrary() }
     }
 
     fun countMangaInDatabaseInLibrary() = runBlocking { getFavorites.await().size }
@@ -148,7 +153,7 @@ class DebugFunctions(
         }
     }
 
-    fun clearSavedSearches() = runBlocking { database.saved_searchQueries.deleteAll() }
+    fun clearSavedSearches() = runBlocking { savedSearchRepository.deleteAll() }
 
     fun listAllSources() = runBlocking {
         sourceManager.getAll().joinToString("\n") {
@@ -223,7 +228,7 @@ class DebugFunctions(
 
     private fun convertSources(from: Long, to: Long) {
         runBlocking {
-            database.ehQueries.migrateSource(to, from)
+            ehRepository.migrateSource(to, from)
         }
     }
 
@@ -306,17 +311,17 @@ class DebugFunctions(
     }*/
 
     fun fixReaderViewerBackupBug() {
-        runBlocking { database.ehQueries.fixReaderViewerBackupBug() }
+        runBlocking { ehRepository.fixReaderViewerBackupBug() }
     }
 
     fun resetReaderViewerForAllManga() {
-        runBlocking { database.ehQueries.resetReaderViewerForAllManga() }
+        runBlocking { ehRepository.resetReaderViewerForAllManga() }
     }
 
     fun migrateLangNhentaiToMultiLangSource() {
         val sources = nHentaiSourceIds - NHentai.otherId
 
-        runBlocking { database.ehQueries.migrateAllNhentaiToOtherLang(NHentai.otherId, sources) }
+        runBlocking { ehRepository.migrateAllNhentaiToOtherLang(NHentai.otherId, sources) }
     }
 
     fun exportProtobufScheme() = ProtoBufSchemaGenerator.generateSchemaText(Backup.serializer().descriptor)

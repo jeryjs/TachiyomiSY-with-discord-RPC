@@ -52,6 +52,9 @@ import tachiyomi.domain.source.service.SourceManager
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.days
 
+/**
+ * SY-specific file
+ */
 class EHentaiUpdateWorker(private val context: Context, workerParams: WorkerParameters) :
     CoroutineWorker(context, workerParams) {
     private val graph: AppGraph = context.metroGraph()
@@ -140,7 +143,7 @@ class EHentaiUpdateWorker(private val context: Context, workerParams: WorkerPara
             }
 
             val chapter = getChaptersByMangaId.await(manga.id).minByOrNull {
-                it.dateUpload
+                it.dateUpload?.toEpochMilliseconds() ?: 0L
             }
 
             UpdateEntry(manga, raisedMeta, chapter)

@@ -15,6 +15,9 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import java.util.Date
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun TsuminoDescription(state: State.Success, openMetadataViewer: () -> Unit) {
     val meta = state.meta as? TsuminoSearchMetadata ?: return

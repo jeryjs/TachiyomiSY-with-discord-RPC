@@ -12,6 +12,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+/**
+ * SY-specific file
+ */
 @Serializable
 class NHentaiSearchMetadata : RaisedSearchMetadata() {
     var url get() = nhId?.let { BASE_URL + nhIdToPath(it) }

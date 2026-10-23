@@ -5,6 +5,9 @@ import kotlinx.coroutines.CoroutineScope
 import tachiyomi.core.common.preference.PreferenceStore
 import java.util.Locale
 
+/**
+ * SY-specific file
+ */
 enum class DebugToggles(val default: Boolean) {
     // Redirect to master version of gallery when encountering a gallery that has a parent/child that is already in the library
     ENABLE_EXH_ROOT_REDIRECT(true),

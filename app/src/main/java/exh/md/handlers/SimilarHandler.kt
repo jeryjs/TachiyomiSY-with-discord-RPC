@@ -12,6 +12,9 @@ import exh.metadata.metadata.MangaDexSearchMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * SY-specific file
+ */
 class SimilarHandler(
     private val lang: String,
     private val service: MangaDexService,

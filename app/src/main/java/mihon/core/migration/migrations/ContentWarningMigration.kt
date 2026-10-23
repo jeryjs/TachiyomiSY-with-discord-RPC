@@ -15,7 +15,7 @@ class ContentWarningMigration(
     private val preferenceStore: PreferenceStore,
     private val sourcePreferences: SourcePreferences,
 ) : Migration {
-    override val version: Float = 82f
+    override val version: Float = /* SY --> */82f/* SY <-- */
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean {
         val showNsfwSource = preferenceStore.getBoolean("show_nsfw_source", true)

@@ -3,6 +3,9 @@ package tachiyomi.domain.track.interactor
 import dev.zacsweers.metro.Inject
 import tachiyomi.domain.track.model.Track
 
+/**
+ * SY-specific file
+ */
 @Inject
 class IsTrackUnfollowed {
 

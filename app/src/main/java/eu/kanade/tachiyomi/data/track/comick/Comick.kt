@@ -14,7 +14,7 @@ import uy.kohesive.injekt.injectLazy
 import kotlin.time.Clock
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Comick(context: Context, id: Long) : BaseTracker(context, id, "Comick"), DeletableTracker {
+class Comick(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Comick"), DeletableTracker {
 
     private val json: Json by injectLazy()
 

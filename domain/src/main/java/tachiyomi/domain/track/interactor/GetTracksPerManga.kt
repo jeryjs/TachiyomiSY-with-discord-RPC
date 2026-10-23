@@ -9,7 +9,9 @@ import tachiyomi.domain.track.repository.TrackRepository
 @Inject
 class GetTracksPerManga(
     private val trackRepository: TrackRepository,
+    // SY -->
     private val isTrackUnfollowed: IsTrackUnfollowed,
+    // SY <--
 ) {
 
     suspend fun await(): Map<Long, List<Track>> {

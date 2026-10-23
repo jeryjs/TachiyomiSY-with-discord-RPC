@@ -15,6 +15,9 @@ import kotlinx.serialization.json.Json
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
+/**
+ * SY-specific file
+ */
 @Serializable
 sealed class RaisedSearchMetadata {
     @Transient

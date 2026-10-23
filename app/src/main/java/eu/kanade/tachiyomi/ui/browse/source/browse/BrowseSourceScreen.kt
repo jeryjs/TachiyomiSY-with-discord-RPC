@@ -256,7 +256,7 @@ data class BrowseSourceScreen(
                 onWebViewClick = onWebViewClick,
                 onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
                 onLocalSourceHelpClick = onHelpClick,
-                onMangaClick = { navigator.push(MangaScreen(it.id, true, smartSearchConfig)) },
+                onMangaClick = { navigator.push(MangaScreen(it.id, true, /* SY --> */smartSearchConfig/* SY <-- */)) },
                 onMangaLongClick = { manga ->
                     scope.launch(Dispatchers.IO) {
                         val duplicates = viewModel.getDuplicateLibraryManga(manga)
@@ -360,6 +360,7 @@ data class BrowseSourceScreen(
                     },
                 )
             }
+            // SY -->
             is BrowseSourceViewModel.Dialog.CreateSavedSearch -> SavedSearchCreateDialog(
                 onDismissRequest = onDismissRequest,
                 currentSavedSearches = dialog.currentSavedSearches,
@@ -372,6 +373,7 @@ data class BrowseSourceScreen(
                     viewModel.deleteSearch(dialog.idToDelete)
                 },
             )
+            // SY <--
             else -> {}
         }
 

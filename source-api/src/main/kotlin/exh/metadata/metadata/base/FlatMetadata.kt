@@ -9,6 +9,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class FlatMetadata(
     val metadata: SearchMetadata,

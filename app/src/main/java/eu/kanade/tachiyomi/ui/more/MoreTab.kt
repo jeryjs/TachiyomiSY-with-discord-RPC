@@ -68,7 +68,9 @@ data object MoreTab : Tab {
 
     @Composable
     override fun Content() {
+        // SY -->
         val context = LocalContext.current
+        // SY <--
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = metroViewModel<MoreViewModel>()
         val downloadQueueState by viewModel.downloadQueueState.collectAsState()

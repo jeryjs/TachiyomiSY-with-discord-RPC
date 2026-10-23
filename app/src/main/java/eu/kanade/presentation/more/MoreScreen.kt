@@ -3,11 +3,11 @@ package eu.kanade.presentation.more
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.tachiyomi.R
@@ -50,18 +50,20 @@ fun MoreScreen(
     onClickDataAndStorage: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
+    // SY -->
     onClickBatchAdd: () -> Unit,
     onClickUpdates: () -> Unit,
     onClickHistory: () -> Unit,
+    // SY <--
 ) {
     val uriHandler = LocalUriHandler.current
 
     Scaffold { contentPadding ->
-        ScrollbarLazyColumn(
-            modifier = Modifier.padding(contentPadding),
-        ) {
+        ScrollbarLazyColumn(contentPadding = contentPadding) {
             item {
-                LogoHeader()
+                LogoHeader(
+                    iconPadding = PaddingValues(vertical = 32.dp),
+                )
             }
             item {
                 SwitchPreferenceWidget(

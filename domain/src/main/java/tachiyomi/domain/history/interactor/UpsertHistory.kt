@@ -12,11 +12,13 @@ class UpsertHistory(
 ) {
 
     suspend fun await(historyUpdate: HistoryUpdate) {
+        // SY -->
         try {
             historyRepository.upsertHistory(historyUpdate)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
         }
+        // SY <--
     }
 
     // SY -->

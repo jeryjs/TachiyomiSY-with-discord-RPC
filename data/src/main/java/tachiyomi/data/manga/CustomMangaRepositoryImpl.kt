@@ -8,10 +8,18 @@ import tachiyomi.domain.manga.repository.CustomMangaRepository
 import java.io.File
 import kotlin.concurrent.thread
 
+/**
+ * SY-specific file.
+ *
+ * Keeps the per-manga incognito flag. It used to share `edits.json` with the user-edited details, but those
+ * live in the manga row now and upstream's migration deletes that file once it has read them, so the flag
+ * keeps a file of its own. The old file's flags are moved over by CustomIncognitoRescueMigration before that
+ * migration runs.
+ */
 class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
-    private val editJson by lazy { File(context.getExternalFilesDir(null), "edits.json") }
+    private val incognitoJson by lazy { File(context.getExternalFilesDir(null), "incognito.json") }
 
-    // Read off the main thread as soon as the repository is created, since titles shown on screen need it
+    // Read off the main thread as soon as the repository is created, since screens ask for the flag while drawing
     private val customMangaMap by lazy { fetchCustomData() }
 
     init {
@@ -21,11 +29,11 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     override fun get(mangaId: Long) = customMangaMap[mangaId]
 
     private fun fetchCustomData(): MutableMap<Long, CustomMangaInfo> {
-        if (!editJson.exists() || !editJson.isFile) return mutableMapOf()
+        if (!incognitoJson.exists() || !incognitoJson.isFile) return mutableMapOf()
 
         val json = try {
             Json.decodeFromString<MangaList>(
-                editJson.bufferedReader().use { it.readText() },
+                incognitoJson.bufferedReader().use { it.readText() },
             )
         } catch (e: Exception) {
             null
@@ -42,16 +50,7 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     }
 
     override fun set(mangaInfo: CustomMangaInfo) {
-        if (
-            mangaInfo.title == null &&
-            mangaInfo.author == null &&
-            mangaInfo.artist == null &&
-            mangaInfo.thumbnailUrl == null &&
-            mangaInfo.description == null &&
-            mangaInfo.genre == null &&
-            mangaInfo.status == null &&
-            mangaInfo.incognitoMode != true
-        ) {
+        if (mangaInfo.incognitoMode != true) {
             customMangaMap.remove(mangaInfo.id)
         } else {
             customMangaMap[mangaInfo.id] = mangaInfo
@@ -62,8 +61,10 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     private fun saveCustomInfo() {
         val jsonElements = customMangaMap.values.map { it.toJson() }
         if (jsonElements.isNotEmpty()) {
-            editJson.delete()
-            editJson.writeText(Json.encodeToString(MangaList(jsonElements)))
+            incognitoJson.delete()
+            incognitoJson.writeText(Json.encodeToString(MangaList(jsonElements)))
+        } else {
+            incognitoJson.delete()
         }
     }
 
@@ -75,25 +76,10 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     @Serializable
     data class MangaJson(
         var id: Long? = null,
-        val title: String? = null,
-        val author: String? = null,
-        val artist: String? = null,
-        val thumbnailUrl: String? = null,
-        val description: String? = null,
-        val genre: List<String>? = null,
-        val status: Long? = null,
         val incognitoMode: Boolean? = null,
     ) {
-
         fun toManga() = CustomMangaInfo(
             id = this@MangaJson.id!!,
-            title = this@MangaJson.title?.takeUnless { it.isBlank() },
-            author = this@MangaJson.author,
-            artist = this@MangaJson.artist,
-            thumbnailUrl = this@MangaJson.thumbnailUrl,
-            description = this@MangaJson.description,
-            genre = this@MangaJson.genre,
-            status = this@MangaJson.status?.takeUnless { it == 0L },
             incognitoMode = this@MangaJson.incognitoMode,
         )
     }
@@ -101,13 +87,6 @@ class CustomMangaRepositoryImpl(context: Context) : CustomMangaRepository {
     fun CustomMangaInfo.toJson(): MangaJson {
         return MangaJson(
             id,
-            title,
-            author,
-            artist,
-            thumbnailUrl,
-            description,
-            genre,
-            status,
             incognitoMode,
         )
     }

@@ -4,6 +4,9 @@ import exh.metadata.sql.models.SearchTitle
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class BackupSearchTitle(
     @ProtoNumber(1) var title: String = "",

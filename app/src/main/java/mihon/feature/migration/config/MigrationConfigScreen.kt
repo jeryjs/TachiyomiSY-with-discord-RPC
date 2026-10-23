@@ -359,7 +359,9 @@ class MigrationConfigScreen(private val mangaIds: Collection<Long>) : Screen() {
             val sources = sourceManager.getAll()
                 .asSequence()
                 .filterIsInstance<HttpSource>()
+                // SY -->
                 .filterNot { it.id == MERGED_SOURCE_ID }
+                // SY <--
                 .filter { it.lang in languages }
                 .map {
                     val source = Source(

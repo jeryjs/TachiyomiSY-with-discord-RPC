@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 import android.graphics.PointF
-import android.os.Build
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -33,7 +32,9 @@ import kotlin.time.Duration
 class WebtoonViewer(
     val activity: ReaderActivity,
     val isContinuous: Boolean = true,
+    // SY -->
     private val tapByPage: Boolean = false,
+    // SY <--
 ) : Viewer {
 
     val graph by lazy { activity.appGraph }
@@ -75,7 +76,6 @@ class WebtoonViewer(
     /**
      * Currently active item. It can be a chapter page or a chapter transition.
      */
-    /* [EXH] private */
     var currentPage: Any? = null
 
     private val threshold: Int by lazy { readerPreferences.readerHideThreshold.get().threshold }
@@ -221,7 +221,7 @@ class WebtoonViewer(
             val nextItem = adapter.items.getOrNull(adapter.items.size - 1)
             val transitionChapter = (nextItem as? ChapterTransition.Next)?.to ?: (nextItem as?ReaderPage)?.chapter
             if (transitionChapter != null) {
-                logcat { "Requesting to preload chapter ${transitionChapter.chapter.chapter_number}" }
+                logcat { "Requesting to preload chapter ${transitionChapter.chapter.chapterNumber}" }
                 activity.requestPreloadChapter(transitionChapter)
             }
         }
@@ -294,6 +294,8 @@ class WebtoonViewer(
         }
     }
 
+    // SY -->
+
     /**
      * Scrolls one screen over a period of time
      */
@@ -305,11 +307,11 @@ class WebtoonViewer(
             duration.inWholeMilliseconds.toInt(),
         )
     }
+    // SY <--
 
     /**
      * Scrolls down by [scrollDistance].
      */
-    /* [EXH] private */
     fun scrollDown() {
         // SY -->
         if (!isContinuous && tapByPage) {
@@ -400,4 +402,4 @@ class WebtoonViewer(
 }
 
 // Double the cache size to reduce rebinds/recycles incurred by the extra layout space on scroll direction changes
-private val RECYCLER_VIEW_CACHE_SIZE = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 4 else 2
+private const val RECYCLER_VIEW_CACHE_SIZE = 4

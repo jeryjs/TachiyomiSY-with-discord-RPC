@@ -37,8 +37,8 @@ fun LibraryToolbar(
     onClickRefresh: () -> Unit,
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
-    onClickSyncNow: () -> Unit,
     // SY -->
+    onClickSyncNow: () -> Unit,
     onClickSyncExh: (() -> Unit)?,
     isSyncEnabled: Boolean,
     // SY <--
@@ -61,8 +61,8 @@ fun LibraryToolbar(
         onClickRefresh = onClickRefresh,
         onClickGlobalUpdate = onClickGlobalUpdate,
         onClickOpenRandomManga = onClickOpenRandomManga,
-        onClickSyncNow = onClickSyncNow,
         // SY -->
+        onClickSyncNow = onClickSyncNow,
         onClickSyncExh = onClickSyncExh,
         isSyncEnabled = isSyncEnabled,
         // SY <--
@@ -80,8 +80,8 @@ private fun LibraryRegularToolbar(
     onClickRefresh: () -> Unit,
     onClickGlobalUpdate: () -> Unit,
     onClickOpenRandomManga: () -> Unit,
-    onClickSyncNow: () -> Unit,
     // SY -->
+    onClickSyncNow: () -> Unit,
     onClickSyncExh: (() -> Unit)?,
     isSyncEnabled: Boolean,
     // SY <--
@@ -130,7 +130,8 @@ private fun LibraryRegularToolbar(
                         title = stringResource(MR.strings.action_open_random_manga),
                         onClick = onClickOpenRandomManga,
                     ),
-                ).toMutableList().apply {
+                )./* SY --> */toMutableList().apply {
+                    /* SY <-- */
                     // SY -->
                     if (onClickSyncExh != null) {
                         add(
@@ -149,7 +150,8 @@ private fun LibraryRegularToolbar(
                         )
                     }
                     // SY <--
-                }.toList(),
+                    /* SY --> */
+                }.toList() /* SY <-- */,
             )
         },
         scrollBehavior = scrollBehavior,

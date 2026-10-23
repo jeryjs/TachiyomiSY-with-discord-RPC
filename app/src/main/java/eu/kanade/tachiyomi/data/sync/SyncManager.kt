@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.data.sync
 
 import android.content.Context
 import android.net.Uri
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.backup.create.BackupCreator
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
@@ -18,6 +17,7 @@ import eu.kanade.tachiyomi.data.sync.service.SyncData
 import eu.kanade.tachiyomi.data.sync.service.SyncResult
 import eu.kanade.tachiyomi.data.sync.service.SyncYomiSyncService
 import eu.kanade.tachiyomi.util.system.workManager
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
@@ -25,11 +25,14 @@ import logcat.logcat
 import okio.buffer
 import okio.sink
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.data.Chapters
-import tachiyomi.data.Database
-import tachiyomi.data.manga.MangaMapper
 import tachiyomi.domain.category.interactor.GetCategories
+import tachiyomi.domain.category.repository.CategoryRepository
+import tachiyomi.domain.chapter.model.Chapter
+import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaUpdate
+import tachiyomi.domain.manga.repository.MangaRepository
+import tachiyomi.domain.sync.repository.SyncRepository
 import java.io.File
 import java.io.IOException
 import java.util.Date
@@ -37,6 +40,8 @@ import kotlin.system.measureTimeMillis
 import kotlin.time.Clock
 
 /**
+ * SY-specific file.
+ *
  * A manager to handle synchronization tasks in the app, such as updating
  * sync preferences and performing synchronization with a remote server.
  *
@@ -44,8 +49,10 @@ import kotlin.time.Clock
  */
 class SyncManager(
     private val context: Context,
-    private val database: Database,
-    private val mangaMapper: MangaMapper,
+    private val mangaRepository: MangaRepository,
+    private val chapterRepository: ChapterRepository,
+    private val categoryRepository: CategoryRepository,
+    private val syncRepository: SyncRepository,
     private val syncPreferences: SyncPreferences,
     private var json: Json,
     private val protoBuf: ProtoBuf,
@@ -79,11 +86,7 @@ class SyncManager(
         val syncStart = Clock.System.now().epochSeconds
 
         // Reset isSyncing in case it was left over or failed syncing during restore.
-        database.transaction {
-            database.mangasQueries.resetIsSyncing()
-            database.chaptersQueries.resetIsSyncing()
-            database.categoriesQueries.resetIsSyncing()
-        }
+        syncRepository.resetAllSyncing()
 
         val syncOptions = syncPreferences.getSyncSettings()
 
@@ -144,11 +147,12 @@ class SyncManager(
 
         logcat(LogPriority.DEBUG) { "Begin create backup (full=$full)" }
         val backupManga = backupCreator.backupMangas(databaseManga, backupOptions)
+            .toList()
             .let { if (full) it else changedSince(it, syncPreferences.lastPushedAt.get()) }
         val backup = Backup(
             backupManga = backupManga,
             backupCategories = backupCreator.backupCategories(backupOptions),
-            backupSources = backupCreator.backupSources(backupManga),
+            backupSources = backupCreator.backupSources(backupManga.mapTo(mutableSetOf()) { it.source }),
             backupPreferences = backupCreator.backupAppPreferences(backupOptions),
             backupSourcePreferences = backupCreator.backupSourcePreferences(backupOptions),
             backupExtensionStores = backupCreator.backupExtensionStores(backupOptions),
@@ -202,7 +206,7 @@ class SyncManager(
         val (filteredFavorites, nonFavorites) = filterFavoritesAndNonFavorites(remoteBackup)
         updateNonFavorites(nonFavorites)
         // the restore below may not run, so its reset of the sync flag cannot be relied on
-        database.transaction { database.mangasQueries.resetIsSyncing() }
+        syncRepository.resetMangaSyncing()
 
         val newSyncData = backup.copy(
             backupManga = filteredFavorites,
@@ -248,11 +252,7 @@ class SyncManager(
                 it.uid !in mergedUids && it.name !in mergedNames
             }
             if (categoriesToDelete.isNotEmpty()) {
-                database.transaction {
-                    categoriesToDelete.forEach {
-                        database.categoriesQueries.delete(it.id)
-                    }
-                }
+                categoryRepository.deleteAll(categoriesToDelete.map { it.id })
                 categoriesToDelete.forEach { syncPreferences.rememberDeletedCategory(it.uid) }
             }
         }
@@ -331,25 +331,19 @@ class SyncManager(
      * @return a list of all manga stored in the database
      */
     private suspend fun getAllMangaFromDB(): List<Manga> {
-        return database.mangasQueries
-            .getAllManga(mangaMapper::mapManga)
-            .awaitAsList()
+        return mangaRepository.getAll()
     }
 
     private suspend fun getAllMangaThatNeedsSync(): List<Manga> {
-        return database.mangasQueries
-            .getMangasWithFavoriteTimestamp(mangaMapper::mapManga)
-            .awaitAsList()
+        return mangaRepository.getMangasWithFavoriteTimestamp()
     }
 
     private suspend fun getMangasModifiedSince(since: Long): List<Manga> {
-        return database.mangasQueries
-            .getMangasModifiedSince(since, mangaMapper::mapManga)
-            .awaitAsList()
+        return mangaRepository.getMangasModifiedSince(since)
     }
 
     private suspend fun isMangaDifferent(localManga: Manga, remoteManga: BackupManga): Boolean {
-        val localChapters = database.chaptersQueries.getChaptersByMangaId(localManga.id, 0).awaitAsList()
+        val localChapters = chapterRepository.getChapterByMangaId(localManga.id)
         val localCategories = getCategories.await(localManga.id).map { it.order }
 
         if (areChaptersDifferent(localChapters, remoteManga.chapters)) {
@@ -367,7 +361,7 @@ class SyncManager(
         return false
     }
 
-    private fun areChaptersDifferent(localChapters: List<Chapters>, remoteChapters: List<BackupChapter>): Boolean {
+    private fun areChaptersDifferent(localChapters: List<Chapter>, remoteChapters: List<BackupChapter>): Boolean {
         val localChapterMap = localChapters.associateBy { it.url }
         val remoteChapterMap = remoteChapters.associateBy { it.url }
 
@@ -452,8 +446,11 @@ class SyncManager(
             val key = Pair(nonFavorite.source, nonFavorite.url)
             localMangaMap[key]?.let { localManga ->
                 if (localManga.favorite != nonFavorite.favorite) {
-                    val updatedManga = localManga.copy(favorite = nonFavorite.favorite)
-                    mangaRestorer.updateManga(updatedManga)
+                    mangaRepository.update(
+                        MangaUpdate(localManga.id) {
+                            favoriteAt = if (nonFavorite.favorite) Clock.System.now() else null
+                        },
+                    )
                 }
             }
         }

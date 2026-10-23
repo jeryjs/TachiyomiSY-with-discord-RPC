@@ -17,6 +17,9 @@ import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetExhSavedSearch(
     private val getSavedSearchById: GetSavedSearchById,

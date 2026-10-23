@@ -51,6 +51,9 @@ import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class BrowseRecommendsViewModel(
     @Assisted private val args: BrowseRecommendsScreen.Args,

@@ -12,44 +12,46 @@ import tachiyomi.domain.manga.model.MergeMangaSettingsUpdate
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.manga.repository.MangaMergeRepository
 
+/**
+ * SY-specific file
+ */
 class MangaMergeRepositoryImpl(
     private val database: Database,
-    private val mangaMapper: MangaMapper,
 ) : MangaMergeRepository {
 
     override suspend fun getMergedManga(): List<Manga> {
         return database.mergedQueries
-            .selectAllMergedMangas(mangaMapper::mapManga)
+            .selectAllMergedMangas(MangaMapper::mapManga)
             .awaitAsList()
     }
 
     override suspend fun subscribeMergedManga(): Flow<List<Manga>> {
         return database.mergedQueries
-            .selectAllMergedMangas(mangaMapper::mapManga)
+            .selectAllMergedMangas(MangaMapper::mapManga)
             .subscribeToList()
     }
 
     override suspend fun getMergedMangaById(id: Long): List<Manga> {
         return database.mergedQueries
-            .selectMergedMangasById(id, mangaMapper::mapManga)
+            .selectMergedMangasById(mergeId = id, mapper = MangaMapper::mapManga)
             .awaitAsList()
     }
 
     override suspend fun subscribeMergedMangaById(id: Long): Flow<List<Manga>> {
         return database.mergedQueries
-            .selectMergedMangasById(id, mangaMapper::mapManga)
+            .selectMergedMangasById(mergeId = id, mapper = MangaMapper::mapManga)
             .subscribeToList()
     }
 
     override suspend fun getReferencesById(id: Long): List<MergedMangaReference> {
         return database.mergedQueries
-            .selectByMergeId(id, MergedMangaMapper::map)
+            .selectByMergeId(mergeId = id, mapper = MergedMangaMapper::map)
             .awaitAsList()
     }
 
     override suspend fun subscribeReferencesById(id: Long): Flow<List<MergedMangaReference>> {
         return database.mergedQueries
-            .selectByMergeId(id, MergedMangaMapper::map)
+            .selectByMergeId(mergeId = id, mapper = MergedMangaMapper::map)
             .subscribeToList()
     }
 
@@ -128,17 +130,23 @@ class MangaMergeRepositoryImpl(
 
     override suspend fun deleteById(id: Long) {
         database.mergedQueries
-            .deleteById(id)
+            .deleteById(id = id)
     }
 
     override suspend fun deleteByMergeId(mergeId: Long) {
         database.mergedQueries
-            .deleteByMergeId(mergeId)
+            .deleteByMergeId(mergeId = mergeId)
     }
 
     override suspend fun getMergeMangaForDownloading(mergeId: Long): List<Manga> {
         return database.mergedQueries
-            .selectMergedMangasForDownloadingById(mergeId, mangaMapper::mapManga)
+            .selectMergedMangasForDownloadingById(mergeId = mergeId, mapper = MangaMapper::mapManga)
+            .awaitAsList()
+    }
+
+    override suspend fun getAllReferences(): List<MergedMangaReference> {
+        return database.mergedQueries
+            .selectAll(MergedMangaMapper::map)
             .awaitAsList()
     }
 }

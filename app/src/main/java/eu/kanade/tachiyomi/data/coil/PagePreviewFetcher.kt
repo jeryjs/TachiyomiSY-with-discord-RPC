@@ -28,6 +28,8 @@ import java.io.File
 import java.io.IOException
 
 /**
+ * SY-specific file
+ *
  * A [Fetcher] that fetches page preview image for [PagePreview] object.
  *
  * Disk caching is handled by [PagePreviewCache], otherwise

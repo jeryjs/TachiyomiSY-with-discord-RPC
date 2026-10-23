@@ -24,6 +24,9 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun ConfigureExhDialog(run: Boolean, onRunning: () -> Unit) {
     val context = LocalContext.current

@@ -7,6 +7,9 @@ import exh.metadata.metadata.base.FlatMetadata
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
+/**
+ * SY-specific file
+ */
 @Serializable
 data class BackupFlatMetadata(
     @ProtoNumber(1) var searchMetadata: BackupSearchMetadata = BackupSearchMetadata(),

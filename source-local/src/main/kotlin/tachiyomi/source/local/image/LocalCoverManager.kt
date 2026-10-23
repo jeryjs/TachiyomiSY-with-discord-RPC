@@ -8,14 +8,17 @@ import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import eu.kanade.tachiyomi.util.storage.DiskUtil
-import mihon.core.common.archive.ZipWriter
+import mihon.core.archive.ZipWriter
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.source.local.io.LocalSourceFileSystem
 import java.io.InputStream
 
 private const val DEFAULT_COVER_NAME = "cover.jpg"
+
+// SY -->
 private const val COVER_ARCHIVE_NAME = "cover.cbi"
+// SY <--
 
 @Inject
 @SingleIn(AppScope::class)
@@ -33,7 +36,7 @@ class LocalCoverManager(
             .filter { it.isFile && it.nameWithoutExtension.equals("cover", ignoreCase = true) }
             // Get the first actual image
             .firstOrNull {
-                ImageUtil.isImage(it.name) { it.openInputStream() } || it.name == COVER_ARCHIVE_NAME
+                ImageUtil.isImage(it.name) { it.openInputStream() } || /* SY --> */it.name == COVER_ARCHIVE_NAME/* SY <-- */
             }
     }
 
@@ -50,7 +53,9 @@ class LocalCoverManager(
             return null
         }
 
+        // SY -->
         var targetFile = find(manga.url)
+        // SY <--
         if (targetFile == null) {
             // SY -->
             targetFile = if (encrypted) {
@@ -61,7 +66,9 @@ class LocalCoverManager(
             // SY <--
         }
 
+        // SY -->
         targetFile!!
+        // SY <--
 
         inputStream.use { input ->
             // SY -->

@@ -87,7 +87,7 @@ abstract class SearchViewModel(
     }
 
     open suspend fun getEnabledSources(): List<Source> {
-        return sourceManager.getVisibleSources()
+        return sourceManager./* SY --> */getVisibleSources()/* SY <-- */
             .filter { (it.lang in enabledLanguages || it.isLocal()) && "${it.id}" !in disabledSources }
             .sortedWith(
                 compareBy(

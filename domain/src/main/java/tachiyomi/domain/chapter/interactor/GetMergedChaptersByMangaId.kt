@@ -12,6 +12,9 @@ import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.model.MergedMangaReference
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetMergedChaptersByMangaId(
     private val chapterRepository: ChapterRepository,

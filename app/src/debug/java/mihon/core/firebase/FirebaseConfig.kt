@@ -2,6 +2,9 @@ package mihon.core.firebase
 
 import android.content.Context
 
+/**
+ * SY-specific file
+ */
 object FirebaseConfig {
     fun init(context: Context) = Unit
 

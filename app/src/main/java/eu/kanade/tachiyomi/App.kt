@@ -147,11 +147,13 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
     @SuppressLint("LaunchActivityFromNotification")
     override fun onCreate() {
         super<Application>.onCreate()
+        // SY -->
         try {
             FirebaseConfig.init(applicationContext)
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        // SY <--
 
         // Must run before the graph is built, since injecting dependencies initializes WebView and the
         // suffix can't be set once a provider exists in the process. Secondary processes die otherwise.
@@ -176,9 +178,11 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             Security.insertProviderAt(Conscrypt.newProvider(), 1)
         }
 
+        // SY -->
         setupExhLogging() // EXH logging
         LogcatLogger.install()
         LogcatLogger.loggers += XLogLogcatLogger() // SY Redirect Logcat to XLog
+        // SY <--
 
         setupNotificationChannels()
 
@@ -215,12 +219,12 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
 
         privacyPreferences.analytics
             .changes()
-            .onEach(FirebaseConfig::setAnalyticsEnabled)
+            .onEach(/* SY --> */ FirebaseConfig::setAnalyticsEnabled /* SY <-- */)
             .launchIn(scope)
 
         privacyPreferences.crashlytics
             .changes()
-            .onEach(FirebaseConfig::setCrashlyticsEnabled)
+            .onEach(/* SY --> */ FirebaseConfig::setCrashlyticsEnabled /* SY <-- */)
             .launchIn(scope)
 
         setAppCompatDelegateThemeMode(uiPreferences.themeMode.get())
@@ -228,6 +232,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         // Updates widget update
         widgetManager.init(scope)
 
+        // SY -->
         /*if (!LogcatLogger.isInstalled && networkPreferences.verboseLogging().get()) {
             LogcatLogger.install(AndroidLogcatLogger(LogPriority.VERBOSE))
         }*/
@@ -239,6 +244,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppStart) {
             SyncDataJob.startNow(this@App)
         }
+        // SY <--
 
         initializeMigrator()
     }
@@ -266,7 +272,9 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             val callFactoryLazy = lazy { networkHelper.value.client }
             val coverCache = coverCache.value
             val sourceManager = sourceManager.value
+            // SY -->
             val pagePreviewCache = pagePreviewCache.value
+            // SY <--
             components {
                 // NetworkFetcher.Factory
                 add(OkHttpNetworkFetcherFactory(callFactoryLazy::value))
@@ -350,6 +358,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
     }
 
+    // SY -->
     // EXH
     private fun setupExhLogging() {
         EHLogLevel.init(this)
@@ -415,6 +424,7 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             """.trimIndent(),
         )
     }
+    // SY <--
 
     private inner class DisableIncognitoReceiver : BroadcastReceiver() {
         private var registered = false

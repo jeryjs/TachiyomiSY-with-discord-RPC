@@ -19,6 +19,9 @@ import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun BrowseSourceSimpleToolbar(
     navigateUp: () -> Unit,
@@ -41,6 +44,7 @@ fun BrowseSourceSimpleToolbar(
                         onClick = { selectingDisplayMode = true },
                     ),
                 ),
+                // SY <--
             )
             DropdownMenu(
                 expanded = selectingDisplayMode,

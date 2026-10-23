@@ -25,6 +25,9 @@ import org.jsoup.nodes.Element
 import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class HBrowse(
     @Assisted delegate: HttpSource,

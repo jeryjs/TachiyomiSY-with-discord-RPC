@@ -16,7 +16,7 @@ class ChapterNameSuffixMigration(
     private val preferenceStore: PreferenceStore,
     // SY <--
 ) : Migration {
-    override val version: Float = 83f
+    override val version: Float = /* SY --> */83f/* SY <-- */
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean {
         // SY -->

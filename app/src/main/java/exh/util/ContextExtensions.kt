@@ -10,6 +10,8 @@ import androidx.core.content.getSystemService
 import eu.kanade.tachiyomi.util.system.powerManager
 
 /**
+ * SY-specific file
+ *
  * Property to get the wifi manager from the context.
  */
 val Context.wifiManager: WifiManager

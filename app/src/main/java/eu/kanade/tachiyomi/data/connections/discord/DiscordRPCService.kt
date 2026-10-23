@@ -22,7 +22,6 @@ import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,14 +42,12 @@ class DiscordRPCService : Service() {
     @Inject @AppCoroutineScope
     private lateinit var appScope: CoroutineScope
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
         applicationContext.appGraph.inject(this)
         startOrResumeRpc()
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_DISCORD_TOGGLE_PAUSE_RESUME -> {
@@ -78,7 +75,6 @@ class DiscordRPCService : Service() {
         return null
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun startOrResumeRpc() {
         val token = connectionsPreferences.connectionsToken(connectionsManager.discord).get()
         val status = when (connectionsPreferences.discordRPCStatus().get()) {

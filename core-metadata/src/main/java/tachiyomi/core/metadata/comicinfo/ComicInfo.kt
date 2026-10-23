@@ -31,7 +31,9 @@ fun SManga.getComicInfo() = ComicInfo(
     day = null,
     categories = null,
     source = null,
+    // SY -->
     padding = null,
+    // SY <--
 )
 
 fun SManga.copyFromComicInfo(comicInfo: ComicInfo) {

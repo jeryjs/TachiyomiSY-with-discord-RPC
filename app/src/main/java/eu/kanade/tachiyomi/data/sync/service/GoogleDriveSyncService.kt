@@ -39,6 +39,9 @@ import java.io.IOException
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 
+/**
+ * SY-specific file
+ */
 class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: SyncPreferences, private val protoBuf: ProtoBuf) : SyncService(
     context,
     json,

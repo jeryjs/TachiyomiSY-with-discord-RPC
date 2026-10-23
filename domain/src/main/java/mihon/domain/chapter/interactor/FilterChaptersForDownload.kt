@@ -19,7 +19,9 @@ import tachiyomi.domain.manga.model.Manga
 @Inject
 class FilterChaptersForDownload(
     private val getChaptersByMangaId: GetChaptersByMangaId,
+    // SY -->
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
+    // SY <--
     private val downloadPreferences: DownloadPreferences,
     private val getCategories: GetCategories,
 ) {

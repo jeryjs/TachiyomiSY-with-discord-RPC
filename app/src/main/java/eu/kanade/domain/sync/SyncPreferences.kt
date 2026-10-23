@@ -7,6 +7,9 @@ import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import java.util.UUID
 
+/**
+ * SY-specific file
+ */
 @Inject
 class SyncPreferences(
     private val preferenceStore: PreferenceStore,

@@ -12,6 +12,9 @@ import mihon.core.migration.MigrationContext
 import tachiyomi.core.common.preference.minusAssign
 import tachiyomi.domain.library.service.LibraryPreferences
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveLibraryNonCompleteSettingMigration(

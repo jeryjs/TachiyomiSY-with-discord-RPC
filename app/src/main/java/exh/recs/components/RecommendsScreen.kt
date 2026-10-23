@@ -19,6 +19,9 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun RecommendsScreen(
     title: String,

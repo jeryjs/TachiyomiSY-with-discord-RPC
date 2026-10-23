@@ -4,6 +4,9 @@ import dev.zacsweers.metro.Inject
 import tachiyomi.domain.manga.model.MergeMangaSettingsUpdate
 import tachiyomi.domain.manga.repository.MangaMergeRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class UpdateMergedSettings(
     private val mangaMergeRepository: MangaMergeRepository,

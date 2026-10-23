@@ -45,6 +45,9 @@ import tachiyomi.presentation.core.components.material.Button
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun EhLoginWebViewScreen(
     onUp: () -> Unit,

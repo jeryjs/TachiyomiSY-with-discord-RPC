@@ -4,6 +4,8 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import tachiyomi.domain.manga.model.Manga
 
 /**
+ * SY-specific file
+ *
  * The type of comic the manga is (ie. manga, manhwa, manhua)
  */
 fun Manga.mangaType(sourceName: String?): MangaType {

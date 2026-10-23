@@ -5,6 +5,9 @@ import eu.kanade.tachiyomi.source.Source
 import java.net.URI
 import java.net.URISyntaxException
 
+/**
+ * SY-specific file
+ */
 interface UrlImportableSource : Source {
     val matchingHosts: List<String>
 

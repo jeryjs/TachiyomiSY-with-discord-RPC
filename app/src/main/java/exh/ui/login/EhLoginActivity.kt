@@ -30,6 +30,8 @@ import java.net.HttpCookie
 import java.util.Locale
 
 /**
+ * SY-specific file
+ *
  * LoginController
  */
 class EhLoginActivity : BaseActivity() {

@@ -18,6 +18,9 @@ import kotlinx.serialization.json.putJsonObject
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.isSubclassOf
 
+/**
+ * SY-specific file
+ */
 class FilterSerializer {
     private val serializers = listOf<Serializer<*>>(
         // SY -->

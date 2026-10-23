@@ -71,26 +71,32 @@ object SettingsSecurityScreen : SearchableSettings {
         val context = LocalContext.current
         val securityPreferences = remember { context.appGraph.securityPreferences }
         val privacyPreferences = remember { context.appGraph.privacyPreferences }
+        // SY -->
         val cbzCrypto = remember { context.appGraph.cbzCrypto }
         return listOf(
             getSecurityGroup(securityPreferences, cbzCrypto),
             getFirebaseGroup(privacyPreferences),
         )
+        // SY <--
     }
 
     @Composable
     private fun getSecurityGroup(
         securityPreferences: SecurityPreferences,
+        // SY -->
         cbzCrypto: CbzCrypto,
+        // SY <--
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
         val authSupported = remember { context.isAuthenticationSupported() }
         val useAuthPref = securityPreferences.useAuthenticator
         val useAuth by useAuthPref.collectAsState()
 
+        // SY -->
         val scope = rememberCoroutineScope()
         val isCbzPasswordSet by remember { cbzCrypto.isPasswordSetState(scope) }.collectAsState()
         val passwordProtectDownloads by securityPreferences.passwordProtectDownloads.collectAsState()
+        // SY <--
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_security),

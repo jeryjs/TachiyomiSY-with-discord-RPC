@@ -232,8 +232,10 @@ class MangaUpdatesApi(
         }
     }
 
+    // SY -->
     suspend fun getSeries(track: DomainTrack): MURecord =
         getSeries(track.remoteId)
+    // SY <--
 
     // SY -->
     suspend fun getSeries(remoteId: Long): MURecord {

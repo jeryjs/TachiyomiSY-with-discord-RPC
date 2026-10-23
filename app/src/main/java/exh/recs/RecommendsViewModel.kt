@@ -36,6 +36,9 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 open class RecommendsViewModel(
     @Assisted private val args: RecommendsScreen.Args,

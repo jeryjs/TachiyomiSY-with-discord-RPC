@@ -18,6 +18,9 @@ import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun EHentaiDescription(state: State.Success, openMetadataViewer: () -> Unit, search: (String) -> Unit) {
     val meta = state.meta as? EHentaiSearchMetadata ?: return

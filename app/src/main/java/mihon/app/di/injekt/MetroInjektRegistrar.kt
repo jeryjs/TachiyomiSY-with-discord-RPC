@@ -52,7 +52,7 @@ class MetroInjektRegistrar(
     )
 
     override fun <R : Any> getInstance(forType: Type): R = getInstanceOrNull(forType)
-        ?: throw Exception("$forType is not exposed to Injekt, add it to ${this::class.simpleName}")
+        ?: throw /* SY --> */Exception("$forType is not exposed to Injekt, add it to ${this::class.simpleName}")/* SY <-- */
 
     override fun <R : Any> getInstanceOrElse(forType: Type, default: R): R = getInstanceOrNull(forType) ?: default
 

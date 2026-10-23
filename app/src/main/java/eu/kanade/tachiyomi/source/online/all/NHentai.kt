@@ -38,6 +38,9 @@ import okhttp3.Response
 import rx.Observable
 import tachiyomi.core.common.util.lang.runAsObservable
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class NHentai(
     @Assisted delegate: HttpSource,

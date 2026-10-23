@@ -7,6 +7,9 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.manga.repository.MangaMergeRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class GetMergedReferencesById(
     private val mangaMergeRepository: MangaMergeRepository,

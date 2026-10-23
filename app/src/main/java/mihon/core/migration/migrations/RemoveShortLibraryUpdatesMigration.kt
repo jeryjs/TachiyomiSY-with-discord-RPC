@@ -9,6 +9,9 @@ import mihon.core.migration.Migration
 import mihon.core.migration.MigrationContext
 import tachiyomi.domain.library.service.LibraryPreferences
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class RemoveShortLibraryUpdatesMigration(

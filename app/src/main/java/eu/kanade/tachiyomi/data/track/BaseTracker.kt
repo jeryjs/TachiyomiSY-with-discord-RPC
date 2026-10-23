@@ -27,12 +27,14 @@ import tachiyomi.domain.track.interactor.UpsertTrack
 import tachiyomi.domain.track.model.Track as DomainTrack
 
 abstract class BaseTracker(
+    // SY -->
     private val context: Context,
+    // SY <--
     override val id: Long,
     override val name: String,
 ) : Tracker {
 
-    protected val appGraph get() = context.appGraph
+    protected val appGraph get() = /* SY --> */ context.appGraph /* SY <-- */
 
     val trackPreferences: TrackPreferences by lazy { appGraph.trackPreferences }
     val networkService: NetworkHelper by lazy { appGraph.networkHelper }

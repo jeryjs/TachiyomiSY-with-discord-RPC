@@ -71,6 +71,8 @@ import com.mikepenz.markdown.model.markdownAnnotatorConfig
 import com.mikepenz.markdown.utils.getUnescapedTextInNode
 import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.tachiyomi.R
+import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import kotlinx.datetime.TimeZone
@@ -116,7 +118,10 @@ fun MangaInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,
     manga: Manga,
-    sourceName: String,
+    source: Source,
+    // SY -->
+    mergedSources: List<Source>?,
+    // SY <--
     isStubSource: Boolean,
     isSourceIncognito: Boolean,
     onCoverClick: () -> Unit,
@@ -154,7 +159,10 @@ fun MangaInfoBox(
                 MangaAndSourceTitlesSmall(
                     appBarPadding = appBarPadding,
                     manga = manga,
-                    sourceName = sourceName,
+                    source = source,
+                    // SY -->
+                    mergedSources = mergedSources,
+                    // SY <--
                     isStubSource = isStubSource,
                     isSourceIncognito = isSourceIncognito,
                     onCoverClick = onCoverClick,
@@ -164,7 +172,10 @@ fun MangaInfoBox(
                 MangaAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
                     manga = manga,
-                    sourceName = sourceName,
+                    source = source,
+                    // SY -->
+                    mergedSources = mergedSources,
+                    // SY <--
                     isStubSource = isStubSource,
                     isSourceIncognito = isSourceIncognito,
                     onCoverClick = onCoverClick,
@@ -400,7 +411,10 @@ fun ExpandableMangaDescription(
 private fun MangaAndSourceTitlesLarge(
     appBarPadding: Dp,
     manga: Manga,
-    sourceName: String,
+    source: Source,
+    // SY -->
+    mergedSources: List<Source>?,
+    // SY <--
     isStubSource: Boolean,
     isSourceIncognito: Boolean,
     onCoverClick: () -> Unit,
@@ -427,7 +441,10 @@ private fun MangaAndSourceTitlesLarge(
             author = manga.author,
             artist = manga.artist,
             status = manga.status,
-            sourceName = sourceName,
+            source = source,
+            // SY -->
+            mergedSources = mergedSources,
+            // SY <--
             isStubSource = isStubSource,
             isSourceIncognito = isSourceIncognito,
             doSearch = doSearch,
@@ -440,7 +457,10 @@ private fun MangaAndSourceTitlesLarge(
 private fun MangaAndSourceTitlesSmall(
     appBarPadding: Dp,
     manga: Manga,
-    sourceName: String,
+    source: Source,
+    // SY -->
+    mergedSources: List<Source>?,
+    // SY <--
     isStubSource: Boolean,
     isSourceIncognito: Boolean,
     onCoverClick: () -> Unit,
@@ -472,7 +492,10 @@ private fun MangaAndSourceTitlesSmall(
                 author = manga.author,
                 artist = manga.artist,
                 status = manga.status,
-                sourceName = sourceName,
+                source = source,
+                // SY -->
+                mergedSources = mergedSources,
+                // SY <--
                 isStubSource = isStubSource,
                 isSourceIncognito = isSourceIncognito,
                 doSearch = doSearch,
@@ -487,7 +510,10 @@ private fun ColumnScope.MangaContentInfo(
     author: String?,
     artist: String?,
     status: Long,
-    sourceName: String,
+    source: Source,
+    // SY -->
+    mergedSources: List<Source>?,
+    // SY <--
     isStubSource: Boolean,
     isSourceIncognito: Boolean,
     doSearch: (query: String, global: Boolean) -> Unit,
@@ -614,12 +640,9 @@ private fun ColumnScope.MangaContentInfo(
                 )
             }
             Text(
-                text = sourceName,
+                text = source.getNameForMangaInfo(/* SY --> */ mergedSources /* SY <-- */),
                 modifier = Modifier.clickableNoIndication {
-                    doSearch(
-                        sourceName,
-                        false,
-                    )
+                    doSearch(source.query(), false)
                 },
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
@@ -644,6 +667,8 @@ private fun ColumnScope.MangaContentInfo(
         }
     }
 }
+
+private fun Source.query(): String = """src:"$name" lang:$lang""".takeIf { name.isNotBlank() } ?: "srcid:$id"
 
 @Composable
 private fun descriptionAnnotator(loadImages: Boolean, linkStyle: SpanStyle) = remember(loadImages, linkStyle) {

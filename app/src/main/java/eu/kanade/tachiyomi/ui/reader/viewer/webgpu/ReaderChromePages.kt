@@ -244,14 +244,12 @@ class TransitionPage(
         if (manga.isLocal()) return true
         val chapter = transition.to?.chapter ?: return false
         val source = viewer.activity.viewModel.source ?: return false
-        return withContext(Dispatchers.IO) {
-            viewer.downloadManager.isChapterDownloadedOnDisk(
-                chapterName = chapter.name,
-                chapterScanlator = chapter.scanlator,
-                chapterUrl = chapter.url,
-                mangaTitle = /* SY --> */ manga.ogTitle, /* SY <-- */
-                source = source,
-            )
-        }
+        return viewer.downloadManager.isChapterDownloadedOnDisk(
+            chapterName = chapter.name,
+            chapterScanlator = chapter.scanlator,
+            chapterUrl = chapter.url,
+            mangaTitle = /* SY --> */ manga.ogTitle, /* SY <-- */
+            source = source,
+        )
     }
 }

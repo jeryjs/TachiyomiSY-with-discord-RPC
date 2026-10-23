@@ -45,6 +45,9 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
 import kotlin.math.roundToInt
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun PagePreviewScreen(
     state: PagePreviewState,

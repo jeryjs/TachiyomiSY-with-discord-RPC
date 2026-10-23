@@ -14,7 +14,7 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.model.Track as DomainTrack
 
-class Komga(context: Context, id: Long) : BaseTracker(context, id, "Komga"), EnhancedTracker {
+class Komga(/* SY --> */ context: Context, /* SY <-- */ id: Long) : BaseTracker(/* SY --> */ context, /* SY <-- */ id, "Komga"), EnhancedTracker {
 
     companion object {
         const val UNREAD = 1L

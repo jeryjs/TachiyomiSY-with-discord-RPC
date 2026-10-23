@@ -53,6 +53,9 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.math.round
 
+/**
+ * SY-specific file
+ */
 @Composable
 fun BrowseSourceEHentaiList(
     mangaList: LazyPagingItems<StateFlow</* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */>>,

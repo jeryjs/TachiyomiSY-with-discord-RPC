@@ -173,7 +173,11 @@ class SourcesViewModel(
     // SY <--
 
     fun showSourceDialog(source: Source) {
-        dialog.update { Dialog.SourceLongClick(source) }
+        dialog.update {
+            // SY -->
+            Dialog.SourceLongClick(source)
+            // SY <--
+        }
     }
 
     fun closeDialog() {
@@ -184,10 +188,12 @@ class SourcesViewModel(
         data object FailedFetchingSources : Event
     }
 
+    // SY -->
     sealed class Dialog {
         data class SourceLongClick(val source: Source) : Dialog()
         data class SourceCategories(val source: Source) : Dialog()
     }
+    // SY <--
 
     @Immutable
     data class State(

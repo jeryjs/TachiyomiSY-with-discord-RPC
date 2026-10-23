@@ -21,6 +21,9 @@ import tachiyomi.domain.source.interactor.InsertSavedSearch
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
 
+/**
+ * SY-specific file
+ */
 @Inject
 @ContributesIntoSet(AppScope::class)
 class MoveLatestToFeedMigration(

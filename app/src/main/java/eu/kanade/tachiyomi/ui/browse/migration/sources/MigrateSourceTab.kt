@@ -26,8 +26,8 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun Screen.migrateSourceTab(): TabContent {
-    val context = LocalContext.current
     // SY -->
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // SY <--
     val uriHandler = LocalUriHandler.current

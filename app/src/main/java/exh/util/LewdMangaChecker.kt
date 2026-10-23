@@ -5,6 +5,9 @@ import exh.source.nHentaiSourceIds
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 
+/**
+ * SY-specific file
+ */
 suspend fun Manga.isLewd(sourceManager: SourceManager): Boolean {
     val sourceName = sourceManager.get(source)?.name
 

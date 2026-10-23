@@ -9,7 +9,7 @@ class GetApplicationRelease(
     private val service: ReleaseService,
 ) {
     suspend fun await(arguments: Arguments): Result {
-        val release = service.latest(arguments.repository)
+        /* SY --> */val release = service.latest(arguments.repository)/* SY <-- */
 
         // Check if latest version is different from current version
         // SY -->
@@ -56,7 +56,9 @@ class GetApplicationRelease(
     // SY <--
 
     data class Arguments(
+        // SY -->
         val isPreview: Boolean,
+        // SY <--
         val commitCount: Int,
         val versionName: String,
         val repository: String,

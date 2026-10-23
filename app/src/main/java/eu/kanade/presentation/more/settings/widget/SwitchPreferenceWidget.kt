@@ -15,7 +15,8 @@ import mihon.icons.materialsymbols.rounded.Preview
 fun SwitchPreferenceWidget(
     modifier: Modifier = Modifier,
     title: String,
-    subtitle: CharSequence? = null,
+    subtitle: /* SY --> */ CharSequence /* SY <-- */? = null,
+    // SY --> fork keeps the Painter-capable icon
     icon: Any? = null, // Can be either ImageVector or Painter
     checked: Boolean = false,
     onCheckedChanged: (Boolean) -> Unit,

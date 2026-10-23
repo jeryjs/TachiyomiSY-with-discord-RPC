@@ -37,6 +37,9 @@ import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * SY-specific file
+ */
 @AssistedInject
 class Lanraragi(
     @Assisted delegate: HttpSource,

@@ -446,7 +446,7 @@ class MainActivity : BaseActivity() {
             BlacklistedSources.HIDDEN_SOURCES += EH_SOURCE_ID
             BlacklistedSources.HIDDEN_SOURCES += EXH_SOURCE_ID
         }
-        // SY -->
+        // SY <--
     }
 
     override fun onProvideAssistContent(outContent: AssistContent) {
@@ -488,7 +488,7 @@ class MainActivity : BaseActivity() {
 
         // App updates
         LaunchedEffect(Unit) {
-            if (!BuildConfig.INCLUDE_UPDATER) return@LaunchedEffect
+            if (!/* SY --> */BuildConfig.INCLUDE_UPDATER/* SY <-- */) return@LaunchedEffect
             var lastCheck: Long? = null
             // The app can stay open for days now, so a cold start alone rarely checks.
             // Elapsed realtime keeps counting while the device sleeps, unlike the monotonic clock.
@@ -509,7 +509,7 @@ class MainActivity : BaseActivity() {
                                 versionName = result.release.version,
                                 changelogInfo = result.release.info,
                                 releaseLink = result.release.releaseLink,
-                                downloadLink = result.release.getDownloadLink(),
+                                downloadLink = result.release/* SY --> */.getDownloadLink()/* SY <-- */,
                             )
                             navigator.push(updateScreen)
                         }

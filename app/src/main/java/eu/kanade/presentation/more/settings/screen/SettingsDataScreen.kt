@@ -114,8 +114,10 @@ object SettingsDataScreen : SearchableSettings {
         val backupPreferences = remember { context.appGraph.backupPreferences }
         val storagePreferences = remember { context.appGraph.storagePreferences }
 
+        // SY -->
         val syncPreferences = remember { context.appGraph.syncPreferences }
         val syncService by syncPreferences.syncService.collectAsState()
+        // SY <--
 
         return listOf(
             getStorageLocationPref(storagePreferences = storagePreferences),
@@ -124,7 +126,7 @@ object SettingsDataScreen : SearchableSettings {
             getBackupAndRestoreGroup(backupPreferences = backupPreferences),
             getDataGroup(),
             getExportGroup(),
-        ) + getSyncPreferences(syncPreferences = syncPreferences, syncService = syncService)
+        ) + /* SY --> */ getSyncPreferences(syncPreferences = syncPreferences, syncService = syncService) /* SY <-- */
     }
 
     @Composable
@@ -335,7 +337,7 @@ object SettingsDataScreen : SearchableSettings {
                     subtitle = stringResource(MR.strings.used_cache, cacheReadableSize),
                     onClick = {
                         // Finishes even if the screen is left while it runs
-                        context.appGraph.appScope.launch(Dispatchers.Main) {
+                        /* SY --> */ context.appGraph.appScope.launch(Dispatchers.Main) /* SY <-- */ {
                             try {
                                 val deletedFiles = withContext(Dispatchers.IO) { chapterCache.clear() }
                                 context.toast(context.stringResource(MR.strings.cache_deleted, deletedFiles))

@@ -7,6 +7,9 @@ import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.repository.FeedSavedSearchRepository
 
+/**
+ * SY-specific file
+ */
 @Inject
 class InsertFeedSavedSearch(
     private val feedSavedSearchRepository: FeedSavedSearchRepository,

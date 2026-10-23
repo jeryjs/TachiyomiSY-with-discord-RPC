@@ -119,6 +119,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     private fun SubsamplingScaleImageView.landscapeZoom(forward: Boolean) {
+        // SY -->
         val config = config
         if (config != null &&
             config.landscapeZoom &&
@@ -141,6 +142,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .start()
             }
         }
+        // SY <--
     }
 
     fun setImage(drawable: Drawable, config: Config) {

@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/**
+ * SY-specific file
+ */
 class BackupRequestBodyTest {
 
     private fun manga(url: String, title: String = url) = BackupManga(source = 1, url = url, title = title)

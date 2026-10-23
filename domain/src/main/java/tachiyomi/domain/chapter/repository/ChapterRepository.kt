@@ -3,21 +3,32 @@ package tachiyomi.domain.chapter.repository
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterRemoteUpdate
+import tachiyomi.domain.chapter.model.ChapterSummary
 import tachiyomi.domain.chapter.model.ChapterUpdate
 
 interface ChapterRepository {
-
-    suspend fun addAll(chapters: List<Chapter>): List<Chapter>
 
     suspend fun update(chapterUpdate: ChapterUpdate)
 
     suspend fun updateAll(chapterUpdates: List<ChapterUpdate>)
 
-    suspend fun updateAllRemote(chapterUpdates: List<ChapterRemoteUpdate>)
-
-    suspend fun removeChaptersWithIds(chapterIds: List<Long>)
+    suspend fun updateFromRemote(
+        removedIds: List<Long>,
+        added: List<Chapter>,
+        updated: List<ChapterRemoteUpdate>,
+    ): List<Chapter>
 
     suspend fun getChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean = false): List<Chapter>
+
+    // SY -->
+    suspend fun addAll(chapters: List<Chapter>): List<Chapter>
+
+    suspend fun removeChaptersWithIds(ids: List<Long>)
+
+    suspend fun getChaptersByMangaIds(mangaIds: List<Long>): List<Chapter>
+    // SY <--
+
+    suspend fun getChapterSummaryByMangaId(mangaId: Long): ChapterSummary
 
     suspend fun getScanlatorsByMangaId(mangaId: Long): List<String>
 
@@ -44,5 +55,7 @@ interface ChapterRepository {
     suspend fun getScanlatorsByMergeId(mangaId: Long): List<String>
 
     fun getScanlatorsByMergeIdAsFlow(mangaId: Long): Flow<List<String>>
+
+    suspend fun resetIsSyncing()
     // SY <--
 }

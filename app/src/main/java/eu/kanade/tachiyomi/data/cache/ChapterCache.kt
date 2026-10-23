@@ -45,7 +45,7 @@ class ChapterCache(
     // SY <--
 ) {
 
-    // --> EH
+    // SY -->
     private val scope = CoroutineScope(Job() + Dispatchers.IO)
 
     // Opened on first use, since opening it reads the disk
@@ -72,7 +72,7 @@ class ChapterCache(
             }
             .launchIn(scope)
     }
-    // <-- EH
+    // SY <--
 
     /**
      * Returns directory of cache.
@@ -92,7 +92,7 @@ class ChapterCache(
     val readableSize: String
         get() = Formatter.formatFileSize(context, realSize)
 
-    // --> EH
+    // SY -->
     // Cache size is in MB
     private fun setupDiskCache(cacheSize: Long): DiskLruCache {
         return DiskLruCache.open(
@@ -102,7 +102,7 @@ class ChapterCache(
             cacheSize * 1024 * 1024,
         )
     }
-    // <-- EH
+    // SY <--
 
     /**
      * Get page list from cache.

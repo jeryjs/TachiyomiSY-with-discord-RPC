@@ -64,8 +64,8 @@ data object BrowseTab : Tab {
     @Composable
     override fun Content() {
         val context = LocalContext.current
-        val scope = rememberCoroutineScope()
         // SY -->
+        val scope = rememberCoroutineScope()
         val hideFeedTab by remember { context.appGraph.uiPreferences.hideFeedTab.asState(scope) }
         val feedTabInFront by remember { context.appGraph.uiPreferences.feedTabInFront.asState(scope) }
         // SY <--
@@ -109,7 +109,7 @@ data object BrowseTab : Tab {
         )
         LaunchedEffect(Unit) {
             switchToExtensionTabChannel.receiveAsFlow()
-                .collectLatest { state.scrollToPage(/* SY --> */2/* SY <-- */) }
+                .collectLatest { state.scrollToPage(/* SY --> */if (hideFeedTab) 1 else 2/* SY <-- */) }
         }
 
         LaunchedEffect(Unit) {

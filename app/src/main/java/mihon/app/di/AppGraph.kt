@@ -51,6 +51,7 @@ import eu.kanade.tachiyomi.util.CrashLogUtil
 import eu.kanade.tachiyomi.util.storage.CbzCrypto
 import exh.debug.DebugFunctions
 import exh.eh.EHentaiUpdateWorker
+import exh.md.MangaDexLoginActivity
 import exh.pref.DelegateSourcePreferences
 import exh.source.ExhPreferences
 import exh.uconfig.EHConfigurator
@@ -112,6 +113,7 @@ interface AppGraph : ViewModelGraph {
     fun inject(eHentaiUpdateWorker: EHentaiUpdateWorker)
     fun inject(ehLoginActivity: EhLoginActivity)
     fun inject(interceptActivity: InterceptActivity)
+    fun inject(mangaDexLoginActivity: MangaDexLoginActivity)
     // SY <--
     // SY -->
     val connectionsManager: ConnectionsManager

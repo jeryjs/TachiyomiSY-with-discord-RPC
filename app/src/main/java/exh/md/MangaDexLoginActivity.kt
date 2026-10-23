@@ -1,6 +1,7 @@
 package exh.md
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.source.service.SourcePreferences
@@ -8,6 +9,8 @@ import eu.kanade.tachiyomi.ui.setting.track.BaseOAuthLoginActivity
 import exh.md.utils.MdUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import mihon.app.di.AppGraph
+import mihon.core.metro.metroGraph
 import tachiyomi.domain.source.service.SourceManager
 
 /**
@@ -15,9 +18,16 @@ import tachiyomi.domain.source.service.SourceManager
  */
 class MangaDexLoginActivity : BaseOAuthLoginActivity() {
 
+    private val graph: AppGraph by lazy { metroGraph() }
+
     @Inject private lateinit var sourceManager: SourceManager
 
     @Inject private lateinit var sourcePreferences: SourcePreferences
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        graph.inject(this)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun handleResult(uri: Uri) {
         val code = uri.getQueryParameter("code")

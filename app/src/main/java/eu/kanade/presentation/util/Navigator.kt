@@ -15,6 +15,7 @@ import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.ScreenTransitionContent
 import soup.compose.material.motion.animation.materialSharedAxisX
+import soup.compose.material.motion.animation.materialSharedAxisZ
 import soup.compose.material.motion.animation.rememberSlideDistance
 
 /**
@@ -49,10 +50,12 @@ fun DefaultNavigatorScreenTransition(
     ScreenTransition(
         navigator = navigator,
         transition = {
-            materialSharedAxisX(
-                forward = navigator.lastEvent != StackEvent.Pop,
-                slideDistance = slideDistance,
-            )
+            // SY -->
+            if (navigator.level >= 1)
+                materialSharedAxisX(navigator.lastEvent == StackEvent.Push, slideDistance)
+            else
+                materialSharedAxisZ(navigator.lastEvent == StackEvent.Push)
+            // SY <--
         },
         modifier = modifier,
     )

@@ -18,6 +18,9 @@ internal fun ShikimoriGetLibMangaQuery.Manga.toTrack(trackId: Long): Track {
         remote_id = sManga.id.toLong()
         title = sManga.name
         total_chapters = sManga.chapters.toLong()
+        // SY -->
+        total_volumes = sManga.volumes.toLong()
+        // SY <--
         tracking_url = sManga.url
 
         if (sManga.userRate != null) {
@@ -25,6 +28,10 @@ internal fun ShikimoriGetLibMangaQuery.Manga.toTrack(trackId: Long): Track {
             // throws in the findLibManga method of ShikimoriApi if null and shouldn't be
             library_id = sManga.userRate.id.toLong()
             last_chapter_read = sManga.userRate.chapters.toDouble()
+            // SY -->
+            last_volume_read = sManga.userRate.volumes.toDouble()
+            reread_count = sManga.userRate.rewatches.toLong()
+            // SY <--
             score = sManga.userRate.score.toDouble()
             status = sManga.userRate.status.toLocalStatus()
         }
@@ -45,6 +52,9 @@ private fun MangaFragment.toTrackSearch(trackId: Long): TrackSearch {
         remote_id = sManga.id.toLong()
         title = sManga.name
         total_chapters = sManga.chapters.toLong()
+        // SY -->
+        total_volumes = sManga.volumes.toLong()
+        // SY <--
         cover_url = sManga.poster?.mainUrl.orEmpty()
         summary = sManga.description.orEmpty()
         score = sManga.score?.takeIf { it > 0.0 } ?: -1.0

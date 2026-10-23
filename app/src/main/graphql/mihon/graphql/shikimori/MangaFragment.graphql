@@ -2,6 +2,9 @@ fragment MangaFragment on Manga {
   id
   name
   chapters
+  # SY -->
+  volumes
+  # SY <--
   kind
   poster {
     mainUrl

@@ -9,11 +9,18 @@ query ShikimoriGetLibManga(
     url
     name
     chapters
+    # SY -->
+    volumes
+    # SY <--
     userRate {
       id
       chapters
       status
       score
+      # SY -->
+      volumes
+      rewatches
+      # SY <--
     }
   }
 }

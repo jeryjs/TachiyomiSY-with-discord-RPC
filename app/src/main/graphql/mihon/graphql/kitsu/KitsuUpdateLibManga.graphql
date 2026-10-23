@@ -2,6 +2,9 @@ mutation KitsuUpdateLibManga(
   $library_id: ID!,
   $status: LibraryEntryStatusEnum!,
   $progress: Int!,
+  # SY -->
+  $volumesOwned: Int!,
+  # SY <--
   $private: Boolean!,
   $rating: Int,
   $startedAt: ISO8601DateTime,
@@ -13,6 +16,9 @@ mutation KitsuUpdateLibManga(
         id: $library_id,
         status: $status,
         progress: $progress,
+        # SY -->
+        volumesOwned: $volumesOwned,
+        # SY <--
         private: $private,
         rating: $rating,
         startedAt: $startedAt,

@@ -64,6 +64,9 @@ class KitsuApi(
                     media_id = track.remote_id.toString(),
                     status = track.toKitsuStatus(),
                     progress = progress,
+                    // SY -->
+                    volumesOwned = track.last_volume_read.coerceAtLeast(0.0).toInt(),
+                    // SY <--
                     private = track.private,
                     rating = Optional.present(track.score.toInt().takeIf { it > 0 }),
                 ),
@@ -95,6 +98,9 @@ class KitsuApi(
                     library_id = libraryId.toString(),
                     status = track.toKitsuStatus(),
                     progress = progress,
+                    // SY -->
+                    volumesOwned = track.last_volume_read.coerceAtLeast(0.0).toInt(),
+                    // SY <--
                     private = track.private,
                     rating = Optional.present(track.score.toInt().takeIf { it > 0 }),
                     startedAt = Optional.present(

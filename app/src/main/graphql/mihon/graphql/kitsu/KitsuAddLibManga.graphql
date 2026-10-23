@@ -2,6 +2,9 @@ mutation KitsuAddLibManga(
   $media_id: ID!,
   $status: LibraryEntryStatusEnum!,
   $progress: Int!,
+  # SY -->
+  $volumesOwned: Int!,
+  # SY <--
   $private: Boolean!,
   $rating: Int,
 ) {
@@ -12,6 +15,9 @@ mutation KitsuAddLibManga(
         mediaType: MANGA,
         status: $status,
         progress: $progress,
+        # SY -->
+        volumesOwned: $volumesOwned,
+        # SY <--
         private: $private,
         rating: $rating,
       }

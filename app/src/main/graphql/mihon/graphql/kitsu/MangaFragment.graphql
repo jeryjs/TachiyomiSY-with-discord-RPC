@@ -4,6 +4,9 @@ fragment MangaFragment on Manga {
     preferred
   }
   chapterCount
+  # SY -->
+  volumeCount
+  # SY <--
   staff(first: 5) {
     nodes {
       role

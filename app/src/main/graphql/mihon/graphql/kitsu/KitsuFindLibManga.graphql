@@ -9,6 +9,9 @@ query KitsuFindLibManga(
       id
       private
       progress
+      # SY -->
+      volumesOwned
+      # SY <--
       rating
       status
       startedAt

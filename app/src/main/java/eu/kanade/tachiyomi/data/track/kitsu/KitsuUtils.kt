@@ -64,6 +64,9 @@ internal fun KitsuFindLibMangaQuery.FindMangaById.toTrackSearch(trackId: Long): 
         status = myLibraryEntry.status.toLocalStatus()
         score = myLibraryEntry.rating?.toDouble() ?: 0.0
         last_chapter_read = myLibraryEntry.progress.toDouble()
+        // SY -->
+        last_volume_read = myLibraryEntry.volumesOwned.toDouble()
+        // SY <--
         private = myLibraryEntry.private
     }
 }
@@ -74,6 +77,9 @@ private fun MangaFragment.toTrackSearch(trackId: Long): TrackSearch {
         remote_id = kitsuManga.id.toLong()
         title = kitsuManga.titles.preferred
         total_chapters = kitsuManga.chapterCount?.toLong() ?: 0
+        // SY -->
+        total_volumes = kitsuManga.volumeCount?.toLong() ?: 0
+        // SY <--
         cover_url = kitsuManga.posterImage?.views?.firstOrNull()?.url ?: kitsuManga.posterImage?.original?.url.orEmpty()
         summary = (kitsuManga.description["en"] as? String).orEmpty()
         tracking_url = "https://kitsu.app/manga/${kitsuManga.slug}"

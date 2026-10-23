@@ -12,6 +12,10 @@ query AniListGetLibManga(
       status
       scoreRaw: score(format: POINT_100)
       progress
+      # SY -->
+      progressVolumes
+      repeat
+      # SY <--
       private
       startedAt {
         year

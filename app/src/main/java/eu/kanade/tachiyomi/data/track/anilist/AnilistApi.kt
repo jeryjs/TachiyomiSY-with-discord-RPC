@@ -55,10 +55,10 @@ class AnilistApi(
             .mutation(
                 AniListAddMangaMutation(
                     manga_id = track.remote_id.toInt(),
-                    progress = track.last_chapter_read.toInt(),
+                    progress = track.last_chapter_read.coerceAtLeast(0.0).toInt(),
                     // SY -->
-                    progressVolumes = track.last_volume_read.toInt(),
-                    repeat = track.reread_count.toInt(),
+                    progressVolumes = track.last_volume_read.coerceAtLeast(0.0).toInt(),
+                    repeat = track.reread_count.coerceAtLeast(0).toInt(),
                     // SY <--
                     status = track.toApiStatus(),
                     private = track.private,
@@ -85,14 +85,14 @@ class AnilistApi(
             .mutation(
                 AniListUpdateMangaMutation(
                     library_id = libraryId.toInt(),
-                    progress = track.last_chapter_read.toInt(),
+                    progress = track.last_chapter_read.coerceAtLeast(0.0).toInt(),
                     // SY -->
-                    progressVolumes = track.last_volume_read.toInt(),
-                    repeat = track.reread_count.toInt(),
+                    progressVolumes = track.last_volume_read.coerceAtLeast(0.0).toInt(),
+                    repeat = track.reread_count.coerceAtLeast(0).toInt(),
                     // SY <--
                     status = track.toApiStatus(),
                     private = track.private,
-                    score = track.score.toInt(),
+                    score = track.score.coerceAtLeast(0.0).toInt(),
                     startedAt = createFuzzyDate(track.started_reading_date),
                     completedAt = createFuzzyDate(track.finished_reading_date),
                 ),

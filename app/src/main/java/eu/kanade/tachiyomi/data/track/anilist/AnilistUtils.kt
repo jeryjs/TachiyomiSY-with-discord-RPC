@@ -45,6 +45,10 @@ internal fun AniListGetLibMangaQuery.MediaList.toTrack(trackId: Long): Track {
             }
             score = mediaList.scoreRaw ?: 0.0
             last_chapter_read = mediaList.progress?.toDouble() ?: 0.0
+            // SY -->
+            last_volume_read = mediaList.progressVolumes?.toDouble() ?: 0.0
+            reread_count = mediaList.repeat?.toLong() ?: 0L
+            // SY <--
 
             started_reading_date = mediaList.startedAt.let {
                 if (it == null || it.year == null || it.month == null || it.day == null) {
@@ -84,6 +88,9 @@ private fun MangaFragment.toTrackSearch(trackId: Long): TrackSearch {
         remote_id = alManga.id.toLong()
         title = alManga.title?.userPreferred ?: "(no title)"
         total_chapters = alManga.chapters?.toLong() ?: 0
+        // SY -->
+        total_volumes = alManga.volumes?.toLong() ?: 0
+        // SY <--
         cover_url = alManga.coverImage?.large ?: ""
         summary = alManga.description?.htmlDecode() ?: ""
         score = alManga.averageScore?.toDouble() ?: -1.0

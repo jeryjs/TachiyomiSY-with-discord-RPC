@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.source.online.english
+package eu.kanade.tachiyomi.source.online.all
 
 import android.content.Context
 import android.net.Uri
@@ -50,11 +50,6 @@ class Pururin(
     }
 
     /**
-     * An ISO 639-1 compliant language code (two letters in lower case).
-     */
-    override val lang = "en"
-
-    /**
      * The class of the metadata used by this source
      */
     override val metaClass = PururinSearchMetadata::class
@@ -99,8 +94,7 @@ class Pururin(
     }
 
     override suspend fun parseIntoMetadata(metadata: PururinSearchMetadata, input: Document) {
-        val selfLink = input.select("[itemprop=name]").last()!!.parent()
-        val parsedSelfLink = selfLink!!.attr("href").toUri().pathSegments
+        val parsedSelfLink = input.selectFirst("meta[property=og:url]")!!.attr("content").toUri().pathSegments
 
         with(metadata) {
             prId = parsedSelfLink[parsedSelfLink.lastIndex - 1].toInt()
@@ -110,10 +104,10 @@ class Pururin(
             title = contentWrapper!!.selectFirst(".title h1")!!.text()
             altTitle = contentWrapper.selectFirst(".alt-title")?.text()
 
-            thumbnailUrl = "https:" + input.selectFirst(".cover-wrapper v-lazy-image")!!.attr("src")
+            thumbnailUrl = input.selectFirst(".cover-wrapper img")!!.absUrl("src")
 
             tags.clear()
-            contentWrapper.select(".table-gallery-info > tbody > tr").forEach { ele ->
+            contentWrapper.select(".table-info > tbody > tr").forEach { ele ->
                 val key = ele.child(0).text().lowercase()
                 val value = ele.child(1)
                 when (key) {
@@ -129,7 +123,7 @@ class Pururin(
                     }
                     "uploader" -> {
                         uploaderDisp = value.text()
-                        uploader = value.child(0).attr("href").toUri().lastPathSegment
+                        uploader = value.selectFirst("a")!!.attr("href").toUri().lastPathSegment
                     }
                     else -> {
                         value.select("a").forEach { link ->

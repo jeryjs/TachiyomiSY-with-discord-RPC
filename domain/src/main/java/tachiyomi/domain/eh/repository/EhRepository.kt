@@ -13,7 +13,7 @@ interface EhRepository {
 
     suspend fun resetReaderViewerForAllManga()
 
-    suspend fun migrateAllNhentaiToOtherLang(otherId: Long, sources: List<Long>)
+    suspend fun migrateAllNhentaiToOtherLang(otherId: Long, sources: Set<Long>)
 
     suspend fun deleteByTrackerId(trackerId: Long)
 }

@@ -9,16 +9,15 @@ import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.source.online.all.EHentai
+import eu.kanade.tachiyomi.source.online.all.Hitomi
 import eu.kanade.tachiyomi.source.online.all.Lanraragi
 import eu.kanade.tachiyomi.source.online.all.MangaDex
 import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.source.online.all.NHentai
+import eu.kanade.tachiyomi.source.online.all.Pururin
 import eu.kanade.tachiyomi.source.online.english.EightMuses
-import eu.kanade.tachiyomi.source.online.english.HBrowse
 import eu.kanade.tachiyomi.source.online.english.HentaiNexus
 import eu.kanade.tachiyomi.source.online.english.NineHentai
-import eu.kanade.tachiyomi.source.online.english.Pururin
-import eu.kanade.tachiyomi.source.online.english.Tsumino
 import exh.log.xLogD
 import exh.pref.DelegateSourcePreferences
 import exh.source.BlacklistedSources
@@ -28,12 +27,9 @@ import exh.source.EIGHTMUSES_SOURCE_ID
 import exh.source.EXH_SOURCE_ID
 import exh.source.EnhancedHttpSource
 import exh.source.ExhPreferences
-import exh.source.HBROWSE_SOURCE_ID
 import exh.source.HENTAINEXUS_SOURCE_ID
 import exh.source.MERGED_SOURCE_ID
 import exh.source.NINEHENTAI_SOURCE_ID
-import exh.source.PURURIN_SOURCE_ID
-import exh.source.TSUMINO_SOURCE_ID
 import exh.source.handleSourceLibrary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -66,11 +62,10 @@ class AndroidSourceManager(
     private val ehentaiFactory: EHentai.Factory,
     private val delegateSourcePreferences: DelegateSourcePreferences,
     private val pururinFactory: Pururin.Factory,
-    private val tsuminoFactory: Tsumino.Factory,
     private val mangaDexFactory: MangaDex.Factory,
-    private val hBrowseFactory: HBrowse.Factory,
     private val eightMusesFactory: EightMuses.Factory,
     private val nHentaiFactory: NHentai.Factory,
+    private val hitomiFactory: Hitomi.Factory,
     private val lanraragiFactory: Lanraragi.Factory,
     private val hentaiNexusFactory: HentaiNexus.Factory,
     private val nineHentaiFactory: NineHentai.Factory,
@@ -136,18 +131,14 @@ class AndroidSourceManager(
     private fun Source.toInternalSource(): Source? {
         // SY -->
         val sourceQName = this::class.qualifiedName
-        val factories = DELEGATED_SOURCES.entries
-            .filter { it.value.factory }
-            .map { it.value.originalSourceQualifiedClassName }
-        val delegate = if (sourceQName != null) {
-            val matched = factories.find { sourceQName.startsWith(it) }
-            if (matched != null) {
-                DELEGATED_SOURCES[matched]
-            } else {
-                DELEGATED_SOURCES[sourceQName] ?: DELEGATED_SOURCES_BY_ID[id]
-            }
-        } else {
-            null
+        val delegate = DELEGATED_SOURCES.firstOrNull { delegated ->
+            id in delegated.sourceIds ||
+                (
+                    sourceQName != null && (
+                        sourceQName == delegated.originalSourceQualifiedClassName ||
+                            (delegated.factory && sourceQName.startsWith(delegated.originalSourceQualifiedClassName))
+                        )
+                    )
         }
         val newSource = if (this is HttpSource && delegate != null) {
             xLogD("Delegating source: %s -> %s!", sourceQName, delegate.newSourceClass.qualifiedName)
@@ -186,11 +177,10 @@ class AndroidSourceManager(
     // SY -->
     private fun createDelegatedSource(kClass: KClass<*>, delegate: HttpSource): DelegatedHttpSource = when (kClass) {
         Pururin::class -> pururinFactory.create(delegate)
-        Tsumino::class -> tsuminoFactory.create(delegate)
         MangaDex::class -> mangaDexFactory.create(delegate)
-        HBrowse::class -> hBrowseFactory.create(delegate)
         EightMuses::class -> eightMusesFactory.create(delegate)
         NHentai::class -> nHentaiFactory.create(delegate)
+        Hitomi::class -> hitomiFactory.create(delegate)
         Lanraragi::class -> lanraragiFactory.create(delegate)
         HentaiNexus::class -> hentaiNexusFactory.create(delegate)
         NineHentai::class -> nineHentaiFactory.create(delegate)
@@ -268,28 +258,16 @@ class AndroidSourceManager(
         val DELEGATED_SOURCES = listOf(
             DelegatedSource(
                 "Pururin",
-                PURURIN_SOURCE_ID,
-                "eu.kanade.tachiyomi.extension.en.pururin.Pururin",
+                fillInSourceId,
+                "eu.kanade.tachiyomi.extension.all.pururin.Pururin",
                 Pururin::class,
-            ),
-            DelegatedSource(
-                "Tsumino",
-                TSUMINO_SOURCE_ID,
-                "eu.kanade.tachiyomi.extension.en.tsumino.Tsumino",
-                Tsumino::class,
             ),
             DelegatedSource(
                 "MangaDex",
                 fillInSourceId,
-                "eu.kanade.tachiyomi.extension.all.mangadex",
+                "eu.kanade.tachiyomi.extension.all.mangadex.MangaDex",
                 MangaDex::class,
                 true,
-            ),
-            DelegatedSource(
-                "HBrowse",
-                HBROWSE_SOURCE_ID,
-                "eu.kanade.tachiyomi.extension.en.hbrowse.HBrowse",
-                HBrowse::class,
             ),
             DelegatedSource(
                 "8Muses",
@@ -302,6 +280,12 @@ class AndroidSourceManager(
                 fillInSourceId,
                 "eu.kanade.tachiyomi.extension.all.nhentai.NHentai",
                 NHentai::class,
+            ),
+            DelegatedSource(
+                "Hitomi",
+                Hitomi.HITOMI_SOURCE_IDS,
+                "eu.kanade.tachiyomi.extension.all.hitomi.Hitomi",
+                Hitomi::class,
                 true,
             ),
             DelegatedSource(
@@ -309,7 +293,6 @@ class AndroidSourceManager(
                 fillInSourceId,
                 "eu.kanade.tachiyomi.extension.all.lanraragi.LANraragi",
                 Lanraragi::class,
-                true,
             ),
             DelegatedSource(
                 "HentaiNexus",
@@ -323,24 +306,32 @@ class AndroidSourceManager(
                 "eu.kanade.tachiyomi.extension.en.ninehentai.NineHentai",
                 NineHentai::class,
             ),
-        ).associateBy { it.originalSourceQualifiedClassName }
-
-        // Keiyoushi extensions are obfuscated and all share the generated entry point class name,
-        // so sources with a fixed id are also matched by it
-        private val DELEGATED_SOURCES_BY_ID = DELEGATED_SOURCES.values
-            .filterNot { it.factory }
-            .associateBy { it.sourceId }
+        )
 
         val currentDelegatedSources: MutableMap<Long, DelegatedSource> =
             ListenMutableMap(mutableMapOf(), ::handleSourceLibrary)
 
         data class DelegatedSource(
             val sourceName: String,
-            val sourceId: Long,
+            val sourceIds: List<Long>,
             val originalSourceQualifiedClassName: String,
             val newSourceClass: KClass<out DelegatedHttpSource>,
             val factory: Boolean = false,
-        )
+        ) {
+            constructor(
+                sourceName: String,
+                sourceId: Long,
+                originalSourceQualifiedClassName: String,
+                newSourceClass: KClass<out DelegatedHttpSource>,
+                factory: Boolean = false,
+            ) : this(
+                sourceName,
+                listOf(sourceId),
+                originalSourceQualifiedClassName,
+                newSourceClass,
+                factory,
+            )
+        }
     }
 
     private class ListenMutableMap<K, V>(

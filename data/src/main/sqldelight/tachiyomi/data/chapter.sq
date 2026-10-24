@@ -134,7 +134,7 @@ VALUES (
     :remoteDateUpload, :remoteOrder, :remoteMemo, :userRead, :userBookmark,
     :userLastPageRead, :stateDateFetch,
     -- SY -->
-    :stateLastModifiedAt, :stateVersion
+    CASE WHEN :stateLastModifiedAt = 0 THEN strftime('%s', 'now') ELSE :stateLastModifiedAt END, :stateVersion
     -- SY <--
 )
 -- Two syncs of the same entry can race; the chapter the other one already stored is skipped rather
@@ -199,7 +199,8 @@ WHERE C.manga_id IN (
 AND (
     :applyScanlatorFilter = 0
     OR ES.scanlator IS NULL
-);
+)
+ORDER BY C.manga_id, C.remote_order;
 
 getScanlatorsByMergeId:
 SELECT DISTINCT remote_scanlator

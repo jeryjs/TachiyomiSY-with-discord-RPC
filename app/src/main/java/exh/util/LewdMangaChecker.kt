@@ -41,6 +41,7 @@ private fun isHentaiSource(source: String): Boolean {
         source.contains("hentai cafe", true) ||
         source.contains("hentai2read", true) ||
         source.contains("hentaifox", true) ||
+        source.contains("hitomi.la", true) ||
         source.contains("hentainexus", true) ||
         source.contains("manhwahentai.me", true) ||
         source.contains("milftoon", true) ||
@@ -49,9 +50,7 @@ private fun isHentaiSource(source: String): Boolean {
         source.contains("ninehentai", true) ||
         source.contains("pururin", true) ||
         source.contains("simply hentai", true) ||
-        source.contains("tsumino", true) ||
         source.contains("8muses", true) ||
-        source.contains("hbrowse", true) ||
         source.contains("nhentai", true) ||
         source.contains("erofus", true) ||
         source.contains("luscious", true) ||

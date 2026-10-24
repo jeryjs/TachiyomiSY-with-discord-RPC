@@ -269,8 +269,15 @@ class ReaderViewModel(
 
     private suspend fun getUnfilteredChapterList(): List<Chapter> {
         return unfilteredChapterList
-            ?: getChaptersByMangaId.await(manga!!.id, applyScanlatorFilter = false)
-                .also { unfilteredChapterList = it }
+            // SY-->
+            ?: if (manga!!.source == MERGED_SOURCE_ID) {
+                getMergedChaptersByMangaId.await(manga!!.id, applyScanlatorFilter = false)
+                    .also { unfilteredChapterList = it }
+            } else {
+                getChaptersByMangaId.await(manga!!.id, applyScanlatorFilter = false)
+                    .also { unfilteredChapterList = it }
+            }
+        // SY <--
     }
 
     /**
@@ -522,12 +529,16 @@ class ReaderViewModel(
     // SY -->
     fun getChapters(): List<ReaderChapterItem> {
         if (!::chapterList.isInitialized) return emptyList()
+
+        val manga = manga ?: return emptyList()
+        val mangaList = state.value.mergedManga?.takeIf { it.isNotEmpty() } ?: mapOf(manga.id to manga)
+
         val currentChapter = getCurrentChapter()
 
         return chapterList.map {
             ReaderChapterItem(
                 chapter = it.chapter,
-                manga = manga!!,
+                manga = mangaList[it.chapter.mangaId] ?: manga,
                 isCurrent = it.chapter.id == currentChapter?.chapter?.id,
                 dateFormat = UiPreferences.dateFormat(uiPreferences.dateFormat.get(), Locale.getDefault()),
             )
@@ -672,7 +683,7 @@ class ReaderViewModel(
         }
 
         if (chapter.pageLoader?.isLocal == false) {
-            val manga = manga ?: return
+            val manga = /* SY --> */ state.value.mergedManga?.get(chapter.chapter.mangaId) ?: /* SY <-- */ manga ?: return
             val dbChapter = chapter.chapter
             val source = state.value.source ?: return
             val isDownloaded = downloadManager.isChapterDownloadedOnDisk(
@@ -784,15 +795,20 @@ class ReaderViewModel(
         if (getCurrentChapter()?.pageLoader !is DownloadPageLoader) return
         val nextChapter = state.value.viewerChapters?.nextChapter?.chapter ?: return
 
+        // SY -->
+        val mangas = state.value.mergedManga ?: mapOf(manga.id to manga)
+        val nextChapterManga = mangas[nextChapter.mangaId] ?: return
+        // SY <--
+
         viewModelScope.launch(Dispatchers.IO) {
             val isNextChapterDownloaded = downloadManager.isChapterDownloaded(
                 nextChapter.name,
                 nextChapter.scanlator,
                 nextChapter.url,
                 // SY -->
-                manga.ogTitle,
+                nextChapterManga.ogTitle,
+                nextChapterManga.source,
                 // SY <--
-                manga.source,
             )
             if (!isNextChapterDownloaded) return@launch
 
@@ -804,10 +820,15 @@ class ReaderViewModel(
                 }
             }.take(downloadAheadAmount)
 
-            downloadManager.downloadChapters(
-                manga,
-                chaptersToDownload,
-            )
+            // SY -->
+            chaptersToDownload.groupBy { it.mangaId }.forEach { (mangaId, chapters) ->
+                val chapterManga = mangas[mangaId] ?: return@forEach
+                downloadManager.downloadChapters(
+                    chapterManga,
+                    chapters,
+                )
+            }
+            // SY <--
         }
     }
 

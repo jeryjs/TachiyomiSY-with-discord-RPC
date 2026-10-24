@@ -4,7 +4,6 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
 import eu.kanade.domain.manga.interactor.UpdateManga
-import exh.source.HBROWSE_SOURCE_ID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihon.core.migration.MigrateUtils
@@ -27,10 +26,10 @@ class DelegateHBrowseMigration(
     override val version: Float = 4f
 
     override suspend fun invoke(migrationContext: MigrationContext): Boolean = withContext(Dispatchers.IO) {
-        MigrateUtils.updateSourceId(ehRepository, HBROWSE_SOURCE_ID, 6912)
+        MigrateUtils.updateSourceId(ehRepository, 1401584337232758222, 6912)
 
         // Migrate BHrowse URLs
-        val hBrowseManga = getMangaBySource.await(HBROWSE_SOURCE_ID)
+        val hBrowseManga = getMangaBySource.await(1401584337232758222)
         val mangaUpdates = hBrowseManga.map {
             MangaUpdate(it.id) { url = it.url + "/c00001/" }
         }

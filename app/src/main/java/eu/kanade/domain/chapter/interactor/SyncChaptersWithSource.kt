@@ -6,8 +6,10 @@ import eu.kanade.domain.chapter.model.toSChapter
 import eu.kanade.domain.manga.interactor.GetExcludedScanlators
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.manga.model.toSManga
+import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
+import eu.kanade.tachiyomi.data.sync.chapterTombstoneKey
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -39,6 +41,9 @@ class SyncChaptersWithSource(
     private val updateManga: UpdateManga,
     private val getExcludedScanlators: GetExcludedScanlators,
     private val libraryPreferences: LibraryPreferences,
+    // SY -->
+    private val syncPreferences: SyncPreferences,
+    // SY <--
 ) {
 
     /**
@@ -239,11 +244,18 @@ class SyncChaptersWithSource(
         }
         // SY <--
 
+        // SY -->
+        val tombstoneKey = { chapter: Chapter -> chapterTombstoneKey(manga.source, manga.url, chapter.url) }
+        syncPreferences.rememberDeletedChapters(removedChapters.map(tombstoneKey))
+        // SY <--
         val added = chapterRepository.updateFromRemote(
             removedIds = removedChapters.map { it.id },
             added = /* SY --> */ chaptersToAdd /* SY <-- */,
             updated = updatedChapters,
         )
+        // SY -->
+        syncPreferences.forgetDeletedChapters(added.map(tombstoneKey))
+        // SY <--
         val excludedScanlators = getExcludedScanlators.await(manga.id).toHashSet()
 
         // A first fetch lists the back catalogue, and chapters coming back under a deleted number were out already

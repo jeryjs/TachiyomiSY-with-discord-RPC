@@ -81,8 +81,6 @@ class MangaDex(
         fun create(delegate: HttpSource): MangaDex
     }
 
-    override val lang: String = delegate.lang
-
     private val mdLang by lazy {
         MdLang.fromExt(lang) ?: MdLang.ENGLISH
     }

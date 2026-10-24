@@ -9,17 +9,6 @@ DROP VIEW historyView;
 DROP VIEW libraryView;
 DROP VIEW updatesView;
 
--- SY -->
--- This fork's databases sit one file short of the shape this migration expects: they report version 43, so
--- 42.sqm (favorite_at) is skipped and the column copied below does not exist. Users of upstream's previous
--- release are in the same position. Every database that reaches this file runs it exactly once, so the
--- column is added and filled here instead.
-ALTER TABLE mangas ADD COLUMN favorite_at INTEGER;
-UPDATE mangas
-SET favorite_at = coalesce(nullif(date_added, 0), 0)
-WHERE favorite = 1;
--- SY <--
-
 -- ---------------------------------------------------------------------------------------------------------
 -- damaged indexes
 -- ---------------------------------------------------------------------------------------------------------

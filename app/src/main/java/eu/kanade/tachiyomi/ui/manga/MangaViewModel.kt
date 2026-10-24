@@ -533,8 +533,14 @@ class MangaViewModel(
     }
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
-            mangaIncognitoMode.value = getIncognitoState.await(mangaId = mangaId)
+        viewModelScope.launch {
+            // SY -->
+            // Read off the main thread and assign on it: a write to this state from a background thread does
+            // not invalidate composition, which left the flag set but the toolbar icon drawn unset.
+            mangaIncognitoMode.value = withContext(Dispatchers.IO) {
+                getIncognitoState.await(mangaId = mangaId)
+            }
+            // SY <--
         }
         viewModelScope.launch(Dispatchers.Default) {
             downloadManager.statusFlow()

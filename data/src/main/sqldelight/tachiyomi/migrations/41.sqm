@@ -1,3 +1,32 @@
+-- SY -->
+-- Upstream's 40.sqm and 41.sqm both live in this slot for this fork. The fork's own 39.sqm (reread_count)
+-- pushed upstream's 39 to 40, so upstream's 40 has been 41 here since then; the merge that brought
+-- upstream's 41 (the sync trigger fixes) in replaced that file instead of adding to it. Without it no
+-- database older than the fork's last release can reach the current schema: 43.sqm copies the memo columns
+-- and reads extension_store, and only this file creates them. Upstream's 40 comes first, upstream's 41 after.
+-- SY <--
+
+import kotlin.Boolean;
+
+CREATE TABLE extension_store(
+    index_url TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    badge_label TEXT NOT NULL,
+    signing_key TEXT NOT NULL,
+    contact_website TEXT NOT NULL,
+    contact_discord TEXT,
+    is_legacy INTEGER AS Boolean NOT NULL
+);
+
+INSERT INTO extension_store(index_url, name, badge_label, signing_key, contact_website, contact_discord, is_legacy)
+SELECT base_url || '/repo.json', name, coalesce(short_name, name), signing_key_fingerprint, website, NULL, 1 FROM extension_repos;
+
+DROP TABLE extension_repos;
+
+ALTER TABLE mangas ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
+ALTER TABLE chapters ADD COLUMN memo BLOB NOT NULL DEFAULT '{}';
+ALTER TABLE extension_store ADD COLUMN extension_list_url TEXT;
+
 -- Chapters are versioned and merged separately in sync protocol v2; bumping the manga version per
 -- chapter read let the device that read more chapters win all manga-level merges.
 DROP TRIGGER IF EXISTS update_chapter_and_manga_version;

@@ -231,6 +231,24 @@ object HomeScreen : Screen() {
             Modifier
         }
         // SY <--
+        // SY -->
+        // A null label rather than an empty one lets the item centre its icon when no label is
+        // shown, the way the classic NavigationBarItem did before the NavigationSuiteScaffold
+        // migration.
+        val tabLabel: (@Composable () -> Unit)? =
+            if (alwaysShowLabel || selected) {
+                @Composable {
+                    Text(
+                        text = tab.options.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else {
+                null
+            }
+        // SY <--
         NavigationSuiteItem(
             // SY -->
             modifier = flickModifier,
@@ -250,20 +268,9 @@ object HomeScreen : Screen() {
                     contentDescription = tab.options.title,
                 )
             },
-            label = {
-                // SY -->
-                if (alwaysShowLabel || selected) {
-                    // SY <--
-                    Text(
-                        text = tab.options.title,
-                        style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    // SY -->
-                }
-                // SY <--
-            },
+            // SY -->
+            label = tabLabel,
+            // SY <--
             badge = tabBadge(tab),
         )
     }

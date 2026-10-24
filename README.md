@@ -10,6 +10,18 @@ Mihon is a free and open source manga reader for Android 8.0 and above. This ver
 
 ## Features
 
+Features of this fork include:
+* Discord Rich Presence, show what you are reading on Discord with account connections, notification pause/resume and incognito support
+* Volume progress and reread tracking for AniList, Shikimori, Kitsu, MyAnimeList, MangaUpdates, MangaBaka and Hikka, with volume and reread dialogs in the tracker sheet
+* Reread handling, starting a reread can automatically update your trackers, plus a setting to always show the reread count
+* Incognito mode per manga and for E-Hentai based sources, with indicators
+* Grouped updates screen, chapters released the same day grouped together, with expand/collapse and swipe actions
+* Incomplete download tracking, indicators for partially downloaded chapters in the chapter list and updates
+* Expandable history, view the previous chapters of an entry and resume where you left off
+* App update progress and tap-to-install in the About screen
+* Bottom bar improvements, flick the bar to switch tabs and icons center when their label is hidden
+* Smaller additions, scroll-to-top/bottom buttons in WebView, long press the chapter header to reset filters, and a separate notification channel for sync
+
 Features of Mihon(original) include:
 * Online reading from a variety of sources
 * Local reading of downloaded content

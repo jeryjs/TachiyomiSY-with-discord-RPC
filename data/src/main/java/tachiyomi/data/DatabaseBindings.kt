@@ -93,11 +93,6 @@ object DatabaseBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun providesExtensionStoreRepair(driver: SqlDriver): ExtensionStoreRepair =
-        ExtensionStoreRepair(driver)
-
-    @Provides
-    @SingleIn(AppScope::class)
     fun providesDatabase(driver: SqlDriver): Database {
         return Database(
             driver = driver,

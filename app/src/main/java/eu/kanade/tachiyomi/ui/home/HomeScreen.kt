@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
@@ -21,10 +22,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -195,7 +199,42 @@ object HomeScreen : Screen() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val selected = tabNavigator.current::class == tab::class
+
+        // SY -->
+        // Flick gesture for the bottom bar: dragging horizontally moves to the previous/next visible
+        // tab. The NavigationSuiteScaffold has no modifier hook for the bar itself, so it is attached
+        // to each item, which tile the full width of the bar.
+        var flickOffsetX by remember { mutableFloatStateOf(0f) }
+        val filteredTabs = TABS.fastFilter { it.isEnabled() }
+        val flickModifier = if (navigationSuiteType == NavigationSuiteType.NavigationBar) {
+            Modifier.pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        flickOffsetX += dragAmount.x
+                    },
+                    onDragEnd = {
+                        val currentIndex = filteredTabs.indexOf(tabNavigator.current)
+                        val newIndex = when {
+                            (flickOffsetX < 0F) -> currentIndex - 1
+                            (flickOffsetX > 0F) -> currentIndex + 1
+                            else -> currentIndex
+                        }
+
+                        flickOffsetX = 0F
+
+                        tabNavigator.current = filteredTabs.getOrNull(newIndex) ?: tabNavigator.current
+                    },
+                )
+            }
+        } else {
+            Modifier
+        }
+        // SY <--
         NavigationSuiteItem(
+            // SY -->
+            modifier = flickModifier,
+            // SY <--
             navigationSuiteType = navigationSuiteType,
             selected = selected,
             onClick = {

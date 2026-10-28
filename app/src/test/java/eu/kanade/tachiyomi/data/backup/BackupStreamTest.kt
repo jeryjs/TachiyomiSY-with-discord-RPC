@@ -7,7 +7,8 @@ import eu.kanade.tachiyomi.data.backup.models.BackupExtensionStore
 import eu.kanade.tachiyomi.data.backup.models.BackupFlatMetadata
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
-import eu.kanade.tachiyomi.data.backup.models.BackupMergedMangaReference
+import eu.kanade.tachiyomi.data.backup.models.BackupMergeSettings
+import eu.kanade.tachiyomi.data.backup.models.BackupMergedEntry
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
 import eu.kanade.tachiyomi.data.backup.models.BackupSource
@@ -20,7 +21,9 @@ import eu.kanade.tachiyomi.data.backup.models.metadata.BackupSearchMetadata
 import eu.kanade.tachiyomi.data.backup.models.metadata.BackupSearchTag
 import eu.kanade.tachiyomi.data.backup.models.metadata.BackupSearchTitle
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.serialization.protobuf.ProtoNumber
 import okio.Buffer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -69,6 +72,21 @@ class BackupStreamTest {
     }
 
     @Test
+    fun `reader decodes only the fields an entry class declares`() {
+        val backup = backup()
+        val reader = BackupReader(Buffer().write(encode(backup)), parser)
+
+        val entries = buildList {
+            while (reader.nextEntry()) add(reader.readEntry(PartialManga.serializer()))
+        }
+
+        entries.map { Triple(it.source, it.url, it.tracking.map(::encode)) } shouldBe backup.backupManga.map {
+            Triple(it.source, it.url, it.tracking.map(::encode))
+        }
+        encode(reader.readMetadata()) shouldBe encode(backup.copy(backupManga = emptyList()))
+    }
+
+    @Test
     fun `reader takes fields in any order`() {
         val backup = backup()
         val (first, second, third) = backup.backupManga
@@ -102,9 +120,10 @@ class BackupStreamTest {
                         version = index + 2L
                         customTitle = "Custom $index"
                         customStatus = index
-                        mergedMangaReferences = listOf(
-                            BackupMergedMangaReference(isInfoManga = true, mergeUrl = "/merge", mangaUrl = url, mangaSourceId = source),
+                        mergedEntries = listOf(
+                            BackupMergedEntry(isInfoManga = true, mangaUrl = url, mangaSourceId = source),
                         )
+                        mergeSettings = BackupMergeSettings(chapterSortMode = 2, infoMangaUrl = url, infoMangaSourceId = source)
                         flatMetadata = BackupFlatMetadata(
                             searchMetadata = BackupSearchMetadata(uploader = "uploader", extra = "{}", extraVersion = 3),
                             searchTags = listOf(BackupSearchTag(namespace = "artist", name = "name", type = 1)),
@@ -121,7 +140,8 @@ class BackupStreamTest {
         val (entries, metadata) = read(encode(backup))
         entries.map(::encode) shouldBe backup.backupManga.map(::encode)
         entries.map { it.flatMetadata } shouldBe backup.backupManga.map { it.flatMetadata }
-        entries.map { it.mergedMangaReferences } shouldBe backup.backupManga.map { it.mergedMangaReferences }
+        entries.map { it.mergedEntries } shouldBe backup.backupManga.map { it.mergedEntries }
+        entries.map { it.mergeSettings } shouldBe backup.backupManga.map { it.mergeSettings }
         entries.map { it.customTitle } shouldBe backup.backupManga.map { it.customTitle }
         metadata.backupSavedSearches shouldBe backup.backupSavedSearches
     }
@@ -190,6 +210,15 @@ class BackupStreamTest {
     private fun encode(backup: Backup) = parser.encodeToByteArray(Backup.serializer(), backup)
 
     private fun encode(manga: BackupManga) = parser.encodeToByteArray(BackupManga.serializer(), manga)
+
+    private fun encode(tracking: BackupTracking) = parser.encodeToByteArray(BackupTracking.serializer(), tracking)
+
+    @Serializable
+    private class PartialManga(
+        @ProtoNumber(1) val source: Long,
+        @ProtoNumber(2) val url: String,
+        @ProtoNumber(18) val tracking: List<BackupTracking> = emptyList(),
+    )
 
     private fun backup() = Backup(
         backupManga = listOf(

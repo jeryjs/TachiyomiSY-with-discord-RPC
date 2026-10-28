@@ -703,7 +703,9 @@ CREATE TABLE merged_new(
 
 INSERT INTO merged_new(_id, info_manga, get_chapter_updates, chapter_sort_mode, chapter_priority, download_chapters, merge_id, merge_url, manga_id, manga_url, manga_source)
 SELECT _id, info_manga, get_chapter_updates, chapter_sort_mode, chapter_priority, download_chapters, merge_id, merge_url, manga_id, manga_url, manga_source
-FROM merged;
+FROM merged
+WHERE merge_id IN (SELECT id FROM manga)
+AND (manga_id IS NULL OR manga_id IN (SELECT id FROM manga));
 
 DROP TABLE merged;
 ALTER TABLE merged_new RENAME TO merged;
@@ -722,7 +724,8 @@ CREATE TABLE search_metadata_new (
 
 INSERT INTO search_metadata_new(manga_id, uploader, extra, indexed_extra, extra_version)
 SELECT manga_id, uploader, extra, indexed_extra, extra_version
-FROM search_metadata;
+FROM search_metadata
+WHERE manga_id IN (SELECT id FROM manga);
 
 DROP TABLE search_metadata;
 ALTER TABLE search_metadata_new RENAME TO search_metadata;
@@ -742,7 +745,8 @@ CREATE TABLE search_tags_new (
 
 INSERT INTO search_tags_new(_id, manga_id, namespace, name, type)
 SELECT _id, manga_id, namespace, name, type
-FROM search_tags;
+FROM search_tags
+WHERE manga_id IN (SELECT id FROM manga);
 
 DROP TABLE search_tags;
 ALTER TABLE search_tags_new RENAME TO search_tags;
@@ -761,7 +765,8 @@ CREATE TABLE search_titles_new (
 
 INSERT INTO search_titles_new(_id, manga_id, title, type)
 SELECT _id, manga_id, title, type
-FROM search_titles;
+FROM search_titles
+WHERE manga_id IN (SELECT id FROM manga);
 
 DROP TABLE search_titles;
 ALTER TABLE search_titles_new RENAME TO search_titles;

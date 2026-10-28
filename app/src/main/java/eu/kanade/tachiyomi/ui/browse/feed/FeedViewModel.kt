@@ -47,6 +47,7 @@ import tachiyomi.domain.source.interactor.GetFeedSavedSearchGlobal
 import tachiyomi.domain.source.interactor.GetSavedSearchBySourceId
 import tachiyomi.domain.source.interactor.GetSavedSearchGlobalFeed
 import tachiyomi.domain.source.interactor.InsertFeedSavedSearch
+import tachiyomi.domain.source.interactor.ReorderFeed
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.service.SourceManager
@@ -76,6 +77,7 @@ open class FeedViewModel(
     private val getSavedSearchBySourceId: GetSavedSearchBySourceId,
     private val insertFeedSavedSearch: InsertFeedSavedSearch,
     private val deleteFeedSavedSearchById: DeleteFeedSavedSearchById,
+    private val reorderFeed: ReorderFeed,
     @AppCoroutineScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -91,7 +93,6 @@ open class FeedViewModel(
     val events = _events.receiveAsFlow()
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
-    var pushed: Boolean = false
 
     init {
         addCloseable(coroutineDispatcher)
@@ -118,7 +119,6 @@ open class FeedViewModel(
     }
 
     fun init() {
-        pushed = false
         viewModelScope.launch(Dispatchers.IO) {
             val newItems = mutableState.value.items?.map { it.copy(results = null) } ?: return@launch
             mutableState.update { state ->
@@ -201,6 +201,7 @@ open class FeedViewModel(
                     source = source.id,
                     savedSearch = savedSearch?.id,
                     global = true,
+                    feedOrder = 0,
                 ),
             )
         }
@@ -209,6 +210,12 @@ open class FeedViewModel(
     fun deleteFeed(feed: FeedSavedSearch) {
         appScope.launch {
             deleteFeedSavedSearchById.await(feed.id)
+        }
+    }
+
+    fun changeOrder(feed: FeedSavedSearch, newIndex: Int) {
+        appScope.launch {
+            reorderFeed.changeOrder(feed, newIndex)
         }
     }
 
@@ -314,6 +321,10 @@ open class FeedViewModel(
         mutableState.update { it.copy(dialog = null) }
     }
 
+    fun setShowingFeedOrderScreen(showing: Boolean) {
+        mutableState.update { it.copy(showingFeedOrderScreen = showing) }
+    }
+
     sealed class Dialog {
         data class AddFeed(val options: List<Source>) : Dialog()
         data class AddFeedSearch(val source: Source, val options: List<SavedSearch?>) : Dialog()
@@ -328,6 +339,7 @@ open class FeedViewModel(
     data class State(
         val dialog: Dialog? = null,
         val items: List<FeedItemUI>? = null,
+        val showingFeedOrderScreen: Boolean = false,
     ) {
         val isLoading
             get() = items == null

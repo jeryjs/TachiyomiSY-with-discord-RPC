@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.Database
 import tachiyomi.data.subscribeToList
 import tachiyomi.domain.source.model.FeedSavedSearch
+import tachiyomi.domain.source.model.FeedWithSavedSearchName
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.domain.source.repository.FeedSavedSearchRepository
 
@@ -64,6 +65,14 @@ class FeedSavedSearchRepositoryImpl(
             .awaitAsOne()
     }
 
+    override suspend fun getAllFeedWithSavedSearchName(): List<FeedWithSavedSearchName> {
+        return database.feed_saved_searchQueries
+            .selectAllFeedWithSavedSearchName { source, global, name ->
+                FeedWithSavedSearchName(source, global, name)
+            }
+            .awaitAsList()
+    }
+
     override suspend fun delete(feedSavedSearchId: Long) {
         database.feed_saved_searchQueries
             .deleteById(id = feedSavedSearchId)
@@ -87,6 +96,20 @@ class FeedSavedSearchRepositoryImpl(
                     savedSearch = it.savedSearch,
                     global = it.global,
                 )
+            }
+        }
+    }
+
+    override suspend fun updateAllOrders(orderedIds: List<Long>, global: Boolean, sourceId: Long?) {
+        database.transaction {
+            val current = if (global) {
+                database.feed_saved_searchQueries.getGlobalFeedIds().awaitAsList()
+            } else {
+                database.feed_saved_searchQueries.getSourceFeedIds(sourceId = requireNotNull(sourceId)).awaitAsList()
+            }
+            val ids = orderedIds.filter { it in current } + current.filterNot { it in orderedIds }
+            ids.forEachIndexed { index, feedId ->
+                database.feed_saved_searchQueries.updateOrder(order = index.toLong(), id = feedId)
             }
         }
     }

@@ -94,6 +94,25 @@ class UpdatesQuery(
             null,
             // language=sqldelight
             """
+                WITH merged_base AS MATERIALIZED (
+                    SELECT
+                        chapter.id,
+                        chapter.manga_id,
+                        chapter.remote_chapter_number,
+                        chapter.remote_date_upload,
+                        chapter.state_date_fetch,
+                        chapter.user_read,
+                        chapter.user_bookmark,
+                        chapter.user_last_page_read,
+                        ME.merge_id,
+                        ME.chapter_priority,
+                        MG.chapter_sort_mode AS sort_mode
+                    FROM chapter
+                    JOIN merged_entry AS ME
+                        ON ME.manga_id = chapter.manga_id
+                    JOIN merge AS MG
+                        ON MG.manga_id = ME.merge_id
+                )
                 SELECT *
                 FROM (
                     -- Normal source
@@ -147,17 +166,47 @@ class UpdatesQuery(
                         excluded_scanlator.scanlator AS excludedScanlator,
                         manga.user_title AS userTitle,
                         manga.user_thumbnail_url AS userThumbnailUrl
-                    FROM manga
-                    -- Every entry the merge holds, not just one of them
-                    JOIN merged AS ME
-                        ON ME.merge_id = manga.id
+                    FROM merged_base AS base
                     JOIN chapter
-                        ON ME.manga_id = chapter.manga_id
+                        ON chapter.id = base.id
+                    JOIN manga
+                        ON manga.id = base.merge_id
                     LEFT JOIN excluded_scanlator
-                        ON ME.merge_id = excluded_scanlator.manga_id
+                        ON base.merge_id = excluded_scanlator.manga_id
                         AND chapter.remote_scanlator = excluded_scanlator.scanlator
                     WHERE manga.source_id = $MERGED_SOURCE_ID
                     AND chapter.state_date_fetch > manga.user_favorite_at
+                    AND (
+                        base.sort_mode IN (0, 1)
+                        OR (base.sort_mode = 2 AND (
+                            base.remote_chapter_number < 0
+                            OR NOT EXISTS (
+                                SELECT 1 FROM merged_base AS base2
+                                WHERE base2.merge_id = base.merge_id
+                                AND base2.remote_chapter_number = base.remote_chapter_number
+                                AND base2.manga_id != base.manga_id
+                                AND (
+                                    base2.chapter_priority < base.chapter_priority
+                                    OR (base2.chapter_priority = base.chapter_priority AND base2.manga_id < base.manga_id)
+                                )
+                            )
+                        ))
+                        OR (base.sort_mode = 3 AND base.manga_id = (
+                            SELECT base2.manga_id FROM merged_base AS base2
+                            WHERE base2.merge_id = base.merge_id
+                            GROUP BY base2.manga_id
+                            ORDER BY count(*) DESC, base2.manga_id
+                            LIMIT 1
+                        ))
+                        OR (base.sort_mode = 4 AND base.manga_id = (
+                            SELECT base2.manga_id FROM merged_base AS base2
+                            WHERE base2.merge_id = base.merge_id
+                            AND base2.remote_chapter_number >= 0
+                            GROUP BY base2.manga_id
+                            ORDER BY max(base2.remote_chapter_number) DESC, base2.manga_id
+                            LIMIT 1
+                        ))
+                    )
                 ) AS combined
                 WHERE
                     favorite = 1
@@ -230,5 +279,5 @@ class UpdatesQuery(
         )
     }
 
-    override fun toString(): String = "LibraryQuery.sq:get"
+    override fun toString(): String = "UpdatesQuery"
 }

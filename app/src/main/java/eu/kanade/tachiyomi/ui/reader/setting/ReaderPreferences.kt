@@ -257,6 +257,12 @@ class ReaderPreferences(
 
     val smoothAutoScroll: Preference<Boolean> = preferenceStore.getBoolean("smooth_auto_scroll", true)
 
+    val autoscrollGesturesEnabled: Preference<Boolean> =
+        preferenceStore.getBoolean("eh_util_autoscroll_gestures", false)
+
+    val autoscrollGestureToastsEnabled: Preference<Boolean> =
+        preferenceStore.getBoolean("eh_util_autoscroll_gesture_toasts", true)
+
     val preserveReadingPosition: Preference<Boolean> = preferenceStore.getBoolean("eh_preserve_reading_position", false)
 
     val useAutoWebtoon: Preference<Boolean> = preferenceStore.getBoolean("eh_use_auto_webtoon", true)

@@ -9,7 +9,11 @@ interface SavedSearchRepository {
 
     suspend fun getAll(): List<SavedSearch>
 
+    suspend fun findId(source: Long, name: String): Long?
+
     suspend fun insert(search: SavedSearch)
+
+    suspend fun insertReturningId(search: SavedSearch): Long
 
     suspend fun insertAll(searches: List<SavedSearch>)
 

@@ -18,6 +18,7 @@ import eu.kanade.core.preference.asState
 import eu.kanade.core.util.fastFilterNot
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.chapter.interactor.SetReadStatus
+import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.sync.SyncPreferences
@@ -47,6 +48,7 @@ import exh.source.nHentaiSourceIds
 import exh.util.cancellable
 import exh.util.isLewd
 import exh.util.nullIfBlank
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,6 +71,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import mihon.core.common.utils.mutate
 import mihon.core.metro.AppCoroutineScope
 import mihon.domain.library.model.search.QueryNode
@@ -80,6 +83,7 @@ import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.SubscriberGate
 import tachiyomi.core.common.util.lang.compareToWithCollator
 import tachiyomi.core.common.util.lang.pausedWhileUnsubscribed
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
@@ -153,6 +157,7 @@ class LibraryViewModel(
     private val setCustomMangaInfo: SetCustomMangaInfo,
     // SY <--
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
+    private val smartSearchMerge: SmartSearchMerge,
 
     syncPreferences: SyncPreferences,
     val favoritesSync: FavoritesSyncHelper,
@@ -895,7 +900,44 @@ class LibraryViewModel(
             clearSelection()
         }
     }
-// SY <--
+
+    sealed interface LibraryMergeResult {
+        data class Success(val mergedMangaId: Long, val removableEntries: List<Manga>) : LibraryMergeResult
+        data object Nothing : LibraryMergeResult
+        data class Error(val message: String) : LibraryMergeResult
+    }
+
+    /**
+     * Merges [selectedMangas] into a single merged entry. The first merged entry is the target; if
+     * there is none, the first entry creates a new one.
+     */
+    suspend fun mergeLibraryEntries(selectedMangas: List<Manga>): LibraryMergeResult {
+        val mergedManga = selectedMangas.firstOrNull { it.source == MERGED_SOURCE_ID }?.let { listOf(it) }
+            ?: emptyList()
+        val toMergeMangas = mergedManga + selectedMangas.filterNot { it.source == MERGED_SOURCE_ID }
+        if (toMergeMangas.size <= 1) return LibraryMergeResult.Nothing
+
+        val removableEntries = toMergeMangas.filterNot { it.source == MERGED_SOURCE_ID }
+        return try {
+            var mergingMangaId = toMergeMangas.first().id
+            for (manga in toMergeMangas.drop(1)) {
+                mergingMangaId = smartSearchMerge.smartSearchMerge(manga, mergingMangaId).id
+            }
+            val categoryIds = toMergeMangas
+                .flatMap { getCategories.await(it.id) }
+                .map { it.id }
+                .toSet()
+                .toList()
+            setMangaCategories.await(mergingMangaId, categoryIds)
+            LibraryMergeResult.Success(mergingMangaId, removableEntries)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e) { "Failed to merge" }
+            LibraryMergeResult.Error(e.message.orEmpty())
+        }
+    }
+    // SY <--
 
     private fun List<Chapter>.filterNotQueuedOrDownloaded(manga: Manga): List<Chapter> {
         val queuedDownloads = downloadManager.getQueuedDownloadsByChapterId()
@@ -1046,7 +1088,7 @@ class LibraryViewModel(
             }
         }
     }
-// SY <--
+    // SY <--
 
     private data class LastSelection(val categoryId: Long, val mangaId: Long)
 
@@ -1189,11 +1231,11 @@ class LibraryViewModel(
         data object SyncFavoritesWarning : Dialog
         data object SyncFavoritesConfirm : Dialog
         data class RecommendationSearchSheet(val manga: List<Manga>) : Dialog
+        data class MergeFinished(val entries: List<Manga>, val mergedMangaId: Long) : Dialog
         // SY <--
     }
 
-// SY -->
-
+    // SY -->
     private suspend fun List<LibraryItem>.getGroupedMangaItems(
         groupType: Int,
     ): Map<Category, List</* LibraryItem */ Long>> {
@@ -1311,7 +1353,11 @@ class LibraryViewModel(
             }
         }
     }
-// SY <--
+
+    fun showMergeFinishedDialog(entries: List<Manga>, mergedMangaId: Long) {
+        dialog.update { Dialog.MergeFinished(entries, mergedMangaId) }
+    }
+    // SY <--
 
     @Immutable
     private data class ItemPreferences(

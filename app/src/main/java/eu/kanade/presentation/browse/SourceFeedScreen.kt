@@ -13,12 +13,15 @@ import eu.kanade.presentation.browse.components.GlobalSearchCardRow
 import eu.kanade.presentation.browse.components.GlobalSearchErrorResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.components.GlobalSearchResultItem
+import eu.kanade.presentation.components.AppBar
+import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.components.SearchToolbar
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.sy.SYMR
 import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.topSmallPaddingValues
@@ -99,6 +102,7 @@ fun SourceFeedScreen(
     searchQuery: String?,
     onSearchQueryChange: (String?) -> Unit,
     getMangaState: @Composable (Manga) -> State<Manga>,
+    onSortFeedClick: (() -> Unit)? = null,
 ) {
     Scaffold(
         topBar = { scrollBehavior ->
@@ -109,6 +113,7 @@ fun SourceFeedScreen(
                 scrollBehavior = scrollBehavior,
                 onClickBack = onClickBack,
                 onClickSearch = onClickSearch,
+                onSortFeedClick = onSortFeedClick,
             )
         },
         floatingActionButton = {
@@ -218,6 +223,7 @@ fun SourceFeedToolbar(
     scrollBehavior: TopAppBarScrollBehavior,
     onClickBack: () -> Unit,
     onClickSearch: (String) -> Unit,
+    onSortFeedClick: (() -> Unit)? = null,
 ) {
     SearchToolbar(
         navigateUp = onClickBack,
@@ -228,5 +234,17 @@ fun SourceFeedToolbar(
         onClickCloseSearch = { onSearchQueryChange(null) },
         scrollBehavior = scrollBehavior,
         placeholderText = stringResource(MR.strings.action_search_hint),
+        actions = {
+            onSortFeedClick?.let { func ->
+                AppBarActions(
+                    actions = listOf(
+                        AppBar.OverflowAction(
+                            title = stringResource(SYMR.strings.action_sort_feed),
+                            onClick = { func() },
+                        ),
+                    ),
+                )
+            }
+        },
     )
 }

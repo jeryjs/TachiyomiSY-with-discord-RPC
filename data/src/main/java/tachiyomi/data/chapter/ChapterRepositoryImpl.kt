@@ -47,6 +47,7 @@ class ChapterRepositoryImpl(
                         remoteMemo = chapter.memo,
                         stateLastModifiedAt = chapter.lastModifiedAt,
                         stateVersion = chapter.version,
+                        stateIsSyncing = 0L,
                     )
                         // A chapter already stored for the entry is skipped
                         .awaitAsOneOrNull()
@@ -112,7 +113,8 @@ class ChapterRepositoryImpl(
                     // SY -->
                     stateLastModifiedAt = chapter.lastModifiedAt,
                     stateVersion = chapter.version,
-                    // SY <--
+                    stateIsSyncing = 0L,
+// SY <--
                 )
                     .awaitAsOne()
                 chapter.copy(id = chapterId)
@@ -219,23 +221,30 @@ class ChapterRepositoryImpl(
             .awaitAsList()
     }
 
-    override suspend fun getMergedChapterByMangaId(mangaId: Long, applyScanlatorFilter: Boolean): List<Chapter> {
+    override suspend fun getDedupedMergedChapters(
+        mangaId: Long,
+        sortMode: Int,
+        applyScanlatorFilter: Boolean,
+    ): List<Chapter> {
         return database.chapterQueries
-            .getMergedChaptersByMangaId(
+            .getDedupedMergedChapters(
                 mergeId = mangaId,
+                sortMode = sortMode.toLong(),
                 applyScanlatorFilter = applyScanlatorFilter.toLong(),
                 mapper = ::mapChapter,
             )
             .awaitAsList()
     }
 
-    override suspend fun getMergedChapterByMangaIdAsFlow(
+    override suspend fun getDedupedMergedChaptersAsFlow(
         mangaId: Long,
+        sortMode: Int,
         applyScanlatorFilter: Boolean,
     ): Flow<List<Chapter>> {
         return database.chapterQueries
-            .getMergedChaptersByMangaId(
+            .getDedupedMergedChapters(
                 mergeId = mangaId,
+                sortMode = sortMode.toLong(),
                 applyScanlatorFilter = applyScanlatorFilter.toLong(),
                 mapper = ::mapChapter,
             )

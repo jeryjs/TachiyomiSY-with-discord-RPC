@@ -4,6 +4,7 @@
     <!-- Actions -->
     <string name="action_clean_titles">Clean titles</string>
     <string name="action_edit_info">Edit info</string>
+    <string name="action_stop">Stop</string>
 
     <!-- Entry Type -->
     <string name="entry_type_manga">Manga</string>
@@ -290,6 +291,14 @@
     <string name="eh_autoscroll">Autoscroll</string>
     <string name="eh_retry_all">Retry all</string>
     <string name="eh_boost_page">Boost page</string>
+    <string name="eh_autoscroll_gestures">Autoscroll gestures</string>
+    <string name="eh_autoscroll_gestures_help">Autoscroll gestures help</string>
+    <string name="eh_autoscroll_gestures_help_message">Autoscroll on:\n- Tap to pause or resume\n- Swipe up or down to adjust speed\n- Drag with two fingers to scroll manually\n- Swipe sideways to stop\n\nAutoscroll off:\n- Swipe sideways to start\n\nClose the reader menu to use gestures.</string>
+    <string name="eh_autoscroll_gesture_toasts">Gesture toasts</string>
+    <string name="eh_autoscroll_gesture_toasts_help">Gesture toasts help</string>
+    <string name="eh_autoscroll_gesture_toasts_help_message">When this option is enabled, the reader shows toast messages after autoscroll gestures perform actions such as start, pause, resume, stop, speed changes, or moving through the chapter.
+
+When this option is disabled, the gestures still work the same way, but those informational toast messages are not shown.</string>
     <string name="eh_autoscroll_help">Autoscroll help</string>
     <string name="eh_autoscroll_help_message">Automatically scroll to the next page in the specified interval. Interval is specified in seconds.</string>
     <string name="eh_autoscroll_freq_invalid">Invalid frequency</string>
@@ -359,9 +368,11 @@
     <string name="merge_unknown_entry">Unknown entry ID: %1$d</string>
     <string name="merged_already">This entry is already merged with the current entry!</string>
     <string name="merge_duplicate">This merged entry is a duplicate!</string>
+    <string name="remove_merged_entries">Remove entries from the library</string>
 
     <!-- Entry Info Edit -->
     <string name="reset_tags">Reset tags</string>
+    <string name="collate_tags">Collate tags</string>
     <string name="add_tags">Add Tags</string>
     <string name="reset_info">Reset info</string>
     <string name="multi_tags_comma_separated">Enter tag(s), seperated by commas.</string>
@@ -402,6 +413,7 @@
     <string name="too_many_in_feed">Too many sources in your feed, cannot add more than 10</string>
     <string name="feed_tab_empty">You don\'t have any sources in your feed, navigate to the top right to add one</string>
     <string name="feed_add">Add %1$s to feed?</string>
+    <string name="action_sort_feed">Sort feed</string>
 
     <!-- Sort by tags -->
     <string name="add_tag">Add tag</string>
@@ -623,7 +635,7 @@
     <string name="merge_dedupe_priority">Priority</string>
     <string name="merge_dedupe_most">Most</string>
     <string name="merge_dedupe_highest">Highest</string>
-    <string name="merge_dedupe_keep_all_summary">Show every chapter from every entry.</string>
+    <string name="merge_dedupe_keep_all_summary">Show every chapter from every entry, ordered by entry priority.</string>
     <string name="merge_dedupe_priority_summary">Show each chapter once, from the highest entry below that has it.</string>
     <string name="merge_dedupe_most_summary">Show only the chapters of the entry with the most chapters.</string>
     <string name="merge_dedupe_highest_summary">Show only the chapters of the entry with the highest chapter number.</string>

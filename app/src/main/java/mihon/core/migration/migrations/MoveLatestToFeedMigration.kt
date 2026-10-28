@@ -57,6 +57,7 @@ class MoveLatestToFeedMigration(
                 source = it.toLong(),
                 savedSearch = null,
                 global = true,
+                feedOrder = 0,
             )
         }
         if (!feedSavedSearch.isNullOrEmpty()) {

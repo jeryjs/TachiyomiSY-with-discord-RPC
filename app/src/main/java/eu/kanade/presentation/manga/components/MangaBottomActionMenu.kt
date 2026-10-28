@@ -244,6 +244,7 @@ fun LibraryBottomActionMenu(
     onClickCollectRecommendations: (() -> Unit)?,
     onClickAddToMangaDex: (() -> Unit)?,
     onClickResetInfo: (() -> Unit)?,
+    onClickMerge: (() -> Unit)?,
     // SY <--
     modifier: Modifier = Modifier,
 ) {
@@ -259,7 +260,7 @@ fun LibraryBottomActionMenu(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             val haptic = LocalHapticFeedback.current
-            val confirm = remember { mutableStateListOf(false, false, false, false, false, false) }
+            val confirm = remember { mutableStateListOf(false, false, false, false, false, false, false) }
             var resetJob by remember { mutableStateOf<Job?>(null) }
             val onLongClickItem: (Int) -> Unit = { toConfirmIndex ->
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -275,7 +276,8 @@ fun LibraryBottomActionMenu(
                 onClickAddToMangaDex != null ||
                 onClickResetInfo != null ||
                 onClickCollectRecommendations != null ||
-                onMigrateClicked != null
+                onMigrateClicked != null ||
+                onClickMerge != null
             val configuration = LocalConfiguration.current
             val moveMarkPrev = remember { !configuration.isTabletUi() }
             var overFlowOpen by remember { mutableStateOf(false) }
@@ -382,6 +384,12 @@ fun LibraryBottomActionMenu(
                             DropdownMenuItem(
                                 text = { Text(text = stringResource(SYMR.strings.reset_info)) },
                                 onClick = onClickResetInfo,
+                            )
+                        }
+                        if (onClickMerge != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(SYMR.strings.merge)) },
+                                onClick = onClickMerge,
                             )
                         }
                     }

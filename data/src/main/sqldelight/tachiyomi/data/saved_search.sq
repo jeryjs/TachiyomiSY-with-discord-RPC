@@ -35,6 +35,13 @@ INSERT INTO saved_search(source, name, query, filters_json)
 VALUES (:source, :name, :query, :filtersJson)
 RETURNING _id;
 
+findId:
+SELECT _id
+FROM saved_search
+WHERE source = :source
+AND name = :name
+LIMIT 1;
+
 deleteById:
 DELETE FROM saved_search
 WHERE _id = :id;

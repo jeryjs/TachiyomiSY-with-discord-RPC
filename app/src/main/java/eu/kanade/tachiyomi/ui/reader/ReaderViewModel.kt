@@ -124,7 +124,6 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.GetMergedMangaById
-import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.GetTracks
@@ -172,7 +171,6 @@ class ReaderViewModel(
     private val uiPreferences: UiPreferences,
     private val getFlatMetadataById: GetFlatMetadataById,
     private val getMergedMangaById: GetMergedMangaById,
-    private val getMergedReferencesById: GetMergedReferencesById,
     private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
     private val setReadStatus: SetReadStatus,
     private val sourcePreferences: SourcePreferences,
@@ -460,11 +458,6 @@ class ReaderViewModel(
                 } else {
                     null
                 }
-                val mergedReferences = if (source is MergedSource) {
-                    getMergedReferencesById.await(manga.id)
-                } else {
-                    emptyList()
-                }
                 val mergedManga = if (source is MergedSource) {
                     getMergedMangaById.await(manga.id).associateBy { it.id }
                 } else {
@@ -504,7 +497,6 @@ class ReaderViewModel(
                     // SY -->
                     sourceManager = sourceManager,
                     readerPrefs = readerPreferences,
-                    mergedReferences = mergedReferences,
                     mergedManga = mergedManga,
                     sourcePreferences = sourcePreferences,
                     cbzCrypto = cbzCrypto,
@@ -1323,6 +1315,14 @@ class ReaderViewModel(
         mutableState.update { it.copy(dialog = Dialog.AutoScrollHelp) }
     }
 
+    fun openAutoScrollGesturesHelpDialog() {
+        mutableState.update { it.copy(dialog = Dialog.AutoScrollGesturesHelp) }
+    }
+
+    fun openAutoScrollGestureToastsHelpDialog() {
+        mutableState.update { it.copy(dialog = Dialog.AutoScrollGestureToastsHelp) }
+    }
+
     fun openBoostPageHelp() {
         mutableState.update { it.copy(dialog = Dialog.BoostPageHelp) }
     }
@@ -1722,6 +1722,8 @@ class ReaderViewModel(
 
         // SY -->
         data object AutoScrollHelp : Dialog
+        data object AutoScrollGesturesHelp : Dialog
+        data object AutoScrollGestureToastsHelp : Dialog
         data object RetryAllHelp : Dialog
         data object BoostPageHelp : Dialog
         // SY <--

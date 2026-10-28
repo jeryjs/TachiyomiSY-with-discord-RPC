@@ -51,6 +51,7 @@ import tachiyomi.domain.source.interactor.DeleteFeedSavedSearchById
 import tachiyomi.domain.source.interactor.GetFeedSavedSearchBySourceId
 import tachiyomi.domain.source.interactor.GetSavedSearchBySourceIdFeed
 import tachiyomi.domain.source.interactor.InsertFeedSavedSearch
+import tachiyomi.domain.source.interactor.ReorderFeed
 import tachiyomi.domain.source.model.EXHSavedSearch
 import tachiyomi.domain.source.model.FeedSavedSearch
 import tachiyomi.domain.source.model.SavedSearch
@@ -79,6 +80,7 @@ open class SourceFeedViewModel(
     private val insertFeedSavedSearch: InsertFeedSavedSearch,
     private val deleteFeedSavedSearchById: DeleteFeedSavedSearchById,
     private val getExhSavedSearch: GetExhSavedSearch,
+    private val reorderFeed: ReorderFeed,
     @AppCoroutineScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -150,6 +152,7 @@ open class SourceFeedViewModel(
                     source = sourceId,
                     savedSearch = savedSearchId,
                     global = false,
+                    feedOrder = 0,
                 ),
             )
         }
@@ -158,6 +161,12 @@ open class SourceFeedViewModel(
     fun deleteFeed(feed: FeedSavedSearch) {
         appScope.launch {
             deleteFeedSavedSearchById.await(feed.id)
+        }
+    }
+
+    fun changeOrder(feed: FeedSavedSearch, newIndex: Int) {
+        appScope.launch {
+            reorderFeed.changeOrder(feed, newIndex, false)
         }
     }
 
@@ -337,6 +346,10 @@ open class SourceFeedViewModel(
         mutableState.update { it.copy(dialog = null) }
     }
 
+    fun setShowingFeedOrderScreen(showing: Boolean) {
+        mutableState.update { it.copy(showingFeedOrderScreen = showing) }
+    }
+
     sealed class Dialog {
         data object Filter : Dialog()
         data class DeleteFeed(val feed: FeedSavedSearch) : Dialog()
@@ -352,6 +365,7 @@ open class SourceFeedViewModel(
         val savedSearches: List<EXHSavedSearch> = emptyList(),
         val dialog: Dialog? = null,
         val hideEntriesInLibraryState: Boolean? = null,
+        val showingFeedOrderScreen: Boolean = false,
     ) {
         val isLoading
             get() = items.isEmpty()

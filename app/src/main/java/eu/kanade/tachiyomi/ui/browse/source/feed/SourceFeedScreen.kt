@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.browse.source.feed
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -9,6 +10,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import eu.kanade.presentation.browse.SourceFeedOrderScreen
 import eu.kanade.presentation.browse.SourceFeedScreen
 import eu.kanade.presentation.browse.components.SourceFeedAddDialog
 import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
@@ -44,23 +46,41 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
             return
         }
 
-        SourceFeedScreen(
-            name = state.source?.name ?: return,
-            isLoading = state.isLoading,
-            items = state.items,
-            hasFilters = state.filters.isNotEmpty(),
-            onFabClick = viewModel::openFilterSheet,
-            onClickBrowse = { onBrowseClick(navigator, state.source ?: return@SourceFeedScreen) },
-            onClickLatest = { onLatestClick(navigator, state.source ?: return@SourceFeedScreen) },
-            onClickSavedSearch = { onSavedSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
-            onClickDelete = viewModel::openDeleteFeed,
-            onClickManga = { onMangaClick(navigator, it) },
-            onClickBack = { navigator.pop() },
-            onClickSearch = { onSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
-            searchQuery = state.searchQuery,
-            onSearchQueryChange = viewModel::search,
-            getMangaState = { viewModel.getManga(initialManga = it) },
-        )
+        BackHandler(enabled = state.showingFeedOrderScreen) {
+            viewModel.setShowingFeedOrderScreen(false)
+        }
+        Crossfade(
+            targetState = state.showingFeedOrderScreen,
+            label = "source_feed_order_crossfade",
+        ) { showOrder ->
+            if (showOrder) {
+                SourceFeedOrderScreen(
+                    state = state,
+                    onClickDelete = viewModel::openDeleteFeed,
+                    onChangeOrder = viewModel::changeOrder,
+                    navigateUp = { viewModel.setShowingFeedOrderScreen(false) },
+                )
+            } else {
+                SourceFeedScreen(
+                    name = state.source?.name ?: return@Crossfade,
+                    isLoading = state.isLoading,
+                    items = state.items,
+                    hasFilters = state.filters.isNotEmpty(),
+                    onFabClick = viewModel::openFilterSheet,
+                    onClickBrowse = { onBrowseClick(navigator, state.source ?: return@SourceFeedScreen) },
+                    onClickLatest = { onLatestClick(navigator, state.source ?: return@SourceFeedScreen) },
+                    onClickSavedSearch = { onSavedSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
+                    onClickDelete = viewModel::openDeleteFeed,
+                    onClickManga = { onMangaClick(navigator, it) },
+                    onClickBack = { navigator.pop() },
+                    onClickSearch = { onSearchClick(navigator, state.source ?: return@SourceFeedScreen, it) },
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = viewModel::search,
+                    getMangaState = { viewModel.getManga(initialManga = it) },
+                    onSortFeedClick = { viewModel.setShowingFeedOrderScreen(true) },
+                )
+            }
+        }
 
         val onDismissRequest = viewModel::dismissDialog
         when (val dialog = state.dialog) {

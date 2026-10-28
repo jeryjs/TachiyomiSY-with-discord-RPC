@@ -1,4 +1,4 @@
- -- SY-specific file
+-- SY-specific file
 
 import kotlin.Boolean;
 
@@ -7,6 +7,7 @@ CREATE TABLE feed_saved_search (
     source INTEGER NOT NULL,
     saved_search INTEGER,
     global INTEGER AS Boolean NOT NULL,
+    feed_order INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(saved_search) REFERENCES saved_search (_id)
     ON DELETE CASCADE
 );
@@ -14,9 +15,10 @@ CREATE TABLE feed_saved_search (
 CREATE INDEX feed_saved_search_saved_search_index ON feed_saved_search(saved_search);
 
 selectAllGlobal:
-SELECT _id, source, saved_search, global
+SELECT _id, source, saved_search, global, feed_order
 FROM feed_saved_search
-WHERE global = 1;
+WHERE global = 1
+ORDER BY feed_order;
 
 countGlobal:
 SELECT count(*)
@@ -24,19 +26,20 @@ FROM feed_saved_search
 WHERE global = 1;
 
 selectBySource:
-SELECT _id, source, saved_search, global
+SELECT _id, source, saved_search, global, feed_order
 FROM feed_saved_search
 WHERE source = :sourceId
-AND global = 0;
+AND global = 0
+ORDER BY feed_order;
 
 insertReturningId:
-INSERT INTO feed_saved_search(source, saved_search, global)
-VALUES (:source, :savedSearch, :global)
+INSERT INTO feed_saved_search(source, saved_search, global, feed_order)
+VALUES (:source, :savedSearch, :global, (SELECT COALESCE(MAX(feed_order), 0) + 1 FROM feed_saved_search))
 RETURNING _id;
 
 insert:
-INSERT INTO feed_saved_search(source, saved_search, global)
-VALUES (:source, :savedSearch, :global);
+INSERT INTO feed_saved_search(source, saved_search, global, feed_order)
+VALUES (:source, :savedSearch, :global, (SELECT COALESCE(MAX(feed_order), 0) + 1 FROM feed_saved_search));
 
 deleteById:
 DELETE FROM feed_saved_search
@@ -50,7 +53,8 @@ SELECT S._id, S.source, S.name, S.query, S.filters_json
 FROM feed_saved_search F
 JOIN saved_search S
 ON S._id = F.saved_search
-WHERE F.global = 1;
+WHERE F.global = 1
+ORDER BY F.feed_order;
 
 selectSourceFeedSavedSearch:
 SELECT S._id, S.source, S.name, S.query, S.filters_json
@@ -58,7 +62,8 @@ FROM feed_saved_search F
 JOIN saved_search S
 ON S._id = F.saved_search
 WHERE F.global = 0
-AND F.source = :sourceId;
+AND F.source = :sourceId
+ORDER BY F.feed_order;
 
 countSourceFeedSavedSearch:
 SELECT count(*)
@@ -67,3 +72,28 @@ JOIN saved_search S
 ON S._id = F.saved_search
 WHERE F.global = 0
 AND F.source = :sourceId;
+
+selectAllFeedWithSavedSearchName:
+SELECT coalesce(f.source, s.source) source, f.global, s.name
+FROM feed_saved_search AS f
+LEFT JOIN saved_search AS s
+ON f.saved_search = s._id
+ORDER BY f.feed_order;
+
+getGlobalFeedIds:
+SELECT _id
+FROM feed_saved_search
+WHERE global = 1
+ORDER BY feed_order;
+
+getSourceFeedIds:
+SELECT _id
+FROM feed_saved_search
+WHERE source = :sourceId
+AND global = 0
+ORDER BY feed_order;
+
+updateOrder:
+UPDATE feed_saved_search
+SET feed_order = :order
+WHERE _id = :id;

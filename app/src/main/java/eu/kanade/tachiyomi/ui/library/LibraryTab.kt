@@ -32,6 +32,7 @@ import eu.kanade.presentation.library.DeleteLibraryMangaDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
 import eu.kanade.presentation.library.components.LibraryContent
 import eu.kanade.presentation.library.components.LibraryToolbar
+import eu.kanade.presentation.library.components.MergeFinishedDialog
 import eu.kanade.presentation.library.components.SyncFavoritesConfirmDialog
 import eu.kanade.presentation.library.components.SyncFavoritesProgressDialog
 import eu.kanade.presentation.library.components.SyncFavoritesWarningDialog
@@ -43,6 +44,7 @@ import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.library.LibraryUpdateWorker
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
+import eu.kanade.tachiyomi.ui.browse.source.SourcesScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
@@ -57,10 +59,12 @@ import exh.recs.batch.RecommendationSearchBottomSheetDialog
 import exh.recs.batch.RecommendationSearchProgressDialog
 import exh.recs.batch.SearchStatus
 import exh.source.MERGED_SOURCE_ID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mihon.feature.migration.config.MigrationConfigScreen
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.Help
@@ -211,6 +215,36 @@ data object LibraryTab : Tab {
                     onClickCollectRecommendations = viewModel::showRecommendationSearchDialog.takeIf { state.selection.size > 1 },
                     onClickAddToMangaDex = viewModel::syncMangaToDex.takeIf { state.showAddToMangadex },
                     onClickResetInfo = viewModel::resetInfo.takeIf { state.showResetInfo },
+                    onClickMerge = {
+                        val selection = state.selectedManga
+                        if (selection.size == 1) {
+                            val manga = selection.first()
+                            viewModel.clearSelection()
+                            navigator.push(SourcesScreen(SourcesScreen.SmartSearchConfig(manga.title, manga.id)))
+                        } else if (selection.isNotEmpty()) {
+                            viewModel.clearSelection()
+                            scope.launch(Dispatchers.IO) {
+                                when (val result = viewModel.mergeLibraryEntries(selection)) {
+                                    is LibraryViewModel.LibraryMergeResult.Success -> {
+                                        viewModel.showMergeFinishedDialog(result.removableEntries, result.mergedMangaId)
+                                    }
+                                    is LibraryViewModel.LibraryMergeResult.Nothing -> {
+                                        snackbarHostState.showSnackbar(context.stringResource(SYMR.strings.merged_references_invalid))
+                                    }
+                                    is LibraryViewModel.LibraryMergeResult.Error -> {
+                                        withContext(Dispatchers.Main) {
+                                            context.toast(
+                                                context.stringResource(SYMR.strings.failed_merge, result.message),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            viewModel.clearSelection()
+                            context.toast(SYMR.strings.no_valid_entry)
+                        }
+                    },
                     // SY <--
                 )
             },
@@ -343,6 +377,22 @@ data object LibraryTab : Tab {
                         onDismissRequest()
                         viewModel.clearSelection()
                         viewModel.runRecommendationSearch(dialog.manga)
+                    },
+                )
+            }
+
+            is LibraryViewModel.Dialog.MergeFinished -> {
+                val navigateToMerged = {
+                    navigator.push(MangaScreen(dialog.mergedMangaId))
+                    onDismissRequest()
+                }
+                MergeFinishedDialog(
+                    onDismissRequest = navigateToMerged,
+                    onConfirm = { removeEntries ->
+                        if (removeEntries) {
+                            viewModel.removeMangas(dialog.entries, deleteFromLibrary = true, deleteChapters = false)
+                        }
+                        navigateToMerged()
                     },
                 )
             }

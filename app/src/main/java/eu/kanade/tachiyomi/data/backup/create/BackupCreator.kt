@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.data.backup.BackupFileValidator
 import eu.kanade.tachiyomi.data.backup.BackupWriter
 import eu.kanade.tachiyomi.data.backup.create.creators.CategoriesBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.ExtensionStoresBackupCreator
+import eu.kanade.tachiyomi.data.backup.create.creators.FeedBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.MangaBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.PreferenceBackupCreator
 import eu.kanade.tachiyomi.data.backup.create.creators.SavedSearchBackupCreator
@@ -18,6 +19,7 @@ import eu.kanade.tachiyomi.data.backup.create.creators.SourcesBackupCreator
 import eu.kanade.tachiyomi.data.backup.models.Backup
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupExtensionStore
+import eu.kanade.tachiyomi.data.backup.models.BackupFeed
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
@@ -60,6 +62,7 @@ class BackupCreator(
     private val backupFileValidator: BackupFileValidator,
     // SY -->
     private val savedSearchBackupCreator: SavedSearchBackupCreator,
+    private val feedBackupCreator: FeedBackupCreator,
     private val getMergedManga: GetMergedManga,
     // SY <--
 ) {
@@ -124,6 +127,7 @@ class BackupCreator(
                             backupSourcePreferences = backupSourcePreferences(options),
                             // SY -->
                             backupSavedSearches = backupSavedSearches(options),
+                            backupFeeds = backupFeeds(options),
                             // SY <--
                         ),
                     )
@@ -187,6 +191,12 @@ class BackupCreator(
         if (!options.savedSearches) return emptyList()
 
         return savedSearchBackupCreator()
+    }
+
+    suspend fun backupFeeds(options: BackupOptions): List<BackupFeed> {
+        if (!options.savedSearches) return emptyList()
+
+        return feedBackupCreator()
     }
     // SY <--
 

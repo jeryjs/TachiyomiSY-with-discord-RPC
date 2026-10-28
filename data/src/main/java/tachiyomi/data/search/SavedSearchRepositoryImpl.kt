@@ -1,6 +1,8 @@
 package tachiyomi.data.search
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -30,6 +32,12 @@ class SavedSearchRepositoryImpl(
             .awaitAsList()
     }
 
+    override suspend fun findId(source: Long, name: String): Long? {
+        return database.saved_searchQueries
+            .findId(source = source, name = name)
+            .awaitAsOneOrNull()
+    }
+
     override suspend fun insert(search: SavedSearch) {
         database.saved_searchQueries.insert(
             source = search.source,
@@ -37,6 +45,15 @@ class SavedSearchRepositoryImpl(
             query = search.query,
             filtersJson = search.filtersJson,
         )
+    }
+
+    override suspend fun insertReturningId(search: SavedSearch): Long {
+        return database.saved_searchQueries.insertReturningId(
+            source = search.source,
+            name = search.name,
+            query = search.query,
+            filtersJson = search.filtersJson,
+        ).awaitAsOne()
     }
 
     override suspend fun insertAll(searches: List<SavedSearch>) {

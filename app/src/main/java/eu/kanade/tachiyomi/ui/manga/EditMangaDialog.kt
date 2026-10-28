@@ -1,6 +1,8 @@
 package eu.kanade.tachiyomi.ui.manga
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,9 +53,16 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.manga.components.MangaCover
 import eu.kanade.presentation.track.components.TrackLogoIcon
@@ -86,7 +97,9 @@ import tachiyomi.source.local.isLocal
 @Composable
 fun EditMangaDialog(
     manga: Manga,
+    coverManga: Manga?,
     sourceName: String,
+    mergedManga: List<Manga>? = null,
     onDismissRequest: () -> Unit,
     onPositiveClick: (
         title: String?,
@@ -97,6 +110,8 @@ fun EditMangaDialog(
         tags: List<String>?,
         status: Long?,
     ) -> Unit,
+    onCoverClick: () -> Unit,
+    onResetCoverClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -119,7 +134,7 @@ fun EditMangaDialog(
     )
     val tags = remember { manga.genre.orEmpty().dropBlank().toMutableStateList() }
     var statusIndex by remember {
-        mutableStateOf(if (manga.status != manga.ogStatus) manga.status.toStatusIndex() else 0)
+        mutableIntStateOf(if (manga.status != manga.ogStatus) manga.status.toStatusIndex() else 0)
     }
 
     var showAddTagsDialog by remember { mutableStateOf(false) }
@@ -132,6 +147,12 @@ fun EditMangaDialog(
         if (!manga.genre.isNullOrEmpty() && !isLocal) {
             tags.addAll(manga.ogGenre.orEmpty())
         }
+    }
+
+    // Adds every tag of the merge's entries that isn't already present
+    fun collateTags() {
+        val merged = mergedManga ?: return
+        tags.addAll(merged.flatMap { it.genre.orEmpty() }.distinct() - tags.toSet())
     }
 
     suspend fun autofillFromTracker(track: Track, tracker: Tracker) {
@@ -172,6 +193,7 @@ fun EditMangaDialog(
                     thumbnailUrl.clearText()
                     description.clearText()
                     resetTags()
+                    onResetCoverClick()
                 },
             )
 
@@ -185,9 +207,10 @@ fun EditMangaDialog(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     MangaCover.Book(
-                        data = manga,
+                        data = coverManga ?: manga,
                         modifier = Modifier.width(76.dp),
                         shape = RoundedCornerShape(6.dp),
+                        onClick = onCoverClick,
                     )
                     Column(
                         modifier = Modifier.weight(1f),
@@ -245,6 +268,7 @@ fun EditMangaDialog(
                     tags = tags,
                     onAddTagsClick = { showAddTagsDialog = true },
                     onResetTagsClick = ::resetTags,
+                    onCollateTagsClick = mergedManga?.let { ::collateTags },
                 )
             }
             HorizontalDivider()
@@ -446,6 +470,7 @@ private fun TagsSection(
     tags: SnapshotStateList<String>,
     onAddTagsClick: () -> Unit,
     onResetTagsClick: () -> Unit,
+    onCollateTagsClick: (() -> Unit)? = null,
 ) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -455,44 +480,120 @@ private fun TagsSection(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
+            onCollateTagsClick?.let { click ->
+                TextButton(onClick = click) {
+                    Text(stringResource(SYMR.strings.collate_tags))
+                }
+            }
             TextButton(onClick = onResetTagsClick) {
                 Text(stringResource(SYMR.strings.reset_tags))
             }
         }
-        FlowRow(
+
+        ReorderableTagFlow(
+            tags = tags,
+            onRemoveTag = { index -> tags.removeAt(index) },
+            onAddTagsClick = onAddTagsClick,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            tags.forEachIndexed { index, tag ->
-                InputChip(
-                    selected = false,
-                    onClick = {},
-                    label = { Text(tag) },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Rounded.Close,
-                            contentDescription = stringResource(MR.strings.action_remove),
-                            modifier = Modifier
-                                .size(InputChipDefaults.IconSize)
-                                .clickable { tags.removeAt(index) },
-                        )
-                    },
-                )
-            }
-            AssistChip(
-                onClick = onAddTagsClick,
-                label = { Text(stringResource(SYMR.strings.add_tag)) },
-                leadingIcon = {
+        )
+    }
+}
+
+@Composable
+private fun ReorderableTagFlow(
+    tags: SnapshotStateList<String>,
+    onRemoveTag: (Int) -> Unit,
+    onAddTagsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val chipBounds = remember { mutableStateMapOf<Int, Rect>() }
+    var dragIndex by remember { mutableStateOf<Int?>(null) }
+    var dragTranslation by remember { mutableStateOf(Offset.Zero) }
+    var dragStartBounds by remember { mutableStateOf(Rect.Zero) }
+
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        tags.forEachIndexed { index, tag ->
+            val isDragging = dragIndex == index
+            InputChip(
+                selected = false,
+                onClick = {},
+                label = { Text(tag) },
+                trailingIcon = {
                     Icon(
-                        imageVector = MaterialSymbols.Rounded.Add,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                        imageVector = MaterialSymbols.Rounded.Close,
+                        contentDescription = stringResource(MR.strings.action_remove),
+                        modifier = Modifier
+                            .size(InputChipDefaults.IconSize)
+                            .clickable { onRemoveTag(index) },
                     )
                 },
+                modifier = Modifier
+                    .onGloballyPositioned { coordinates ->
+                        chipBounds[index] = coordinates.boundsInRoot()
+                    }
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .graphicsLayer {
+                        if (isDragging) {
+                            translationX = dragTranslation.x
+                            translationY = dragTranslation.y
+                            scaleX = 1.05f
+                            scaleY = 1.05f
+                        }
+                    }
+                    .pointerInput(index) {
+                        detectDragGestures(
+                            onDragStart = {
+                                dragIndex = index
+                                dragStartBounds = chipBounds[index] ?: Rect.Zero
+                                dragTranslation = Offset.Zero
+                            },
+                            onDrag = { _, amount ->
+                                dragTranslation += amount
+                            },
+                            onDragEnd = {
+                                val center = Offset(
+                                    dragStartBounds.center.x + dragTranslation.x,
+                                    dragStartBounds.center.y + dragTranslation.y,
+                                )
+                                val targetIndex = chipBounds.entries
+                                    .firstOrNull { (_, bounds) -> bounds.contains(center) }
+                                    ?.key
+                                if (targetIndex != null && targetIndex != index) {
+                                    tags.move(index, targetIndex)
+                                }
+                                dragIndex = null
+                                dragTranslation = Offset.Zero
+                            },
+                            onDragCancel = {
+                                dragIndex = null
+                                dragTranslation = Offset.Zero
+                            },
+                        )
+                    },
             )
         }
+        AssistChip(
+            onClick = onAddTagsClick,
+            label = { Text(stringResource(SYMR.strings.add_tag)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = MaterialSymbols.Rounded.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                )
+            },
+        )
     }
+}
+
+private fun <T> SnapshotStateList<T>.move(from: Int, to: Int) {
+    val item = removeAt(from)
+    add(to, item)
 }
 
 @Composable

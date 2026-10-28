@@ -126,7 +126,7 @@ INSERT INTO chapter(
     remote_date_upload, remote_order, remote_memo, user_read, user_bookmark,
     user_last_page_read, state_date_fetch,
     -- SY -->
-    state_last_modified_at, state_version
+    state_last_modified_at, state_version, state_is_syncing
     -- SY <--
 )
 VALUES (
@@ -134,7 +134,8 @@ VALUES (
     :remoteDateUpload, :remoteOrder, :remoteMemo, :userRead, :userBookmark,
     :userLastPageRead, :stateDateFetch,
     -- SY -->
-    CASE WHEN :stateLastModifiedAt = 0 THEN strftime('%s', 'now') ELSE :stateLastModifiedAt END, :stateVersion
+    CASE WHEN :stateLastModifiedAt = 0 AND :stateIsSyncing = 0 THEN strftime('%s', 'now') ELSE :stateLastModifiedAt END,
+    :stateVersion, :stateIsSyncing
     -- SY <--
 )
 -- Two syncs of the same entry can race; the chapter the other one already stored is skipped rather
@@ -183,30 +184,72 @@ SELECT
 FROM chapter
 WHERE remote_url = :remoteUrl;
 
-getMergedChaptersByMangaId:
-SELECT
-    C.id, C.manga_id, C.remote_url, C.remote_name, C.remote_scanlator, C.remote_chapter_number,
-    C.remote_date_upload, C.remote_order, C.remote_memo, C.user_read, C.user_bookmark,
-    C.user_last_page_read, C.state_date_fetch,
-    C.state_last_modified_at, C.state_version, C.state_is_syncing
-FROM chapter C
-LEFT JOIN excluded_scanlator ES
-ON C.manga_id = ES.manga_id
-AND C.remote_scanlator = ES.scanlator
-WHERE C.manga_id IN (
-    SELECT manga_id FROM merged WHERE merge_id = :mergeId
-)
-AND (
-    :applyScanlatorFilter = 0
+-- Returns the chapters a merged entry shows, deduped per its sort mode (MergeSettings.CHAPTER_SORT_*).
+getDedupedMergedChapters:
+WITH refs AS (
+    SELECT manga_id, chapter_priority
+    FROM merged_entry
+    WHERE merge_id = :mergeId
+),
+base AS (
+    SELECT
+        C.id, C.manga_id, C.remote_url, C.remote_name, C.remote_scanlator,
+        C.remote_chapter_number, C.remote_date_upload, C.remote_order, C.remote_memo,
+        C.user_read, C.user_bookmark, C.user_last_page_read, C.state_date_fetch,
+        C.state_last_modified_at, C.state_version, C.state_is_syncing,
+        R.chapter_priority
+    FROM chapter C
+    JOIN refs R
+    ON R.manga_id = C.manga_id
+    LEFT JOIN excluded_scanlator ES
+    ON C.manga_id = ES.manga_id
+    AND C.remote_scanlator = ES.scanlator
+    WHERE :applyScanlatorFilter = 0
     OR ES.scanlator IS NULL
 )
-ORDER BY C.manga_id, C.remote_order;
+SELECT
+    B.id, B.manga_id, B.remote_url, B.remote_name, B.remote_scanlator,
+    B.remote_chapter_number, B.remote_date_upload, B.remote_order, B.remote_memo,
+    B.user_read, B.user_bookmark, B.user_last_page_read, B.state_date_fetch,
+    B.state_last_modified_at, B.state_version, B.state_is_syncing
+FROM base B
+WHERE :sortMode <= 1
+OR (:sortMode = 2 AND (
+    B.remote_chapter_number < 0
+    OR NOT EXISTS (
+        SELECT 1
+        FROM base B2
+        WHERE B2.remote_chapter_number = B.remote_chapter_number
+        AND B2.manga_id != B.manga_id
+        AND (
+            B2.chapter_priority < B.chapter_priority
+            OR (B2.chapter_priority = B.chapter_priority AND B2.manga_id < B.manga_id)
+        )
+    )
+))
+OR (:sortMode = 3 AND B.manga_id = (
+    SELECT B2.manga_id
+    FROM base B2
+    GROUP BY B2.manga_id
+    ORDER BY COUNT(*) DESC, B2.manga_id
+    LIMIT 1
+))
+OR (:sortMode = 4 AND B.manga_id = (
+    SELECT B2.manga_id
+    FROM base B2
+    WHERE B2.remote_chapter_number >= 0
+    GROUP BY B2.manga_id
+    ORDER BY MAX(B2.remote_chapter_number) DESC, B2.manga_id
+    LIMIT 1
+))
+-- chapter_priority first so PRIORITY mode comes back interleaved by source priority
+ORDER BY B.chapter_priority, B.manga_id, B.remote_order;
 
 getScanlatorsByMergeId:
 SELECT DISTINCT remote_scanlator
 FROM chapter
 WHERE manga_id IN (
-    SELECT manga_id FROM merged WHERE merge_id = :mergeId
+    SELECT manga_id FROM merged_entry WHERE merge_id = :mergeId
 );
 
 resetIsSyncing:

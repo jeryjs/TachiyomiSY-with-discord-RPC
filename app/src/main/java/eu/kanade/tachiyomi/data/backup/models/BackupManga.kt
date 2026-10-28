@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.data.backup.models
 
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import mihon.core.common.extensions.JsonObjectEmptyBytes
@@ -13,8 +14,10 @@ import tachiyomi.domain.manga.model.Manga
 class BackupManga(
     // in 1.x some of these values have different names
     // SY -->
+    @EncodeDefault
     @ProtoNumber(1) var source: Long = 0,
     // url is called key in 1.x
+    @EncodeDefault
     @ProtoNumber(2) var url: String = "",
     // SY <--
     @ProtoNumber(3) var title: String = "",
@@ -57,10 +60,11 @@ class BackupManga(
 
     // SY -->
     // SY specific values
-    @ProtoNumber(600) var mergedMangaReferences: List<BackupMergedMangaReference> = emptyList(),
+    @ProtoNumber(600) var mergedEntries: List<BackupMergedEntry> = emptyList(),
     @ProtoNumber(601) var flatMetadata: BackupFlatMetadata? = null,
     @ProtoNumber(602) var customStatus: Int = 0,
     @ProtoNumber(603) var customThumbnailUrl: String? = null,
+    @ProtoNumber(604) var mergeSettings: BackupMergeSettings? = null,
     // Bump by 50 for values that are not in the original SY fork
     @ProtoNumber(650) var incognitoMode: Boolean? = false,
 

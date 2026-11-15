@@ -15,9 +15,12 @@ enum class EHLogLevel(val nameRes: StringResource, val description: StringResour
     ;
 
     companion object {
-        private var curLogLevel: Int? = null
+        // Starts at what init() reads on a fresh install: fork code logs (and is queried for its log
+        // level) while the Metro graph is being injected, which happens before App.setupExhLogging()
+        // calls init(). An uninitialised level must not NPE the caller.
+        private var curLogLevel: Int = MINIMAL.ordinal
 
-        val currentLogLevel get() = values()[curLogLevel!!]
+        val currentLogLevel get() = values()[curLogLevel]
 
         fun init(context: Context) {
             curLogLevel = PreferenceManager.getDefaultSharedPreferences(context)
@@ -25,7 +28,7 @@ enum class EHLogLevel(val nameRes: StringResource, val description: StringResour
         }
 
         fun shouldLog(requiredLogLevel: EHLogLevel): Boolean {
-            return curLogLevel!! >= requiredLogLevel.ordinal
+            return curLogLevel >= requiredLogLevel.ordinal
         }
     }
 }

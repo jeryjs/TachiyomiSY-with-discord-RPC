@@ -8,7 +8,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 /**
  * SY-specific file
  */
-fun OkHttpClient.Builder.maybeInjectEHLogger(): OkHttpClient.Builder {
+fun OkHttpClient.Builder.maybeInjectEHLogger(): OkHttpClient.Builder = xLogSafely(this@maybeInjectEHLogger) {
     if (EHLogLevel.shouldLog(EHLogLevel.EXTREME)) {
         val xlogBorder = XLog.tag("||EH-NETWORK-JSON").build()
         val xlogNoBorder = XLog.tag("||EH-NETWORK-JSON").disableBorder().build()
@@ -20,7 +20,7 @@ fun OkHttpClient.Builder.maybeInjectEHLogger(): OkHttpClient.Builder {
                 xlogNoBorder.d(message)
             }
         }
-        return addInterceptor(HttpLoggingInterceptor(logger).apply { level = HttpLoggingInterceptor.Level.BODY })
+        return@xLogSafely addInterceptor(HttpLoggingInterceptor(logger).apply { level = HttpLoggingInterceptor.Level.BODY })
     }
-    return this
+    this@maybeInjectEHLogger
 }

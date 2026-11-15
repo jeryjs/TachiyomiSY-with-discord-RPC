@@ -9,8 +9,7 @@ import eu.kanade.tachiyomi.ui.setting.track.BaseOAuthLoginActivity
 import exh.md.utils.MdUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import mihon.app.di.AppGraph
-import mihon.core.metro.metroGraph
+import mihon.app.di.appGraph
 import tachiyomi.domain.source.service.SourceManager
 
 /**
@@ -18,14 +17,12 @@ import tachiyomi.domain.source.service.SourceManager
  */
 class MangaDexLoginActivity : BaseOAuthLoginActivity() {
 
-    private val graph: AppGraph by lazy { metroGraph() }
-
     @Inject private lateinit var sourceManager: SourceManager
 
     @Inject private lateinit var sourcePreferences: SourcePreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        graph.inject(this)
+        appGraph.inject(this)
         super.onCreate(savedInstanceState)
     }
 
